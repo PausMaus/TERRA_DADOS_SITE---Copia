@@ -1,0 +1,174 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}">
+
+
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>{% block title %}Relatorio{% endblock %}</title>
+  </head>
+  <body>
+    <h1>Relatório Umbrella360</h1>
+    <li><a href="{% url 'index' %}">Pagina Inicial</a></li>
+
+
+    <p>Bem vindo á pagina de Relatório da Umbrella 360.</p>
+    <p>Selecione uma das opções abaixo para visualizar os relatórios:</p>
+
+    <li><a href="{% url 'report' %}">Relatório Global</a></li>
+    <li><a href="{% url 'motoristas' %}">Motoristas</a></li>
+    <li><a href="{% url 'caminhoes' %}">Caminhões</a></li>
+    <main>
+
+
+    {% block content %}
+    
+    <h2>Global</h2>
+    <div style="float: right; margin-left: 20px; margin-bottom: 20px;">
+      <img src="{% static 'umbrella360/images/Media_Consumo.png' %}" alt="Relatório Umbrella360" style="max-width: 400px; display: block;">
+    </div>
+    <p>Este relatório apresenta as médias de consumo de combustível dos motoristas e caminhões cadastrados na Umbrella360.</p>
+    <p>As médias são calculadas com base na quilometragem total percorrida e no combustível total consumido.</p>
+    
+    <div style="position: absolute; top: 20px; right: 20px; text-align: right;">
+      <p>Total de motoristas cadastrados: <strong>{{ total_motoristas }}</strong></p>
+      <p>Total de caminhões cadastrados: <strong>{{ total_caminhoes }}</strong></p>
+    </div>
+    
+    <h3>Caminhões Por Marca</h3>
+    <table border="1" cellpadding="5" cellspacing="0">
+      <thead>
+        <tr>
+          <th>Marca</th>
+          <th>Quilometragem Atual (km)</th>
+          <th>Combustível Total (litros)</th>
+          <th>Média de Consumo (km/l)</th>
+          <th>Velocidade Média (km/h)</th>
+          <th>RPM Médio do Motor</th>
+          <th>Temperatura Média (°C)</th>
+          <th>Emissões de CO2 (g/km)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if calculo_scania %}
+          {% for item in calculo_scania %}
+            <tr>
+              <td>Scania</td>
+              <td>{{ item.quilometragem }}</td>
+              <td>{{ item.Consumido }}</td>
+              <td>{{ item.Quilometragem_média }}</td>
+              <td>{{ item.Velocidade_média }}</td>
+              <td>{{ item.RPM_médio }}</td>
+              <td>{{ item.Temperatura_média }}</td>
+              <td>{{ item.Emissões_CO2 }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td>Scania</td>
+            <td colspan="7">Nenhum dado de cálculo Scania cadastrado.</td>
+          </tr>
+        {% endif %}
+        {% if calculo_volvo %}
+          {% for item in calculo_volvo %}
+            <tr>
+              <td>Volvo</td>
+              <td>{{ item.quilometragem }}</td>
+              <td>{{ item.Consumido }}</td>
+              <td>{{ item.Quilometragem_média }}</td>
+              <td>{{ item.Velocidade_média }}</td>
+              <td>{{ item.RPM_médio }}</td>
+              <td>{{ item.Temperatura_média }}</td>
+              <td>{{ item.Emissões_CO2 }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td>Volvo</td>
+            <td colspan="7">Nenhum dado de cálculo Volvo cadastrado.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+    
+
+
+
+    <h3>Motoristas (por maior média de consumo)</h3>
+    <table border="1" cellpadding="5" cellspacing="0">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Quilometragem Atual (km)</th>
+          <th>Combustível Total (litros)</th>
+          <th>Média de Consumo (km/l)</th>
+          <th>Horas de Motor</th>
+          <th>Velocidade Média (km/h)</th>
+          <th>Emissões de CO2 (g/km)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for motorista in motoristas %}
+          <tr>
+            <td>{{ motorista.agrupamento }}</td>
+            <td>{{ motorista.quilometragem }}</td>
+            <td>{{ motorista.Consumido }}</td>
+            <td>{{ motorista.Quilometragem_média }}</td>
+            <td>{{ motorista.Horas_de_motor }}</td>
+            <td>{{ motorista.Velocidade_média }}</td>
+            <td>{{ motorista.Emissões_CO2 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7">Nenhum motorista cadastrado.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <h3>Caminhões (por maior média de consumo)</h3>
+    <table border="1" cellpadding="5" cellspacing="0">
+      <thead>
+        <tr>
+          <th>Agrupamento</th>
+          <th>Marca</th>
+          <th>Quilometragem Atual (km)</th>
+          <th>Combustível Total (litros)</th>
+          <th>Média de Consumo (km/l)</th>
+          <th>Horas de Motor</th>
+          <th>Velocidade Média (km/h)</th>
+          <th>RPM Médio do Motor</th>
+          <th>Temperatura Média (°C)</th>
+          <th>Emissões de CO2 (g/km)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for caminhao in caminhoes %}
+          <tr>
+            <td>{{ caminhao.agrupamento }}</td>
+            <td>{{ caminhao.marca }}</td>
+            <td>{{ caminhao.quilometragem }}</td>
+            <td>{{ caminhao.Consumido }}</td>
+            <td>{{ caminhao.Quilometragem_média }}</td>
+            <td>{{ caminhao.Horas_de_motor }}</td>
+            <td>{{ caminhao.Velocidade_média }}</td>
+            <td>{{ caminhao.RPM_médio }}</td>
+            <td>{{ caminhao.Temperatura_média }}</td>
+            <td>{{ caminhao.Emissões_CO2 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="10">Nenhum caminhão cadastrado.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% endblock %}
+    </main>
+    <footer>
+      <p>&copy; 2042 Umbrella360. Todos os direitos reservados.</p>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,46 @@
+
+
+{% extends "umbrella360/report.html" %}
+
+{% block title %}Motoristas{% endblock %}
+
+{% block content %}
+    <h2>Motoristas</h2>
+    <p>Este relatório apresenta as médias de consumo de combustível dos motoristas e caminhões cadastrados na Umbrella360.</p>
+    <p>As médias são calculadas com base na quilometragem total percorrida e no combustível total consumido.</p>
+
+    <h3>Motoristas (por maior média de consumo)</h3>
+    <table border="1" cellpadding="5" cellspacing="0">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Quilometragem Atual (km)</th>
+          <th>Combustível Total (litros)</th>
+          <th>Média de Consumo (km/l)</th>
+          <th>Horas de Motor</th>
+          <th>Velocidade Média (km/h)</th>
+          <th>Emissões de CO2 (g/km)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for motorista in motoristas %}
+          <tr>
+            <td>{{ motorista.agrupamento }}</td>
+            <td>{{ motorista.quilometragem }}</td>
+            <td>{{ motorista.Consumido }}</td>
+            <td>{{ motorista.Quilometragem_média }}</td>
+            <td>{{ motorista.Horas_de_motor }}</td>
+            <td>{{ motorista.Velocidade_média }}</td>
+            <td>{{ motorista.Emissões_CO2 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7">Nenhum motorista cadastrado.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+      </tbody>
+    </table>
+
+{% endblock %}

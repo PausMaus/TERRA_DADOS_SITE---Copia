@@ -1,0 +1,29 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}">
+
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>Relatório</title>
+  </head>
+  <body>
+    <h1>Umbrella360</h1>
+    <p>Seja Bem vindo á Umbrella 360.</p>
+    <h2>Logistica Inteligente</h2>
+    <p> Tudo o que usamos em nossas casas, teve que ser trazido de alguma forma.</p>
+    <p>A missão da Umbrella360 é transformar a vida de milhões de brasileiros através da logística.</p>
+    <p>Nós enxergamos um mundo mais justo, mais humano e mais sustentável.</p>
+
+
+
+    <h2>Menu</h2>
+    <p>Aqui, disponibilizamos as ferramentas Umbrella360:</p>
+    <li><a href="{% url 'report' %}">Relatorio</a></li>
+
+
+    <footer>
+      <p>&copy; 2042 Umbrella360. Todos os direitos reservados.</p>
+    </footer>
+  </body>
+</html>

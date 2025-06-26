@@ -1,0 +1,49 @@
+{% extends "umbrella360/report.html" %}
+
+{% block title %}Caminhões{% endblock %}
+
+{% block content %}
+    <h2>Caminhões</h2>
+    <p>Este relatório apresenta as médias de consumo de combustível dos motoristas e caminhões cadastrados na Umbrella360.</p>
+    <p>As médias são calculadas com base na quilometragem total percorrida e no combustível total consumido.</p>
+
+    <h3>Caminhões (por maior média de consumo)</h3>
+    <table border="1" cellpadding="5" cellspacing="0">
+      <thead>
+        <tr>
+          <th>Agrupamento</th>
+          <th>Marca</th>
+          <th>Quilometragem Atual (km)</th>
+          <th>Combustível Total (litros)</th>
+          <th>Média de Consumo (km/l)</th>
+          <th>Horas de Motor</th>
+          <th>Velocidade Média (km/h)</th>
+          <th>RPM Médio do Motor</th>
+          <th>Temperatura Média (°C)</th>
+          <th>Emissões de CO2 (g/km)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for caminhao in caminhoes %}
+          <tr>
+            <td>{{ caminhao.agrupamento }}</td>
+            <td>{{ caminhao.marca }}</td>
+            <td>{{ caminhao.quilometragem }}</td>
+            <td>{{ caminhao.Consumido }}</td>
+            <td>{{ caminhao.Quilometragem_média }}</td>
+            <td>{{ caminhao.Horas_de_motor }}</td>
+            <td>{{ caminhao.Velocidade_média }}</td>
+            <td>{{ caminhao.RPM_médio }}</td>
+            <td>{{ caminhao.Temperatura_média }}</td>
+            <td>{{ caminhao.Emissões_CO2 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="10">Nenhum caminhão cadastrado.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+
+{% endblock %}

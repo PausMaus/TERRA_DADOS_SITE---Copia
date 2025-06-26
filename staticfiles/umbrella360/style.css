@@ -1,0 +1,29 @@
+li a {
+    color: green;
+}
+
+body {
+    background-color: #3dbccd; /* Light blue */
+}
+
+h1 {
+    color: #ffffff; /* White */
+    font-family: Verdana, sans-serif;
+    font-size: 24px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background-color: #10a0b3; /* Light gray */
+    border: 3px solid #ddd; /* Light border */
+    color: #333; /* Dark text */
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    thead {
+        background-color: #3c8d97; /* White */
+        color: #ffffff; /* Black */
+    }
+
+}
