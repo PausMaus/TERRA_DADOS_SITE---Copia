@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Motorista, Caminhao, Calculo_Scania, Calculo_Volvo
+from .models import Motorista, Caminhao
 
 
 
@@ -26,18 +26,5 @@ class CaminhaoAdmin(admin.ModelAdmin):
     ordering = ('agrupamento',)
 
 
-class Calculo_ScaniaAdmin(admin.ModelAdmin):
-    list_display = ('quilometragem', 'Consumido', 'Quilometragem_média',
-                    'Velocidade_média', 'RPM_médio',
-                    'Temperatura_média', 'Emissões_CO2')
-
-class Calculo_VolvoAdmin(admin.ModelAdmin):
-    list_display = ('quilometragem', 'Consumido', 'Quilometragem_média',
-                    'Velocidade_média', 'RPM_médio',
-                    'Temperatura_média', 'Emissões_CO2')
-
-
 admin.site.register(Motorista, MotoristaAdmin)
 admin.site.register(Caminhao, CaminhaoAdmin)
-admin.site.register(Calculo_Scania, Calculo_ScaniaAdmin)
-admin.site.register(Calculo_Volvo, Calculo_VolvoAdmin)
