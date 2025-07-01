@@ -73,6 +73,13 @@ class Caminhao(models.Model):
 
 
 class Calculo_Scania(models.Model):
+    caminhao = models.ForeignKey(
+        Caminhao, 
+        on_delete=models.CASCADE, 
+        limit_choices_to={'marca': 'Scania'},
+        verbose_name="Caminhão Scania",
+        related_name='calculos_scania'
+    )
     quilometragem = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00, verbose_name="Quilometragem Atual (km)", blank=True, null=True
     )
@@ -94,11 +101,30 @@ class Calculo_Scania(models.Model):
     Emissões_CO2 = models.FloatField(
      default=0.00, verbose_name="Emissões de CO2 (g/km)", blank=True, null=True
     )
+
+    def __str__(self):
+        return f"Cálculo Scania - {self.caminhao.agrupamento}"
+
+    class Meta:
+        verbose_name = "Cálculo Scania"
+        verbose_name_plural = "Cálculos Scania"
+
+    @classmethod
+    def get_scania_trucks_data(cls):
+        """Retorna dados dos caminhões Scania"""
+        return Caminhao.objects.filter(marca='Scania')
 
 
 
 
 class Calculo_Volvo(models.Model):
+    caminhao = models.ForeignKey(
+        Caminhao, 
+        on_delete=models.CASCADE, 
+        limit_choices_to={'marca': 'Volvo'},
+        verbose_name="Caminhão Volvo",
+        related_name='calculos_volvo'
+    )
     quilometragem = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00, verbose_name="Quilometragem Atual (km)", blank=True, null=True
     )
@@ -120,3 +146,20 @@ class Calculo_Volvo(models.Model):
     Emissões_CO2 = models.FloatField(
      default=0.00, verbose_name="Emissões de CO2 (g/km)", blank=True, null=True
     )
+
+    def __str__(self):
+        return f"Cálculo Volvo - {self.caminhao.agrupamento}"
+
+    class Meta:
+        verbose_name = "Cálculo Volvo"
+        verbose_name_plural = "Cálculos Volvo"
+
+    @classmethod
+    def get_volvo_trucks_data(cls):
+        """Retorna dados dos caminhões Volvo"""
+        return Caminhao.objects.filter(marca='Volvo')
+
+
+
+
+
