@@ -8,32 +8,116 @@
     <!-- Include Plotly.js for chart rendering -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     
-    <h2>Caminhões</h2>
+    <h2 class="h2">Caminhões</h2>
 
     <p>Este relatório apresenta as médias de consumo de combustível dos motoristas e caminhões cadastrados na Umbrella360.</p>
     <p>As médias são calculadas com base na quilometragem total percorrida e no combustível total consumido.</p>    <div class="container" style="margin-top: 24px; display: flex; align-items: flex-start; gap: 20px;">
-      <!-- Left side: Truck images -->
-      <div style="flex: 1;">
-        <div style="margin-bottom: 20px; text-align: center;">
-          <h2>Volvo</h2>
-          <img src="{% static 'umbrella360/images/Volvo.png' %}" alt="Relatório Umbrella360" title="Volvo" style="max-width: 500px; border: 5px solid #c0c0c0; border-radius: 8px;">
+      <!-- Dashboard for Volvo -->
+      <div style="flex: 1; background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+        <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50; font-size: 1.6rem;">Volvo</h3>
+        
+        <!-- Volvo Main KPIs -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; padding: 1rem; border-radius: 10px; text-align: center;">
+            <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Quilômetros Percorridos</h5>
+            <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">{{ volvo_stats.total_quilometragem|floatformat:0 }}</p>
+          </div>
+          <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 1rem; border-radius: 10px; text-align: center;">
+            <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Consumo Diesel (L)</h5>
+            <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">{{ volvo_stats.total_consumido|floatformat:0 }}</p>
+          </div>
         </div>
-        <div style="text-align: center;">
-          <h2>Scania</h2>
-          <img src="{% static 'umbrella360/images/Scania.png' %}" alt="Relatório Umbrella360" title="Scania" style="max-width: 500px; border: 5px solid #c0c0c0; border-radius: 8px;">
+
+        <!-- Volvo Performance Metrics -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin-bottom: 1.5rem;">
+          <div style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; padding: 0.8rem; border-radius: 8px; text-align: center;">
+            <h6 style="margin: 0 0 0.3rem 0; font-size: 0.7rem; opacity: 0.9;">Velocidade Média</h6>
+            <p style="margin: 0; font-size: 1.1rem; font-weight: bold;">{{ volvo_stats.media_velocidade|floatformat:2 }}</p>
+          </div>
+          <div style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 0.8rem; border-radius: 8px; text-align: center;">
+            <h6 style="margin: 0 0 0.3rem 0; font-size: 0.7rem; opacity: 0.9;">RPM Médio</h6>
+            <p style="margin: 0; font-size: 1.1rem; font-weight: bold;">{{ volvo_stats.media_rpm|floatformat:2 }}</p>
+          </div>
+          <div style="background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%); color: white; padding: 0.8rem; border-radius: 8px; text-align: center;">
+            <h6 style="margin: 0 0 0.3rem 0; font-size: 0.7rem; opacity: 0.9;">Emissões CO2</h6>
+            <p style="margin: 0; font-size: 1.1rem; font-weight: bold;">{{ volvo_stats.total_emissoes|floatformat:2 }}</p>
+          </div>
+        </div>
+
+        <!-- Volvo Efficiency Gauge -->
+        <div style="display: flex; justify-content: center; align-items: center; gap: 1rem;">
+          <div style="background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); color: white; padding: 1.5rem; border-radius: 12px; text-align: center;">
+            <h5 style="margin: 0 0 0.8rem 0; font-size: 1rem;">Média de Consumo</h5>
+            <div style="position: relative; display: inline-block;">
+              <div style="width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(#3498db 0deg 190deg, #ecf0f1 190deg 360deg); display: flex; align-items: center; justify-content: center;">
+                <div style="width: 55px; height: 55px; border-radius: 50%; background: #2c3e50; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                  <span style="font-size: 1.2rem; font-weight: bold; color: #3498db;">{{ volvo_stats.media_quilometragem|floatformat:2 }}</span>
+                  <span style="font-size: 0.6rem; opacity: 0.8;">km/l</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 1rem; border-radius: 10px; text-align: center; min-width: 80px;">
+            <h6 style="margin: 0 0 0.3rem 0; font-size: 0.8rem; opacity: 0.9;">Veículos</h6>
+            <p style="margin: 0; font-size: 1.8rem; font-weight: bold;">{{ volvo_stats.count_veiculos }}</p>
+          </div>
         </div>
       </div>
-      
-      <!-- Right side: Emissions chart -->
-      <div style="flex: 0 0 400px; padding: 20px;">
-        <h3 style="text-align: center; margin-bottom: 15px;">Distribuição das Emissões de CO₂ por Marca</h3>
-        <div style="width: 400px; height: 350px;">
-          {{ grafico|safe }}
+
+      <!-- Dashboard for Scania -->
+      <div style="flex: 1; background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+        <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50; font-size: 1.6rem;">Scania</h3>
+        
+        <!-- Scania Main KPIs -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; padding: 1rem; border-radius: 10px; text-align: center;">
+            <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Quilômetros Percorridos</h5>
+            <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">{{ scania_stats.total_quilometragem|floatformat:0 }}</p>
+          </div>
+          <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 1rem; border-radius: 10px; text-align: center;">
+            <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Consumo Diesel (L)</h5>
+            <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">{{ scania_stats.total_consumido|floatformat:0 }}</p>
+          </div>
+        </div>
+
+        <!-- Scania Performance Metrics -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin-bottom: 1.5rem;">
+          <div style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; padding: 0.8rem; border-radius: 8px; text-align: center;">
+            <h6 style="margin: 0 0 0.3rem 0; font-size: 0.7rem; opacity: 0.9;">Velocidade Média</h6>
+            <p style="margin: 0; font-size: 1.1rem; font-weight: bold;">{{ scania_stats.media_velocidade|floatformat:2 }}</p>
+          </div>
+          <div style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 0.8rem; border-radius: 8px; text-align: center;">
+            <h6 style="margin: 0 0 0.3rem 0; font-size: 0.7rem; opacity: 0.9;">RPM Médio</h6>
+            <p style="margin: 0; font-size: 1.1rem; font-weight: bold;">{{ scania_stats.media_rpm|floatformat:2 }}</p>
+          </div>
+          <div style="background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%); color: white; padding: 0.8rem; border-radius: 8px; text-align: center;">
+            <h6 style="margin: 0 0 0.3rem 0; font-size: 0.7rem; opacity: 0.9;">Emissões CO2</h6>
+            <p style="margin: 0; font-size: 1.1rem; font-weight: bold;">{{ scania_stats.total_emissoes|floatformat:2 }}</p>
+          </div>
+        </div>
+
+        <!-- Scania Efficiency Gauge -->
+        <div style="display: flex; justify-content: center; align-items: center; gap: 1rem;">
+          <div style="background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); color: white; padding: 1.5rem; border-radius: 12px; text-align: center;">
+            <h5 style="margin: 0 0 0.8rem 0; font-size: 1rem;">Média de Consumo</h5>
+            <div style="position: relative; display: inline-block;">
+              <div style="width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(#e74c3c 0deg 175deg, #ecf0f1 175deg 360deg); display: flex; align-items: center; justify-content: center;">
+                <div style="width: 55px; height: 55px; border-radius: 50%; background: #2c3e50; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                  <span style="font-size: 1.2rem; font-weight: bold; color: #e74c3c;">{{ scania_stats.media_quilometragem|floatformat:2 }}</span>
+                  <span style="font-size: 0.6rem; opacity: 0.8;">km/l</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 1rem; border-radius: 10px; text-align: center; min-width: 80px;">
+            <h6 style="margin: 0 0 0.3rem 0; font-size: 0.8rem; opacity: 0.9;">Veículos</h6>
+            <p style="margin: 0; font-size: 1.8rem; font-weight: bold;">{{ scania_stats.count_veiculos }}</p>
+          </div>
         </div>
       </div>
     </div>
 
-    <h3>Caminhões (por maior média de consumo)</h3>
+    <h3 class="h3">Caminhões (por maior média de consumo)</h3>
     <table border="1" cellpadding="5" cellspacing="0">
       <thead>
         <tr>
@@ -54,14 +138,14 @@
           <tr>
             <td>{{ caminhao.agrupamento }}</td>
             <td>{{ caminhao.marca }}</td>
-            <td>{{ caminhao.quilometragem }}</td>
-            <td>{{ caminhao.Consumido }}</td>
-            <td>{{ caminhao.Quilometragem_média }}</td>
+            <td>{{ caminhao.quilometragem|floatformat:2 }}</td>
+            <td>{{ caminhao.Consumido|floatformat:2 }}</td>
+            <td>{{ caminhao.Quilometragem_média|floatformat:2 }}</td>
             <td>{{ caminhao.Horas_de_motor }}</td>
-            <td>{{ caminhao.Velocidade_média }}</td>
-            <td>{{ caminhao.RPM_médio }}</td>
-            <td>{{ caminhao.Temperatura_média }}</td>
-            <td>{{ caminhao.Emissões_CO2 }}</td>
+            <td>{{ caminhao.Velocidade_média|floatformat:2 }}</td>
+            <td>{{ caminhao.RPM_médio|floatformat:2 }}</td>
+            <td>{{ caminhao.Temperatura_média|floatformat:2 }}</td>
+            <td>{{ caminhao.Emissões_CO2|floatformat:2 }}</td>
           </tr>
         {% empty %}
           <tr>

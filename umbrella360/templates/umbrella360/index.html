@@ -1,29 +1,91 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}">
+<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=4">
 
 <!doctype html>
-<html lang="en-US">
+<html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <title>Relatório</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Umbrella360 - Logística Inteligente</title>
   </head>
   <body>
-    <h1>Umbrella360</h1>
-    <p>Seja Bem vindo á Umbrella 360.</p>
-    <h2>Logistica Inteligente</h2>
-    <p> Tudo o que usamos em nossas casas, teve que ser trazido de alguma forma.</p>
-    <p>A missão da Umbrella360 é transformar a vida de milhões de brasileiros através da logística.</p>
-    <p>Nós enxergamos um mundo mais justo, mais humano e mais sustentável.</p>
+    <div class="header">
+      <h1>Umbrella360</h1>
+      <p class="tagline">Transformando a Logística com Dados Inteligentes</p>
+        <div class="menu-buttons">
+          <a href="{% url 'report' %}" class="btn btn-secondary">Relatório Global</a>
+        </div>
+    </div>
 
+    <main class="main-content">
+      <section class="hero-section">
+        <h2>A Ferramenta do <span class="gradient-text">Gestor Inteligente</span></h2>
+        <p class="hero-text">
+          Aonde a <span class="solid-text1">INOVAÇÃO</span> encontra a <span class="solid-text2">LOGÍSTICA</span>.
+        </p>
+      </section>
 
+      <section class="features-grid">
+        <div class="feature-card">
+          <h3>Gestão</h3>
+          <p>Seus dados, sua vantagem competitiva.</p>
+        </div>
 
-    <h2>Menu</h2>
-    <p>Aqui, disponibilizamos as ferramentas Umbrella360:</p>
-    <li><a href="{% url 'report' %}">Relatorio</a></li>
+        <div class="feature-card">
+          <h3>Frota</h3>
+          <p>Inteligente e conectada.</p>
+        </div>
+        
+        <div class="feature-card">
+          <h3>Motoristas</h3>
+          <p>Gerenciamento eficiente de pessoal.</p>
+        </div>
+      </section>
 
+      <section class="data-importance">
+        <h2>Umbrella360</h2>
+        <div class="importance-grid">
+          <div class="importance-item">
+            <strong>Combustível:</strong>
+            <p>Dados precisos sobre consumo de combustível reduzem custos operacionais.</p>
+          </div>
+          <div class="importance-item">
+            <strong>Caminhões:</strong>
+            <p>Comparativos por marca e modelo.</p>
+          </div>
+          <div class="importance-item">
+            <strong>Sustentabilidade:</strong>
+            <p>Monitoramento de emissões ajuda a cumprir metas ambientais e regulamentações.</p>
+          </div>
+          <div class="importance-item">
+            <strong>Motoristas:</strong>
+            <p>Análise de desempenho de motoristas aumenta a produtividade.</p>
+          </div>
+          <div class="importance-item">
+            <strong>Manutenção:</strong>
+            <p>Gerenciamento eficiente de manutenção aumenta a vida útil dos veículos.</p>
+          </div>
+          <div class="importance-item">
+            <strong>Tomada de Decisão:</strong>
+            <p>Relatórios detalhados fornecem insights para investimentos estratégicos em tecnologia e treinamento.</p>
+          </div>
+        </div>
+      </section>
 
-    <footer>
-      <p>&copy; 2042 Umbrella360. Todos os direitos reservados.</p>
+      <section class="cta-section">
+        <h2>Acesse Seus Relatórios</h2>
+        <p>Explore os dados da sua frota e descubra oportunidades de otimização:</p>
+        <div class="menu-buttons">
+          <a href="{% url 'motoristas' %}" class="btn btn-secondary">Motoristas</a>
+          <a href="{% url 'report' %}" class="btn btn-primary">Relatório Global</a>
+          <a href="{% url 'caminhoes' %}" class="btn btn-secondary">Caminhões</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>&copy; 2025 Umbrella360. Transformando o Brasil através da logística inteligente.</p>
+      <p><em>"Nós enxergamos um mundo mais justo, mais humano e mais sustentável."</em></p>
     </footer>
   </body>
 </html>

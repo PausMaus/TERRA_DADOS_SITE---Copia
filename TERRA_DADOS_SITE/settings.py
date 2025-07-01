@@ -28,10 +28,10 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'default-secret-key')
 DATABASES_URL = os.getenv('DATABASE_URL')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 
-ALLOWED_HOSTS = ['terradados.space', 'www.terradados.space', '31.97.18.248' ,"127.0.0.1"]
+ALLOWED_HOSTS = ['terradados.space', 'www.terradados.space']
 
 
 # Application definition
