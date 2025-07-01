@@ -1,76 +1,109 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}">
+<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=4">
 
 
 <!doctype html>
-<html lang="en-US">
+<html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <title>{% block title %}Relatorio{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Relatório Umbrella360{% endblock %}</title>
   </head>
   <body>
-    <h1>Relatório Umbrella360</h1>
-    <li>
-      <a href="{% url 'index' %}" style="margin-right: 30px;">Pagina Inicial</a>
-      <a href="{% url 'report' %}" style="margin-right: 30px;">Relatório Global</a>
-      <a href="{% url 'motoristas' %}" style="margin-right: 30px;">Motoristas</a>
-      <a href="{% url 'caminhoes' %}">Caminhões</a>
-    </li>
-
-
-    <div style="position: absolute; top: 20px; right: 20px; text-align: right;">
-    <table>
-      <tr>
-        <th>Total de Motoristas</th>
-        <td>{{ total_motoristas }}</td>
-      </tr>
-      <tr>
-        <th>Total de Caminhões</th>
-        <td>{{ total_caminhoes }}</td>
-      </tr>
-    </table>
+    <div class="header">
+      <h1>{% block header_title %}Relatório Umbrella360{% endblock %}</h1>
+        <div class="menu-buttons">
+          <a href="{% url 'index' %}" class="btn btn-secondary">Página Inicial</a>
+          <a href="{% url 'motoristas' %}" class="btn btn-secondary">Motoristas</a>
+          <a href="{% url 'report' %}" class="btn btn-primary">Relatório Global</a>
+          <a href="{% url 'caminhoes' %}" class="btn btn-secondary">Caminhões</a>
+          <a href="{% url 'grafico_emissoes' %}" class="btn btn-secondary">Análise Avançada</a>
+        </div>
     </div>
 
-    
-    
+
+
     
     <main>
+      {% block content %}
+      <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
+        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-width: 1000px; width: 100%;">
+          <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50; font-size: 1.8rem;">Dashboard Global da Frota</h3>
+          
+          <!-- Top Row: Main KPIs -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; padding: 1.5rem; border-radius: 12px; text-align: center;">
+              <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; opacity: 0.9;">Quilômetros Percorridos</h4>
+              <p style="margin: 0; font-size: 2rem; font-weight: bold;">{{ total_quilometragem_caminhoes|floatformat:0 }} Mil</p>
+            </div>
+            <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 1.5rem; border-radius: 12px; text-align: center;">
+              <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; opacity: 0.9;">Consumo Diesel</h4>
+              <p style="margin: 0; font-size: 2rem; font-weight: bold;">{{ total_consumo_caminhoes|floatformat:0 }} Mil</p>
+            </div>
+            <div style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 1.5rem; border-radius: 12px; text-align: center;">
+              <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; opacity: 0.9;">Veículos Monitorados</h4>
+              <p style="margin: 0; font-size: 2rem; font-weight: bold;">{{ total_caminhoes }}</p>
+            </div>
+          </div>
 
+          <!-- Middle Row: Performance Metrics -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; padding: 1rem; border-radius: 10px; text-align: center;">
+              <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Velocidade Média</h5>
+              <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">44.36</p>
+            </div>
+            <div style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 1rem; border-radius: 10px; text-align: center;">
+              <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">RPM Médio</h5>
+              <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">875.26</p>
+            </div>
+            <div style="background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%); color: white; padding: 1rem; border-radius: 10px; text-align: center;">
+              <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Emissões CO2</h5>
+              <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">425.56</p>
+            </div>
+          </div>
 
-    {% block content %}
-    
-    <h2>Global</h2>
- 
-    <p>Este relatório apresenta as médias de consumo de combustível dos motoristas e caminhões cadastrados na Umbrella360.</p>
-    <p>As médias são calculadas com base na quilometragem total percorrida e no combustível total consumido.</p>
-
-      <div style="display: flex; justify-content: center;">
-        <img src="{% static 'umbrella360/images/Global.png' %}" alt="Relatório Umbrella360" style="max-width: 1000px; display: block;border: 5px solid #c0c0c0; border-radius: 8px; ">
+          <!-- Bottom Row: Efficiency Gauge -->
+          <div style="display: flex; justify-content: center; align-items: center; gap: 2rem;">
+            <div style="background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); color: white; padding: 2rem; border-radius: 15px; text-align: center; min-width: 200px;">
+              <h4 style="margin: 0 0 1rem 0; font-size: 1.2rem;">Média de Consumo</h4>
+              <div style="position: relative; display: inline-block;">
+                <div style="width: 120px; height: 120px; border-radius: 50%; background: conic-gradient(#3498db 0deg 180deg, #ecf0f1 180deg 360deg); display: flex; align-items: center; justify-content: center; position: relative;">
+                  <div style="width: 80px; height: 80px; border-radius: 50%; background: #2c3e50; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                    <span style="font-size: 1.8rem; font-weight: bold; color: #e74c3c;">{{ media_km_atual|floatformat:2 }}</span>
+                    <span style="font-size: 0.8rem; opacity: 0.8;">km/l</span>
+                  </div>
+                </div>
+                <div style="position: absolute; top: -10px; right: -10px; background: #e74c3c; color: white; padding: 0.3rem 0.6rem; border-radius: 15px; font-size: 0.8rem;">
+                  Meta: 1.78
+                </div>
+              </div>
+            </div>
+            
+            <!-- Brand Comparison Chart -->
+            <div style="background: rgba(52, 73, 94, 0.1); padding: 1.5rem; border-radius: 12px; border: 2px solid #34495e;">
+              <h5 style="margin: 0 0 1rem 0; text-align: center; color: #2c3e50;">Consumo por Marca</h5>
+              <div style="display: flex; gap: 1rem; align-items: end;">
+                <div style="text-align: center;">
+                  <div style="width: 40px; height: 80px; background: #3498db; border-radius: 5px; margin-bottom: 0.5rem; position: relative;">
+                    <span style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 0.8rem; color: #2c3e50;">1.30</span>
+                  </div>
+                  <span style="font-size: 0.8rem; color: #2c3e50;">Volvo</span>
+                </div>
+                <div style="text-align: center;">
+                  <div style="width: 40px; height: 75px; background: #3498db; border-radius: 5px; margin-bottom: 0.5rem; position: relative;">
+                    <span style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 0.8rem; color: #2c3e50;">1.21</span>
+                  </div>
+                  <span style="font-size: 0.8rem; color: #2c3e50;">Scania</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    
 
-    
-    <h3>Custos Gerais</h3>
-    <p>Este relatório apresenta os custos gerais associados à operação dos motoristas e caminhões cadastrados na Umbrella360.</p>
-    <p>Os custos são calculados com base na quilometragem total percorrida, no combustível total consumido e nas médias de consumo.</p>
-    <table border="1" cellpadding="5" cellspacing="0">
-      <tr>
-      <th>Total de quilometragem de todos os caminhões</th>
-      <td><strong>{{ total_quilometragem_caminhoes|floatformat:2 }}</strong> km</td>
-      </tr>
-      <tr>
-      <th>Total de consumo de todos os caminhões</th>
-      <td><strong>{{ total_consumo_caminhoes|floatformat:2 }}</strong> litros</td>
-      </tr>
-      <tr>
-      <th>Objectivo de consumo de combustível (km/l)</th>
-      <td><strong>{{ media_km_fixa|floatformat:2 }}</strong> km/l</td>
-      </tr>
-    </table>
-
-    <h3>Análise de Custos e Economia Potencial</h3>
+    <h3 class="h3">Análise de Custos e Economia Potencial</h3>
     <p>Esta análise compara os custos atuais com os custos potenciais se a frota atingisse o objetivo de eficiência.</p>
-    <table border="1" cellpadding="5" cellspacing="0">
+    <table class="table.colored">
       <thead>
         <tr>
           <th>Cenário</th>
@@ -80,19 +113,19 @@
         </tr>
       </thead>
       <tbody>
-        <tr style="background-color: #ffebee;">
+        <tr>
           <td><strong>Atual</strong></td>
           <td>{{ media_km_atual|floatformat:2 }}</td>
           <td>{{ km_atual|floatformat:2 }}</td>
           <td><strong>R$ {{ custo_atual|floatformat:2 }}</strong></td>
         </tr>
-        <tr style="background-color: #e8f5e8;">
+        <tr>
           <td><strong>Objetivo</strong></td>
           <td>{{ media_km_fixa|floatformat:2 }}</td>
           <td>{{ km_objetivo|floatformat:2 }}</td>
           <td><strong>R$ {{ custo_objetivo|floatformat:2 }}</strong></td>
         </tr>
-        <tr style="background-color: #fff3e0;">
+        <tr>
           <td colspan="4"><strong>Economia Potencial</strong></td>
           <td colspan="4"><strong>R$ {{ economia_potencial|floatformat:2 }}</strong></td>
         </tr>
@@ -101,7 +134,7 @@
 
 
 
-    <h3>Caminhões Por Marca</h3>
+    <h3 class="h3">Caminhões Por Marca</h3>
     <table border="1" cellpadding="5" cellspacing="0">
       <thead>
         <tr>
@@ -119,7 +152,7 @@
         <tr>
           <td>{{ scania_stats.marca }}</td>
           <td>{{ scania_stats.total_quilometragem|floatformat:2|default:"0.00" }}</td>
-          <td>{{ scania_stats.total_consumido|default:"0" }}</td>
+          <td>{{ scania_stats.total_consumido|floatformat:2|default:"0.00" }}</td>
           <td>{{ scania_stats.media_quilometragem|floatformat:2|default:"0.00" }}</td>
           <td>{{ scania_stats.media_velocidade|floatformat:2|default:"0.00" }}</td>
           <td>{{ scania_stats.media_rpm|floatformat:2|default:"0.00" }}</td>
@@ -129,7 +162,7 @@
         <tr>
           <td>{{ volvo_stats.marca }}</td>
           <td>{{ volvo_stats.total_quilometragem|floatformat:2|default:"0.00" }}</td>
-          <td>{{ volvo_stats.total_consumido|default:"0" }}</td>
+          <td>{{ volvo_stats.total_consumido|floatformat:2|default:"0.00" }}</td>
           <td>{{ volvo_stats.media_quilometragem|floatformat:2|default:"0.00" }}</td>
           <td>{{ volvo_stats.media_velocidade|floatformat:2|default:"0.00" }}</td>
           <td>{{ volvo_stats.media_rpm|floatformat:2|default:"0.00" }}</td>
@@ -142,7 +175,7 @@
 
 
 
-    <h3>Motoristas (por maior média de consumo)</h3>
+    <h3 class="h3">Motoristas (por maior média de consumo)</h3>
     <table border="1" cellpadding="5" cellspacing="0">
       <thead>
         <tr>
@@ -159,12 +192,12 @@
         {% for motorista in motoristas %}
           <tr>
             <td>{{ motorista.agrupamento }}</td>
-            <td>{{ motorista.quilometragem }}</td>
-            <td>{{ motorista.Consumido }}</td>
-            <td>{{ motorista.Quilometragem_média }}</td>
+            <td>{{ motorista.quilometragem|floatformat:2 }}</td>
+            <td>{{ motorista.Consumido|floatformat:2 }}</td>
+            <td>{{ motorista.Quilometragem_média|floatformat:2 }}</td>
             <td>{{ motorista.Horas_de_motor }}</td>
-            <td>{{ motorista.Velocidade_média }}</td>
-            <td>{{ motorista.Emissões_CO2 }}</td>
+            <td>{{ motorista.Velocidade_média|floatformat:2 }}</td>
+            <td>{{ motorista.Emissões_CO2|floatformat:2 }}</td>
           </tr>
         {% empty %}
           <tr>
@@ -174,7 +207,7 @@
       </tbody>
     </table>
 
-    <h3>Caminhões (por maior média de consumo)</h3>
+    <h3 class="h3">Caminhões (por maior média de consumo)</h3>
     <table border="1" cellpadding="5" cellspacing="0">
       <thead>
         <tr>
@@ -195,14 +228,14 @@
           <tr>
             <td>{{ caminhao.agrupamento }}</td>
             <td>{{ caminhao.marca }}</td>
-            <td>{{ caminhao.quilometragem }}</td>
-            <td>{{ caminhao.Consumido }}</td>
-            <td>{{ caminhao.Quilometragem_média }}</td>
+            <td>{{ caminhao.quilometragem|floatformat:2 }}</td>
+            <td>{{ caminhao.Consumido|floatformat:2 }}</td>
+            <td>{{ caminhao.Quilometragem_média|floatformat:2 }}</td>
             <td>{{ caminhao.Horas_de_motor }}</td>
-            <td>{{ caminhao.Velocidade_média }}</td>
-            <td>{{ caminhao.RPM_médio }}</td>
-            <td>{{ caminhao.Temperatura_média }}</td>
-            <td>{{ caminhao.Emissões_CO2 }}</td>
+            <td>{{ caminhao.Velocidade_média|floatformat:2 }}</td>
+            <td>{{ caminhao.RPM_médio|floatformat:2 }}</td>
+            <td>{{ caminhao.Temperatura_média|floatformat:2 }}</td>
+            <td>{{ caminhao.Emissões_CO2|floatformat:2 }}</td>
           </tr>
         {% empty %}
           <tr>
@@ -214,8 +247,11 @@
 
     {% endblock %}
     </main>
-    <footer>
-      <p>&copy; 2042 Umbrella360. Todos os direitos reservados.</p>
+    </div>
+    
+    <footer class="footer">
+      <p>&copy; 2025 Umbrella360. Transformando o Brasil através da logística inteligente.</p>
+      <p><em>"Nós enxergamos um mundo mais justo, mais humano e mais sustentável."</em></p>
     </footer>
   </body>
 </html>

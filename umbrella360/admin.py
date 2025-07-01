@@ -26,5 +26,7 @@ class CaminhaoAdmin(admin.ModelAdmin):
     ordering = ('agrupamento',)
 
 
+
+
 admin.site.register(Motorista, MotoristaAdmin)
 admin.site.register(Caminhao, CaminhaoAdmin)
