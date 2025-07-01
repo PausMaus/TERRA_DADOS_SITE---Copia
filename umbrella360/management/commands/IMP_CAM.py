@@ -29,7 +29,8 @@ class Command(BaseCommand):
                 'Velocidade média',
                 'RPM médio do motor',
                 'Temperatura média',
-                'Emissões de CO2'
+                'Emissões de CO2',
+                'Marca',
 
 
 
@@ -42,7 +43,7 @@ class Command(BaseCommand):
             caminhoes = [
                 Caminhao(
                     agrupamento=str(linha['Agrupamento']),
-                    marca='Volvo',  # Marca padrão, pode ser alterada conforme necessário
+                    marca=linha['Marca'] if not pd.isna(linha['Marca']) else '',
                     quilometragem=linha['Quilometragem'] if not pd.isna(linha['Quilometragem']) else 0,
                     Consumido=linha['Consumido por AbsFCS'] if not pd.isna(linha['Consumido por AbsFCS']) else 0,
                     Quilometragem_média=linha['Quilometragem média por unidade de combustível por AbsFCS'] if not pd.isna(linha['Quilometragem média por unidade de combustível por AbsFCS']) else 0,

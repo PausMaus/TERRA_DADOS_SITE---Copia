@@ -9,9 +9,10 @@ from django.conf import settings
 class Command(BaseCommand):
     help = 'Deleta todos os caminhões do banco de dados'
     # Exclui todos os registros existentes
-    Caminhao.objects.all().delete()
-    Motorista.objects.all().delete()
-    
+
+    def handle(self, *args, **kwargs):
+        Caminhao.objects.all().delete()
+        Motorista.objects.all().delete()
 
     
 

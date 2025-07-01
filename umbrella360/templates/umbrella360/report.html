@@ -10,85 +10,132 @@
   </head>
   <body>
     <h1>Relatório Umbrella360</h1>
-    <li><a href="{% url 'index' %}">Pagina Inicial</a></li>
+    <li>
+      <a href="{% url 'index' %}" style="margin-right: 30px;">Pagina Inicial</a>
+      <a href="{% url 'report' %}" style="margin-right: 30px;">Relatório Global</a>
+      <a href="{% url 'motoristas' %}" style="margin-right: 30px;">Motoristas</a>
+      <a href="{% url 'caminhoes' %}">Caminhões</a>
+    </li>
 
 
-    <p>Bem vindo á pagina de Relatório da Umbrella 360.</p>
-    <p>Selecione uma das opções abaixo para visualizar os relatórios:</p>
+    <div style="position: absolute; top: 20px; right: 20px; text-align: right;">
+    <table>
+      <tr>
+        <th>Total de Motoristas</th>
+        <td>{{ total_motoristas }}</td>
+      </tr>
+      <tr>
+        <th>Total de Caminhões</th>
+        <td>{{ total_caminhoes }}</td>
+      </tr>
+    </table>
+    </div>
 
-    <li><a href="{% url 'report' %}">Relatório Global</a></li>
-    <li><a href="{% url 'motoristas' %}">Motoristas</a></li>
-    <li><a href="{% url 'caminhoes' %}">Caminhões</a></li>
+    
+    
+    
     <main>
 
 
     {% block content %}
     
     <h2>Global</h2>
-    <div style="float: right; margin-left: 20px; margin-bottom: 20px;">
-      <img src="{% static 'umbrella360/images/Media_Consumo.png' %}" alt="Relatório Umbrella360" style="max-width: 400px; display: block;">
-    </div>
+ 
     <p>Este relatório apresenta as médias de consumo de combustível dos motoristas e caminhões cadastrados na Umbrella360.</p>
     <p>As médias são calculadas com base na quilometragem total percorrida e no combustível total consumido.</p>
+
+      <div style="display: flex; justify-content: center;">
+        <img src="{% static 'umbrella360/images/Global.png' %}" alt="Relatório Umbrella360" style="max-width: 1000px; display: block;border: 5px solid #c0c0c0; border-radius: 8px; ">
+      </div>
     
-    <div style="position: absolute; top: 20px; right: 20px; text-align: right;">
-      <p>Total de motoristas cadastrados: <strong>{{ total_motoristas }}</strong></p>
-      <p>Total de caminhões cadastrados: <strong>{{ total_caminhoes }}</strong></p>
-    </div>
+
     
+    <h3>Custos Gerais</h3>
+    <p>Este relatório apresenta os custos gerais associados à operação dos motoristas e caminhões cadastrados na Umbrella360.</p>
+    <p>Os custos são calculados com base na quilometragem total percorrida, no combustível total consumido e nas médias de consumo.</p>
+    <table border="1" cellpadding="5" cellspacing="0">
+      <tr>
+      <th>Total de quilometragem de todos os caminhões</th>
+      <td><strong>{{ total_quilometragem_caminhoes|floatformat:2 }}</strong> km</td>
+      </tr>
+      <tr>
+      <th>Total de consumo de todos os caminhões</th>
+      <td><strong>{{ total_consumo_caminhoes|floatformat:2 }}</strong> litros</td>
+      </tr>
+      <tr>
+      <th>Objectivo de consumo de combustível (km/l)</th>
+      <td><strong>{{ media_km_fixa|floatformat:2 }}</strong> km/l</td>
+      </tr>
+    </table>
+
+    <h3>Análise de Custos e Economia Potencial</h3>
+    <p>Esta análise compara os custos atuais com os custos potenciais se a frota atingisse o objetivo de eficiência.</p>
+    <table border="1" cellpadding="5" cellspacing="0">
+      <thead>
+        <tr>
+          <th>Cenário</th>
+          <th>Eficiência (km/l)</th>
+          <th>Combustível Necessário (litros)</th>
+          <th>Custo Total (R$)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background-color: #ffebee;">
+          <td><strong>Atual</strong></td>
+          <td>{{ media_km_atual|floatformat:2 }}</td>
+          <td>{{ km_atual|floatformat:2 }}</td>
+          <td><strong>R$ {{ custo_atual|floatformat:2 }}</strong></td>
+        </tr>
+        <tr style="background-color: #e8f5e8;">
+          <td><strong>Objetivo</strong></td>
+          <td>{{ media_km_fixa|floatformat:2 }}</td>
+          <td>{{ km_objetivo|floatformat:2 }}</td>
+          <td><strong>R$ {{ custo_objetivo|floatformat:2 }}</strong></td>
+        </tr>
+        <tr style="background-color: #fff3e0;">
+          <td colspan="4"><strong>Economia Potencial</strong></td>
+          <td colspan="4"><strong>R$ {{ economia_potencial|floatformat:2 }}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+
+
     <h3>Caminhões Por Marca</h3>
     <table border="1" cellpadding="5" cellspacing="0">
       <thead>
         <tr>
           <th>Marca</th>
-          <th>Quilometragem Atual (km)</th>
+          <th>Quilometragem Total (km)</th>
           <th>Combustível Total (litros)</th>
           <th>Média de Consumo (km/l)</th>
           <th>Velocidade Média (km/h)</th>
           <th>RPM Médio do Motor</th>
           <th>Temperatura Média (°C)</th>
-          <th>Emissões de CO2 (g/km)</th>
+          <th>Emissões Total de CO2 (g/km)</th>
         </tr>
       </thead>
       <tbody>
-        {% if calculo_scania %}
-          {% for item in calculo_scania %}
-            <tr>
-              <td>Scania</td>
-              <td>{{ item.quilometragem }}</td>
-              <td>{{ item.Consumido }}</td>
-              <td>{{ item.Quilometragem_média }}</td>
-              <td>{{ item.Velocidade_média }}</td>
-              <td>{{ item.RPM_médio }}</td>
-              <td>{{ item.Temperatura_média }}</td>
-              <td>{{ item.Emissões_CO2 }}</td>
-            </tr>
-          {% endfor %}
-        {% else %}
-          <tr>
-            <td>Scania</td>
-            <td colspan="7">Nenhum dado de cálculo Scania cadastrado.</td>
-          </tr>
-        {% endif %}
-        {% if calculo_volvo %}
-          {% for item in calculo_volvo %}
-            <tr>
-              <td>Volvo</td>
-              <td>{{ item.quilometragem }}</td>
-              <td>{{ item.Consumido }}</td>
-              <td>{{ item.Quilometragem_média }}</td>
-              <td>{{ item.Velocidade_média }}</td>
-              <td>{{ item.RPM_médio }}</td>
-              <td>{{ item.Temperatura_média }}</td>
-              <td>{{ item.Emissões_CO2 }}</td>
-            </tr>
-          {% endfor %}
-        {% else %}
-          <tr>
-            <td>Volvo</td>
-            <td colspan="7">Nenhum dado de cálculo Volvo cadastrado.</td>
-          </tr>
-        {% endif %}
+        <tr>
+          <td>{{ scania_stats.marca }}</td>
+          <td>{{ scania_stats.total_quilometragem|floatformat:2|default:"0.00" }}</td>
+          <td>{{ scania_stats.total_consumido|default:"0" }}</td>
+          <td>{{ scania_stats.media_quilometragem|floatformat:2|default:"0.00" }}</td>
+          <td>{{ scania_stats.media_velocidade|floatformat:2|default:"0.00" }}</td>
+          <td>{{ scania_stats.media_rpm|floatformat:2|default:"0.00" }}</td>
+          <td>{{ scania_stats.media_temperatura|floatformat:2|default:"0.00" }}</td>
+          <td>{{ scania_stats.total_emissoes|floatformat:2|default:"0.00" }}</td>
+        </tr>
+        <tr>
+          <td>{{ volvo_stats.marca }}</td>
+          <td>{{ volvo_stats.total_quilometragem|floatformat:2|default:"0.00" }}</td>
+          <td>{{ volvo_stats.total_consumido|default:"0" }}</td>
+          <td>{{ volvo_stats.media_quilometragem|floatformat:2|default:"0.00" }}</td>
+          <td>{{ volvo_stats.media_velocidade|floatformat:2|default:"0.00" }}</td>
+          <td>{{ volvo_stats.media_rpm|floatformat:2|default:"0.00" }}</td>
+          <td>{{ volvo_stats.media_temperatura|floatformat:2|default:"0.00" }}</td>
+          <td>{{ volvo_stats.total_emissoes|floatformat:2|default:"0.00" }}</td>
+        </tr>
       </tbody>
     </table>
     
