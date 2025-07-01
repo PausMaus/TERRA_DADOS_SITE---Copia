@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.views import generic
 from django.utils import timezone
 from django.http import HttpResponse
-from .models import Motorista, Caminhao, Calculo_Scania, Calculo_Volvo
+from .models import Motorista, Caminhao
 from django.db.models import Sum
 import plotly.express as px
 from django.shortcuts import render
