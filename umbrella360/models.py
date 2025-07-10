@@ -6,8 +6,40 @@ from django.db import models
 
 
 
+class ConfiguracaoSistema(models.Model):
+    """
+    Model para armazenar configurações do sistema que podem ser alteradas
+    pelo administrador através do Django Admin.
+    """
+    chave = models.CharField(max_length=100, unique=True, verbose_name="Chave de Configuração")
+    valor = models.FloatField(verbose_name="Valor")
+    descricao = models.TextField(verbose_name="Descrição")
+    categoria = models.CharField(max_length=50, default="geral", verbose_name="Categoria")
+    data_modificacao = models.DateTimeField(auto_now=True, verbose_name="Data de Modificação")
+
+    class Meta:
+        verbose_name = "Configuração do Sistema"
+        verbose_name_plural = "Configurações do Sistema"
+        ordering = ['categoria', 'chave']
+
+    def __str__(self):
+        return f"{self.chave}: {self.valor}"
+
+
 class Motorista(models.Model):
     agrupamento = models.CharField(max_length=100)
+    
+    def __str__(self):
+        return self.agrupamento
+    
+    class Meta:
+        verbose_name = "Motorista"
+        verbose_name_plural = "Motoristas"
+        ordering = ['agrupamento']
+
+
+class Viagem_MOT(models.Model):
+    agrupamento = models.ForeignKey(Motorista, on_delete=models.CASCADE, related_name='viagens')
     quilometragem = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00, verbose_name="Quilometragem Atual (km)", blank=True, null=True
     )
@@ -26,19 +58,35 @@ class Motorista(models.Model):
     Emissões_CO2 = models.FloatField(
     default=0.00, verbose_name="Emissões de CO2 (g/km)", blank=True, null=True
     )
+    mês = models.CharField(
+        max_length=20, default="Maio", verbose_name="Mês de Referência", blank=True, null=True
+    )
 
     def __str__(self):
-        return self.agrupamento
+        return f"{self.agrupamento.agrupamento} ({self.mês})"
 
     class Meta:
-        verbose_name = "Motorista"
-        verbose_name_plural = "Motoristas"
+        verbose_name = "Viagem Motorista"
+        verbose_name_plural = "Viagens Motoristas"
 
 
 
 class Caminhao(models.Model):
-    agrupamento = models.CharField(max_length=10, unique=True)
-    marca = models.CharField(max_length=50, default="Volvo")
+    agrupamento = models.CharField(max_length=10, unique=True, verbose_name="Agrupamento do Caminhão")
+    marca = models.CharField(max_length=50, verbose_name="Marca do Caminhão")
+
+    def __str__(self):
+        return f"{self.agrupamento} - {self.marca}"
+    
+    class Meta:
+        verbose_name = "Caminhão"
+        verbose_name_plural = "Caminhões"
+        ordering = ['agrupamento']
+
+
+
+class Viagem_CAM(models.Model):
+    agrupamento = models.ForeignKey(Caminhao, on_delete=models.CASCADE, related_name='viagens')
     quilometragem = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00, verbose_name="Quilometragem Atual (km)", blank=True, null=True
     )
@@ -63,13 +111,17 @@ class Caminhao(models.Model):
     Emissões_CO2 = models.FloatField(
      default=0.00, verbose_name="Emissões de CO2 (g/km)", blank=True, null=True
     )
+    mês = models.CharField(
+        max_length=20, default="Maio", verbose_name="Mês de Referência", blank=True, null=True
+    )
+
 
     def __str__(self):
-        return f"{self.agrupamento} - {self.marca}"
+        return f"{self.agrupamento.agrupamento} - {self.agrupamento.marca} ({self.mês})"
 
     class Meta:
-        verbose_name = "Caminhão"
-        verbose_name_plural = "Caminhões"
+        verbose_name = "Viagem Caminhões"
+        verbose_name_plural = "Viagens Caminhões"
 
 
 

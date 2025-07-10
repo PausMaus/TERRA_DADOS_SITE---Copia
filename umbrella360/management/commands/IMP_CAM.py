@@ -31,6 +31,7 @@ class Command(BaseCommand):
                 'Temperatura média',
                 'Emissões de CO2',
                 'Marca',
+                'Mês'
 
 
 
@@ -51,7 +52,9 @@ class Command(BaseCommand):
                     Velocidade_média=linha['Velocidade média'] if not pd.isna(linha['Velocidade média']) else 0,
                     RPM_médio=linha['RPM médio do motor'] if not pd.isna(linha['RPM médio do motor']) else 0,
                     Temperatura_média=linha['Temperatura média'] if not pd.isna(linha['Temperatura média']) else 0,
-                    Emissões_CO2=linha['Emissões de CO2'] if not pd.isna(linha['Emissões de CO2']) else 0
+                    Emissões_CO2=linha['Emissões de CO2'] if not pd.isna(linha['Emissões de CO2']) else 0,
+                    mês=linha['Mês'] if not pd.isna(linha['Mês']) else ''
+                
                 )
                 for _, linha in df.iterrows()
             ]

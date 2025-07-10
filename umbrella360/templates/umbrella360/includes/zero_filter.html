@@ -1,0 +1,82 @@
+<!-- Filtro para remover entradas com combustível zero -->
+<div class="zero-filter-container">
+    <div class="zero-filter-toggle" id="zero-filter-toggle">
+        <span class="filter-icon">⛽</span>
+        <span class="filter-text">
+            {% if remover_zero == 'true' %}
+                Sem Zero
+            {% else %}
+                Com Zero
+            {% endif %}
+        </span>
+        <span class="filter-dropdown-arrow">▼</span>
+    </div>
+    
+    <div class="zero-filter-dropdown" id="zero-filter-dropdown">
+        <div class="filter-header">
+            <span class="filter-title">Filtrar Combustível Zero</span>
+        </div>
+        
+        <div class="filter-options">
+            <!-- Opção "Incluir Zero" -->
+            <a href="?mes={{ mes_selecionado }}&remover_zero=false" class="filter-option {% if remover_zero == 'false' %}active{% endif %}">
+                <span class="filter-icon">📊</span>
+                <span class="filter-name">Incluir Todos</span>
+                {% if remover_zero == 'false' %}
+                    <span class="filter-check">✓</span>
+                {% endif %}
+            </a>
+            
+            <!-- Opção "Remover Zero" -->
+            <a href="?mes={{ mes_selecionado }}&remover_zero=true" class="filter-option {% if remover_zero == 'true' %}active{% endif %}">
+                <span class="filter-icon">🚫</span>
+                <span class="filter-name">Remover Zeros</span>
+                {% if remover_zero == 'true' %}
+                    <span class="filter-check">✓</span>
+                {% endif %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterToggle = document.getElementById('zero-filter-toggle');
+    const filterDropdown = document.getElementById('zero-filter-dropdown');
+    let isDropdownOpen = false;
+    
+    if (filterToggle) {
+        filterToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleZeroFilterDropdown();
+        });
+    }
+    
+    // Fechar dropdown ao clicar fora
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.zero-filter-container')) {
+            closeZeroFilterDropdown();
+        }
+    });
+    
+    function toggleZeroFilterDropdown() {
+        if (isDropdownOpen) {
+            closeZeroFilterDropdown();
+        } else {
+            openZeroFilterDropdown();
+        }
+    }
+    
+    function openZeroFilterDropdown() {
+        filterDropdown.classList.add('visible');
+        filterToggle.classList.add('active');
+        isDropdownOpen = true;
+    }
+    
+    function closeZeroFilterDropdown() {
+        filterDropdown.classList.remove('visible');
+        filterToggle.classList.remove('active');
+        isDropdownOpen = false;
+    }
+});
+</script>

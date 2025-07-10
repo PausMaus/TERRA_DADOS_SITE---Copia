@@ -28,10 +28,10 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'default-secret-key')
 DATABASES_URL = os.getenv('DATABASE_URL')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 
-ALLOWED_HOSTS = ['terradados.space', 'www.terradados.space']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -39,6 +39,7 @@ ALLOWED_HOSTS = ['terradados.space', 'www.terradados.space']
 INSTALLED_APPS = [
     'umbrella360.apps.Umbrella360Config',
     'polls.apps.PollsConfig',
+    'academia_virtual.apps.AcademiaVirtualConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

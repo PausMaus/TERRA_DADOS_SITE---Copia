@@ -18,8 +18,9 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path("", include("umbrella360.urls")),
+    path("umbrella/", include("umbrella360.urls")),
     path("polls/", include("polls.urls")),
     path("admin/", admin.site.urls),
+    path("academia_virtual/", include("academia_virtual.urls")),
 ]
 

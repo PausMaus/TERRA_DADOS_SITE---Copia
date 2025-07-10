@@ -1,5 +1,8 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=8">
+<link rel="stylesheet" href="{% static 'umbrella360/theme-fixes.css' %}?v=1">
+<script src="{% static 'umbrella360/theme-toggle.js' %}?v=2"></script>
+<script src="{% static 'umbrella360/table-sort.js' %}?v=1"></script>
 
 
 <!doctype html>
@@ -10,6 +13,14 @@
     <title>{% block title %}Relatório Umbrella360{% endblock %}</title>
   </head>
   <body>
+    <!-- Botão de alternância de tema -->
+    <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
+      <span class="theme-icon">◐</span> Noite de Verão
+    </button>
+    
+    <!-- Filtros combinados -->
+    {% include 'umbrella360/includes/filters_combined.html' %}
+    
     <div class="header">
       <h1>{% block header_title %}Relatório Umbrella360{% endblock %}</h1>
         <div class="menu-buttons">
@@ -34,11 +45,11 @@
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
             <div style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; padding: 1.5rem; border-radius: 12px; text-align: center;">
               <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; opacity: 0.9;">Quilômetros Percorridos</h4>
-              <p style="margin: 0; font-size: 2rem; font-weight: bold;">{{ total_quilometragem_caminhoes|floatformat:0 }} Mil</p>
+              <p style="margin: 0; font-size: 2rem; font-weight: bold;">{{ total_quilometragem_caminhoes|floatformat:0 }} </p>
             </div>
             <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 1.5rem; border-radius: 12px; text-align: center;">
               <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; opacity: 0.9;">Consumo Diesel</h4>
-              <p style="margin: 0; font-size: 2rem; font-weight: bold;">{{ total_consumo_caminhoes|floatformat:0 }} Mil</p>
+              <p style="margin: 0; font-size: 2rem; font-weight: bold;">{{ total_consumo_caminhoes|floatformat:0 }} </p>
             </div>
             <div style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 1.5rem; border-radius: 12px; text-align: center;">
               <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; opacity: 0.9;">Veículos Monitorados</h4>
@@ -103,7 +114,7 @@
 
     <h3 class="h3">Análise de Custos e Economia Potencial</h3>
     <p>Esta análise compara os custos atuais com os custos potenciais se a frota atingisse o objetivo de eficiência.</p>
-    <table class="table.colored">
+    <table class="table colored sortable-table">
       <thead>
         <tr>
           <th>Cenário</th>
@@ -135,7 +146,7 @@
 
 
     <h3 class="h3">Caminhões Por Marca</h3>
-    <table border="1" cellpadding="5" cellspacing="0">
+    <table border="1" cellpadding="5" cellspacing="0" class="sortable-table">
       <thead>
         <tr>
           <th>Marca</th>
@@ -176,7 +187,7 @@
 
 
     <h3 class="h3">Motoristas (por maior média de consumo)</h3>
-    <table border="1" cellpadding="5" cellspacing="0">
+    <table border="1" cellpadding="5" cellspacing="0" class="sortable-table">
       <thead>
         <tr>
           <th>Nome</th>
@@ -189,26 +200,26 @@
         </tr>
       </thead>
       <tbody>
-        {% for motorista in motoristas %}
-          <tr>
-            <td>{{ motorista.agrupamento }}</td>
-            <td>{{ motorista.quilometragem|floatformat:2 }}</td>
-            <td>{{ motorista.Consumido|floatformat:2 }}</td>
-            <td>{{ motorista.Quilometragem_média|floatformat:2 }}</td>
-            <td>{{ motorista.Horas_de_motor }}</td>
-            <td>{{ motorista.Velocidade_média|floatformat:2 }}</td>
-            <td>{{ motorista.Emissões_CO2|floatformat:2 }}</td>
+        {% for viagem in viagens_motoristas %}
+          <tr data-month="{{ viagem.mês|lower }}">
+            <td>{{ viagem.agrupamento.agrupamento }}</td>
+            <td>{{ viagem.quilometragem|floatformat:2 }}</td>
+            <td>{{ viagem.Consumido|floatformat:2 }}</td>
+            <td>{{ viagem.Quilometragem_média|floatformat:2 }}</td>
+            <td>{{ viagem.Horas_de_motor }}</td>
+            <td>{{ viagem.Velocidade_média|floatformat:2 }}</td>
+            <td>{{ viagem.Emissões_CO2|floatformat:2 }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="7">Nenhum motorista cadastrado.</td>
+            <td colspan="7">Nenhuma viagem de motorista cadastrada.</td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
 
     <h3 class="h3">Caminhões (por maior média de consumo)</h3>
-    <table border="1" cellpadding="5" cellspacing="0">
+    <table border="1" cellpadding="5" cellspacing="0" class="sortable-table">
       <thead>
         <tr>
           <th>Agrupamento</th>
@@ -224,22 +235,22 @@
         </tr>
       </thead>
       <tbody>
-        {% for caminhao in caminhoes %}
-          <tr>
-            <td>{{ caminhao.agrupamento }}</td>
-            <td>{{ caminhao.marca }}</td>
-            <td>{{ caminhao.quilometragem|floatformat:2 }}</td>
-            <td>{{ caminhao.Consumido|floatformat:2 }}</td>
-            <td>{{ caminhao.Quilometragem_média|floatformat:2 }}</td>
-            <td>{{ caminhao.Horas_de_motor }}</td>
-            <td>{{ caminhao.Velocidade_média|floatformat:2 }}</td>
-            <td>{{ caminhao.RPM_médio|floatformat:2 }}</td>
-            <td>{{ caminhao.Temperatura_média|floatformat:2 }}</td>
-            <td>{{ caminhao.Emissões_CO2|floatformat:2 }}</td>
+        {% for viagem in viagens_caminhoes %}
+          <tr data-month="{{ viagem.mês|lower }}">
+            <td>{{ viagem.agrupamento.agrupamento }}</td>
+            <td>{{ viagem.agrupamento.marca }}</td>
+            <td>{{ viagem.quilometragem|floatformat:2 }}</td>
+            <td>{{ viagem.Consumido|floatformat:2 }}</td>
+            <td>{{ viagem.Quilometragem_média|floatformat:2 }}</td>
+            <td>{{ viagem.Horas_de_motor }}</td>
+            <td>{{ viagem.Velocidade_média|floatformat:2 }}</td>
+            <td>{{ viagem.RPM_médio|floatformat:2 }}</td>
+            <td>{{ viagem.Temperatura_média|floatformat:2 }}</td>
+            <td>{{ viagem.Emissões_CO2|floatformat:2 }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="10">Nenhum caminhão cadastrado.</td>
+            <td colspan="10">Nenhuma viagem de caminhão cadastrada.</td>
           </tr>
         {% endfor %}
       </tbody>

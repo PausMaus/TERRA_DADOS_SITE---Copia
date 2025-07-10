@@ -118,7 +118,7 @@
     </div>
 
     <h3 class="h3">Caminhões (por maior média de consumo)</h3>
-    <table border="1" cellpadding="5" cellspacing="0">
+    <table border="1" cellpadding="5" cellspacing="0" class="sortable-table">
       <thead>
         <tr>
           <th>Agrupamento</th>
@@ -134,22 +134,22 @@
         </tr>
       </thead>
       <tbody>
-        {% for caminhao in caminhoes %}
-          <tr>
-            <td>{{ caminhao.agrupamento }}</td>
-            <td>{{ caminhao.marca }}</td>
-            <td>{{ caminhao.quilometragem|floatformat:2 }}</td>
-            <td>{{ caminhao.Consumido|floatformat:2 }}</td>
-            <td>{{ caminhao.Quilometragem_média|floatformat:2 }}</td>
-            <td>{{ caminhao.Horas_de_motor }}</td>
-            <td>{{ caminhao.Velocidade_média|floatformat:2 }}</td>
-            <td>{{ caminhao.RPM_médio|floatformat:2 }}</td>
-            <td>{{ caminhao.Temperatura_média|floatformat:2 }}</td>
-            <td>{{ caminhao.Emissões_CO2|floatformat:2 }}</td>
+        {% for viagem in viagens_caminhoes %}
+          <tr data-month="{{ viagem.mês|lower }}">
+            <td>{{ viagem.agrupamento.agrupamento }}</td>
+            <td>{{ viagem.agrupamento.marca }}</td>
+            <td>{{ viagem.quilometragem|floatformat:2 }}</td>
+            <td>{{ viagem.Consumido|floatformat:2 }}</td>
+            <td>{{ viagem.Quilometragem_média|floatformat:2 }}</td>
+            <td>{{ viagem.Horas_de_motor }}</td>
+            <td>{{ viagem.Velocidade_média|floatformat:2 }}</td>
+            <td>{{ viagem.RPM_médio|floatformat:2 }}</td>
+            <td>{{ viagem.Temperatura_média|floatformat:2 }}</td>
+            <td>{{ viagem.Emissões_CO2|floatformat:2 }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="10">Nenhum caminhão cadastrado.</td>
+            <td colspan="10">Nenhuma viagem de caminhão cadastrada.</td>
           </tr>
         {% endfor %}
       </tbody>

@@ -32,7 +32,8 @@ class Command(BaseCommand):
                 'Quilometragem média por unidade de combustível por AbsFCS',
                 'Horas de motor',
                 'Velocidade média',
-                'Emissões de CO2'
+                'Emissões de CO2',
+                'Mês'
 
 
 
@@ -50,7 +51,8 @@ class Command(BaseCommand):
                     Quilometragem_média=linha['Quilometragem média por unidade de combustível por AbsFCS'] if not pd.isna(linha['Quilometragem média por unidade de combustível por AbsFCS']) else 0,
                     Horas_de_motor=linha['Horas de motor'] if not pd.isna(linha['Horas de motor']) else 0,
                     Velocidade_média=linha['Velocidade média'] if not pd.isna(linha['Velocidade média']) else 0,
-                    Emissões_CO2=linha['Emissões de CO2'] if not pd.isna(linha['Emissões de CO2']) else 0
+                    Emissões_CO2=linha['Emissões de CO2'] if not pd.isna(linha['Emissões de CO2']) else 0,
+                    Mês=linha['Mês'] if not pd.isna(linha['Mês']) else ''
                 )
                 for _, linha in df.iterrows()
             ]
