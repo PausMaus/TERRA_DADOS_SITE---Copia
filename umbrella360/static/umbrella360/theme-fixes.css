@@ -1,0 +1,194 @@
+/* ========================================
+   CORREÇÕES DE ESTILOS PARA TEMAS
+======================================== */
+
+/* Botões no tema padrão (Noite de Verão) */
+.btn {
+    display: inline-block;
+    padding: 15px 30px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+/* Botões no tema Café */
+body.tema-cafe .btn {
+    border: 2px solid #8B4513;
+    color: #F5DEB3;
+    background: rgba(139, 69, 19, 0.8);
+}
+
+body.tema-cafe .btn-primary {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+    border-color: #654321;
+}
+
+body.tema-cafe .btn-primary:hover {
+    background: linear-gradient(135deg, #A0522D 0%, #CD853F 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(139, 69, 19, 0.4);
+}
+
+body.tema-cafe .btn-secondary {
+    background: linear-gradient(135deg, #654321 0%, #8B4513 100%);
+    border-color: #8B4513;
+}
+
+body.tema-cafe .btn-secondary:hover {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(139, 69, 19, 0.4);
+}
+
+/* Botões no tema Empresarial */
+body.tema-empresarial .btn {
+    border: 2px solid #34495e;
+    color: #ecf0f1;
+    background: rgba(52, 73, 94, 0.8);
+}
+
+body.tema-empresarial .btn-primary {
+    background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+    border-color: #2c3e50;
+}
+
+body.tema-empresarial .btn-primary:hover {
+    background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(52, 73, 94, 0.4);
+}
+
+body.tema-empresarial .btn-secondary {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-color: #34495e;
+}
+
+body.tema-empresarial .btn-secondary:hover {
+    background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(52, 73, 94, 0.4);
+}
+
+/* Tabelas ordenáveis - Tema padrão (Noite de Verão) */
+.sortable-table th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    text-align: left;
+    padding: 1rem 0.75rem;
+    position: relative;
+    transition: all 0.3s ease;
+    user-select: none;
+    cursor: pointer;
+}
+
+.sortable-table th:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    transform: translateY(-1px);
+}
+
+/* Tabelas ordenáveis - Tema Café */
+.tema-cafe .sortable-table th {
+    background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%) !important;
+    color: #F5DEB3 !important;
+}
+
+.tema-cafe .sortable-table th:hover {
+    background: linear-gradient(135deg, #a0522d 0%, #cd853f 100%) !important;
+}
+
+.tema-cafe .sortable-table th[data-sort="asc"] {
+    background: linear-gradient(135deg, #654321 0%, #8b4513 100%) !important;
+}
+
+.tema-cafe .sortable-table th[data-sort="desc"] {
+    background: linear-gradient(135deg, #cd853f 0%, #d2691e 100%) !important;
+}
+
+/* Tabelas ordenáveis - Tema Empresarial */
+.tema-empresarial .sortable-table th {
+    background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%) !important;
+    color: #ecf0f1 !important;
+}
+
+.tema-empresarial .sortable-table th:hover {
+    background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%) !important;
+}
+
+.tema-empresarial .sortable-table th[data-sort="asc"] {
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%) !important;
+}
+
+.tema-empresarial .sortable-table th[data-sort="desc"] {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+}
+
+/* Correção para tabelas legadas também */
+.tema-cafe table thead {
+    background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%) !important;
+    color: #F5DEB3 !important;
+}
+
+.tema-cafe table thead th {
+    background: transparent !important;
+    color: #F5DEB3 !important;
+}
+
+.tema-empresarial table thead {
+    background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%) !important;
+    color: #ecf0f1 !important;
+}
+
+.tema-empresarial table thead th {
+    background: transparent !important;
+    color: #ecf0f1 !important;
+}
+
+/* Tema Café - Correção das classes com underscore */
+body.tema-cafe .h2 {
+    color: #F5DEB3;
+    text-shadow: 1px 1px 2px rgba(47, 27, 20, 0.3);
+}
+
+body.tema-cafe .h3 {
+    color: #F5DEB3;
+    text-shadow: 1px 1px 2px rgba(47, 27, 20, 0.3);
+}
+
+/* Tema Empresarial - Headings */
+body.tema-empresarial .h2 {
+    color: #000000;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+body.tema-empresarial .h3 {
+    color: #000000;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}

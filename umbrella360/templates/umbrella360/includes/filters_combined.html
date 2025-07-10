@@ -1,0 +1,180 @@
+<!-- Container principal dos filtros - horizontal no topo -->
+<div class="filters-container">
+    <!-- Filtro de meses -->
+    <div class="month-filter-container">
+        <div class="month-filter-toggle" id="month-filter-toggle">
+            <span class="filter-text">
+                {% if mes_selecionado == 'todos' %}
+                    Todos os Meses
+                {% else %}
+                    {{ mes_selecionado|title }}
+                {% endif %}
+            </span>
+            <span class="filter-dropdown-arrow">▼</span>
+        </div>
+        
+        <div class="month-filter-dropdown" id="month-filter-dropdown">
+            <div class="filter-header">
+                <span class="filter-title">Filtrar por Mês</span>
+            </div>
+            
+            <div class="filter-options">
+                <!-- Opção "Todos os Meses" -->
+                <a href="?mes=todos&remover_zero={{ remover_zero }}" class="filter-option {% if mes_selecionado == 'todos' %}active{% endif %}">
+                    <span class="filter-name">Todos os Meses</span>
+                    {% if mes_selecionado == 'todos' %}
+                        <span class="filter-check">✓</span>
+                    {% endif %}
+                </a>
+                
+                <!-- Opções de meses disponíveis -->
+                {% for mes in meses_disponiveis %}
+                    <a href="?mes={{ mes|lower }}&remover_zero={{ remover_zero }}" class="filter-option {% if mes_selecionado == mes|lower %}active{% endif %}">
+                        <span class="filter-name">{{ mes|title }}</span>
+                        {% if mes_selecionado == mes|lower %}
+                            <span class="filter-check">✓</span>
+                        {% endif %}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filtro de combustível zero -->
+    <div class="zero-filter-container">
+        <div class="zero-filter-toggle" id="zero-filter-toggle">
+            <span class="filter-text">
+                {% if filtro_combustivel == 'sem_zero' %}
+                    Sem Zeros
+                {% elif filtro_combustivel == 'normais' %}
+                    Valores Normais
+                {% elif filtro_combustivel == 'erros' %}
+                    Erros de Leitura
+                {% else %}
+                    Todos os Valores
+                {% endif %}
+            </span>
+            <span class="filter-dropdown-arrow">▼</span>
+        </div>
+        
+        <div class="zero-filter-dropdown" id="zero-filter-dropdown">
+            <div class="filter-header">
+                <span class="filter-title">Filtrar Combustível</span>
+            </div>
+            
+            <div class="filter-options">
+                <!-- Opção "Incluir Todos" -->
+                <a href="?mes={{ mes_selecionado }}&filtro_combustivel=todos" class="filter-option {% if filtro_combustivel == 'todos' %}active{% endif %}">
+                    <span class="filter-name">Incluir Todos</span>
+                    {% if filtro_combustivel == 'todos' %}
+                        <span class="filter-check">✓</span>
+                    {% endif %}
+                </a>
+                
+                <!-- Opção "Remover Zeros" -->
+                <a href="?mes={{ mes_selecionado }}&filtro_combustivel=sem_zero" class="filter-option {% if filtro_combustivel == 'sem_zero' %}active{% endif %}">
+                    <span class="filter-name">Sem Zeros</span>
+                    {% if filtro_combustivel == 'sem_zero' %}
+                        <span class="filter-check">✓</span>
+                    {% endif %}
+                </a>
+                
+                <!-- Opção "Valores Normais" -->
+                <a href="?mes={{ mes_selecionado }}&filtro_combustivel=normais" class="filter-option {% if filtro_combustivel == 'normais' %}active{% endif %}">
+                    <span class="filter-name">Valores Normais (≤50.000L)</span>
+                    {% if filtro_combustivel == 'normais' %}
+                        <span class="filter-check">✓</span>
+                    {% endif %}
+                </a>
+                
+                <!-- Opção "Apenas Erros" -->
+                <a href="?mes={{ mes_selecionado }}&filtro_combustivel=erros" class="filter-option {% if filtro_combustivel == 'erros' %}active{% endif %}">
+                    <span class="filter-name">Erros de Leitura (>50.000L)</span>
+                    {% if filtro_combustivel == 'erros' %}
+                        <span class="filter-check">✓</span>
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtro de mês
+    const monthFilterToggle = document.getElementById('month-filter-toggle');
+    const monthFilterDropdown = document.getElementById('month-filter-dropdown');
+    let isMonthDropdownOpen = false;
+    
+    // Filtro de combustível zero
+    const zeroFilterToggle = document.getElementById('zero-filter-toggle');
+    const zeroFilterDropdown = document.getElementById('zero-filter-dropdown');
+    let isZeroDropdownOpen = false;
+    
+    if (monthFilterToggle) {
+        monthFilterToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            closeZeroFilterDropdown(); // Fechar o outro filtro
+            toggleMonthFilterDropdown();
+        });
+    }
+    
+    if (zeroFilterToggle) {
+        zeroFilterToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            closeMonthFilterDropdown(); // Fechar o outro filtro
+            toggleZeroFilterDropdown();
+        });
+    }
+    
+    // Fechar dropdowns ao clicar fora
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.filters-container')) {
+            closeMonthFilterDropdown();
+            closeZeroFilterDropdown();
+        }
+    });
+    
+    // Funções do filtro de mês
+    function toggleMonthFilterDropdown() {
+        if (isMonthDropdownOpen) {
+            closeMonthFilterDropdown();
+        } else {
+            openMonthFilterDropdown();
+        }
+    }
+    
+    function openMonthFilterDropdown() {
+        monthFilterDropdown.classList.add('visible');
+        monthFilterToggle.classList.add('active');
+        isMonthDropdownOpen = true;
+    }
+    
+    function closeMonthFilterDropdown() {
+        monthFilterDropdown.classList.remove('visible');
+        monthFilterToggle.classList.remove('active');
+        isMonthDropdownOpen = false;
+    }
+    
+    // Funções do filtro de combustível zero
+    function toggleZeroFilterDropdown() {
+        if (isZeroDropdownOpen) {
+            closeZeroFilterDropdown();
+        } else {
+            openZeroFilterDropdown();
+        }
+    }
+    
+    function openZeroFilterDropdown() {
+        zeroFilterDropdown.classList.add('visible');
+        zeroFilterToggle.classList.add('active');
+        isZeroDropdownOpen = true;
+    }
+    
+    function closeZeroFilterDropdown() {
+        zeroFilterDropdown.classList.remove('visible');
+        zeroFilterToggle.classList.remove('active');
+        isZeroDropdownOpen = false;
+    }
+});
+</script>

@@ -1,0 +1,99 @@
+<!-- Filtro de meses base -->
+<div class="month-filter-container">
+    <div class="month-filter-toggle" id="month-filter-toggle">
+        <span class="filter-icon">📅</span>
+        <span class="filter-text">
+            {% if mes_selecionado == 'todos' %}
+                Todos os Meses
+            {% else %}
+                {{ mes_selecionado|title }}
+            {% endif %}
+        </span>
+        <span class="filter-dropdown-arrow">▼</span>
+    </div>
+    
+    <div class="month-filter-dropdown" id="month-filter-dropdown">
+        <div class="filter-header">
+            <span class="filter-title">Filtrar por Mês</span>
+        </div>
+        
+        <div class="filter-options">
+            <!-- Opção "Todos os Meses" -->
+            <a href="?mes=todos" class="filter-option {% if mes_selecionado == 'todos' %}active{% endif %}">
+                <span class="filter-icon">📅</span>
+                <span class="filter-name">Todos os Meses</span>
+                {% if mes_selecionado == 'todos' %}
+                    <span class="filter-check">✓</span>
+                {% endif %}
+            </a>
+            
+            <!-- Opções de meses disponíveis -->
+            {% for mes in meses_disponiveis %}
+                <a href="?mes={{ mes|lower }}" class="filter-option {% if mes_selecionado == mes|lower %}active{% endif %}">
+                    <span class="filter-icon">
+                        {% if mes|lower == 'janeiro' %}❄️
+                        {% elif mes|lower == 'fevereiro' %}💝
+                        {% elif mes|lower == 'março' %}🌱
+                        {% elif mes|lower == 'abril' %}🌸
+                        {% elif mes|lower == 'maio' %}🌺
+                        {% elif mes|lower == 'junho' %}☀️
+                        {% elif mes|lower == 'julho' %}🏖️
+                        {% elif mes|lower == 'agosto' %}🌻
+                        {% elif mes|lower == 'setembro' %}🍂
+                        {% elif mes|lower == 'outubro' %}🎃
+                        {% elif mes|lower == 'novembro' %}🦃
+                        {% elif mes|lower == 'dezembro' %}🎄
+                        {% else %}📅
+                        {% endif %}
+                    </span>
+                    <span class="filter-name">{{ mes|title }}</span>
+                    {% if mes_selecionado == mes|lower %}
+                        <span class="filter-check">✓</span>
+                    {% endif %}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterToggle = document.getElementById('month-filter-toggle');
+    const filterDropdown = document.getElementById('month-filter-dropdown');
+    let isDropdownOpen = false;
+    
+    if (filterToggle) {
+        filterToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleFilterDropdown();
+        });
+    }
+    
+    // Fechar dropdown ao clicar fora
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.month-filter-container')) {
+            closeFilterDropdown();
+        }
+    });
+    
+    function toggleFilterDropdown() {
+        if (isDropdownOpen) {
+            closeFilterDropdown();
+        } else {
+            openFilterDropdown();
+        }
+    }
+    
+    function openFilterDropdown() {
+        filterDropdown.classList.add('visible');
+        filterToggle.classList.add('active');
+        isDropdownOpen = true;
+    }
+    
+    function closeFilterDropdown() {
+        filterDropdown.classList.remove('visible');
+        filterToggle.classList.remove('active');
+        isDropdownOpen = false;
+    }
+});
+</script>

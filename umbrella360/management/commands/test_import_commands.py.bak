@@ -1,0 +1,275 @@
+#!/usr/bin/env python
+"""
+Script de teste para validar os comandos de importação
+Execute este script para testar se os comandos estão funcionando corretamente.
+"""
+
+import os
+import sys
+import django
+from django.core.management import call_command
+from django.test import TestCase
+from django.core.management.base import BaseCommand
+from io import StringIO
+import tempfile
+import pandas as pd
+
+# Configurar Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'TERRA_DADOS_SITE.settings')
+django.setup()
+
+from umbrella360.models import Motorista, Caminhao
+
+class TestImportCommands(TestCase):
+    """Classe para testar os comandos de importação"""
+    
+    def setUp(self):
+        """Configuração inicial para os testes"""
+        # Limpar dados existentes
+        Motorista.objects.all().delete()
+        Caminhao.objects.all().delete()
+        
+        # Criar dados de teste
+        self.motoristas_dados = [
+            ['João Silva'],
+            ['Maria Santos'],
+            ['Pedro Oliveira'],
+            ['Ana Costa'],
+            ['Carlos Pereira'],
+            ['João Silva'],  # Duplicata
+            ['Maria Santos'],  # Duplicata
+            ['José Almeida'],
+            ['Lucia Ferreira'],
+            ['Roberto Lima']
+        ]
+        
+        self.caminhoes_dados = [
+            ['CAM001', 'VOLVO'],
+            ['CAM002', 'SCANIA'],
+            ['CAM003', 'MERCEDES'],
+            ['CAM004', 'FORD'],
+            ['CAM005', 'IVECO'],
+            ['CAM001', 'VOLVO'],  # Duplicata
+            ['CAM006', 'SCANIA'],
+            ['CAM007', 'MERCEDES'],
+            ['CAM008', 'FORD'],
+            ['CAM009', 'IVECO']
+        ]
+    
+    def criar_arquivo_motoristas(self, dados):
+        """Cria arquivo Excel temporário com dados de motoristas"""
+        df = pd.DataFrame(dados, columns=['Agrupamento'])
+        arquivo_temp = tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False)
+        df.to_excel(arquivo_temp.name, index=False)
+        return arquivo_temp.name
+    
+    def criar_arquivo_caminhoes(self, dados):
+        """Cria arquivo Excel temporário com dados de caminhões"""
+        df = pd.DataFrame(dados, columns=['Agrupamento', 'Marca'])
+        arquivo_temp = tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False)
+        df.to_excel(arquivo_temp.name, index=False)
+        return arquivo_temp.name
+    
+    def test_importacao_motoristas_dry_run(self):
+        """Testa importação de motoristas em modo dry-run"""
+        print("\\n🧪 Testando importação de motoristas (dry-run)...")
+        
+        arquivo = self.criar_arquivo_motoristas(self.motoristas_dados)
+        
+        try:
+            # Capturar saída do comando
+            out = StringIO()
+            call_command('IMP_L_MOT', arquivo, '--dry-run', stdout=out)
+            output = out.getvalue()
+            
+            # Verificar se não criou registros no banco
+            self.assertEqual(Motorista.objects.count(), 0)
+            
+            # Verificar se a saída contém informações esperadas
+            self.assertIn('DRY-RUN', output)
+            self.assertIn('Seriam importados', output)
+            
+            print("✅ Teste de dry-run para motoristas passou!")
+            
+        finally:
+            os.unlink(arquivo)
+    
+    def test_importacao_motoristas_real(self):
+        """Testa importação real de motoristas"""
+        print("\\n📝 Testando importação real de motoristas...")
+        
+        arquivo = self.criar_arquivo_motoristas(self.motoristas_dados)
+        
+        try:
+            # Executar comando real
+            call_command('IMP_L_MOT', arquivo)
+            
+            # Verificar se criou registros únicos no banco
+            # Dados únicos esperados: 8 (10 total - 2 duplicatas)
+            self.assertEqual(Motorista.objects.count(), 8)
+            
+            # Verificar se os nomes corretos foram importados
+            nomes_esperados = [
+                'João Silva', 'Maria Santos', 'Pedro Oliveira', 'Ana Costa',
+                'Carlos Pereira', 'José Almeida', 'Lucia Ferreira', 'Roberto Lima'
+            ]
+            
+            nomes_banco = list(Motorista.objects.values_list('agrupamento', flat=True))
+            self.assertEqual(set(nomes_banco), set(nomes_esperados))
+            
+            print("✅ Teste de importação real para motoristas passou!")
+            
+        finally:
+            os.unlink(arquivo)
+    
+    def test_importacao_caminhoes_dry_run(self):
+        """Testa importação de caminhões em modo dry-run"""
+        print("\\n🧪 Testando importação de caminhões (dry-run)...")
+        
+        arquivo = self.criar_arquivo_caminhoes(self.caminhoes_dados)
+        
+        try:
+            # Capturar saída do comando
+            out = StringIO()
+            call_command('IMP_CAM', arquivo, '--dry-run', stdout=out)
+            output = out.getvalue()
+            
+            # Verificar se não criou registros no banco
+            self.assertEqual(Caminhao.objects.count(), 0)
+            
+            # Verificar se a saída contém informações esperadas
+            self.assertIn('DRY-RUN', output)
+            self.assertIn('Seriam importados', output)
+            
+            print("✅ Teste de dry-run para caminhões passou!")
+            
+        finally:
+            os.unlink(arquivo)
+    
+    def test_importacao_caminhoes_real(self):
+        """Testa importação real de caminhões"""
+        print("\\n🚛 Testando importação real de caminhões...")
+        
+        arquivo = self.criar_arquivo_caminhoes(self.caminhoes_dados)
+        
+        try:
+            # Executar comando real
+            call_command('IMP_CAM', arquivo)
+            
+            # Verificar se criou registros únicos no banco
+            # Dados únicos esperados: 9 (10 total - 1 duplicata)
+            self.assertEqual(Caminhao.objects.count(), 9)
+            
+            # Verificar se os códigos corretos foram importados
+            codigos_esperados = [
+                'CAM001', 'CAM002', 'CAM003', 'CAM004', 'CAM005',
+                'CAM006', 'CAM007', 'CAM008', 'CAM009'
+            ]
+            
+            codigos_banco = list(Caminhao.objects.values_list('agrupamento', flat=True))
+            self.assertEqual(set(codigos_banco), set(codigos_esperados))
+            
+            print("✅ Teste de importação real para caminhões passou!")
+            
+        finally:
+            os.unlink(arquivo)
+    
+    def test_importacao_duplicatas_existentes(self):
+        """Testa importação quando já existem registros no banco"""
+        print("\\n🔄 Testando importação com registros existentes...")
+        
+        # Criar alguns registros no banco primeiro
+        Motorista.objects.create(agrupamento='João Silva')
+        Motorista.objects.create(agrupamento='Maria Santos')
+        
+        arquivo = self.criar_arquivo_motoristas(self.motoristas_dados)
+        
+        try:
+            # Executar comando
+            out = StringIO()
+            call_command('IMP_L_MOT', arquivo, stdout=out)
+            output = out.getvalue()
+            
+            # Deve ter 8 registros únicos (2 já existiam, 6 novos)
+            self.assertEqual(Motorista.objects.count(), 8)
+            
+            # Verificar se a saída menciona registros existentes
+            self.assertIn('Já existiam', output)
+            
+            print("✅ Teste de registros existentes passou!")
+            
+        finally:
+            os.unlink(arquivo)
+    
+    def test_update_mode_caminhoes(self):
+        """Testa modo update para caminhões"""
+        print("\\n🔄 Testando modo update para caminhões...")
+        
+        # Criar um caminhão com marca diferente
+        Caminhao.objects.create(agrupamento='CAM001', marca='ANTIGA_MARCA')
+        
+        # Dados com marca atualizada
+        dados_atualizados = [['CAM001', 'VOLVO']]
+        arquivo = self.criar_arquivo_caminhoes(dados_atualizados)
+        
+        try:
+            # Executar comando com --update
+            out = StringIO()
+            call_command('IMP_CAM', arquivo, '--update', stdout=out)
+            output = out.getvalue()
+            
+            # Verificar se atualizou a marca
+            caminhao = Caminhao.objects.get(agrupamento='CAM001')
+            self.assertEqual(caminhao.marca, 'VOLVO')
+            
+            # Verificar se a saída menciona atualização
+            self.assertIn('Atualizado', output)
+            
+            print("✅ Teste de modo update passou!")
+            
+        finally:
+            os.unlink(arquivo)
+
+def executar_todos_os_testes():
+    """Executa todos os testes"""
+    print("🚀 Iniciando testes dos comandos de importação...")
+    print("=" * 60)
+    
+    # Criar instância de teste
+    teste = TestImportCommands()
+    
+    try:
+        # Executar cada teste
+        teste.setUp()
+        teste.test_importacao_motoristas_dry_run()
+        
+        teste.setUp()
+        teste.test_importacao_motoristas_real()
+        
+        teste.setUp()
+        teste.test_importacao_caminhoes_dry_run()
+        
+        teste.setUp()
+        teste.test_importacao_caminhoes_real()
+        
+        teste.setUp()
+        teste.test_importacao_duplicatas_existentes()
+        
+        teste.setUp()
+        teste.test_update_mode_caminhoes()
+        
+        print("\\n" + "=" * 60)
+        print("🎉 TODOS OS TESTES PASSARAM!")
+        print("✅ Os comandos de importação estão funcionando corretamente.")
+        print("✅ Detecção de duplicatas funcionando.")
+        print("✅ Modo dry-run funcionando.")
+        print("✅ Modo update funcionando.")
+        
+    except Exception as e:
+        print(f"\\n❌ ERRO NOS TESTES: {e}")
+        import traceback
+        print(traceback.format_exc())
+        sys.exit(1)
+
+if __name__ == '__main__':
+    executar_todos_os_testes()

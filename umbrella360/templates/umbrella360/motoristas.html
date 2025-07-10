@@ -5,17 +5,18 @@
 {% block title %}Motoristas{% endblock %}
 
 {% block content %}
-    <h2 class="h2">Motoristas</h2>
-    <p>Este relatório apresenta as médias de consumo de combustível dos motoristas e caminhões cadastrados na Umbrella360.</p>
-    <p>As médias são calculadas com base na quilometragem total percorrida e no combustível total consumido.</p>
+    <h2 class="h2">Viagens de Motoristas</h2>
+    <p>Este relatório apresenta as viagens dos motoristas registradas no sistema.</p>
+    <p>As médias são calculadas com base na quilometragem percorrida e no combustível consumido em cada viagem.</p>
 
-    <h3 class="h3">Motoristas (por maior média de consumo)</h3>
-    <table border="1" cellpadding="5" cellspacing="0">
+    <h3 class="h3">Viagens de Motoristas (por maior média de consumo)</h3>
+    <table border="1" cellpadding="5" cellspacing="0" class="sortable-table">
       <thead>
         <tr>
-          <th>Nome</th>
-          <th>Quilometragem Atual (km)</th>
-          <th>Combustível Total (litros)</th>
+          <th>Motorista</th>
+          <th>Mês</th>
+          <th>Quilometragem (km)</th>
+          <th>Combustível (litros)</th>
           <th>Média de Consumo (km/l)</th>
           <th>Horas de Motor</th>
           <th>Velocidade Média (km/h)</th>
@@ -23,23 +24,22 @@
         </tr>
       </thead>
       <tbody>
-        {% for motorista in motoristas %}
-          <tr>
-            <td>{{ motorista.agrupamento }}</td>
-            <td>{{ motorista.quilometragem|floatformat:2 }}</td>
-            <td>{{ motorista.Consumido|floatformat:2 }}</td>
-            <td>{{ motorista.Quilometragem_média|floatformat:2 }}</td>
-            <td>{{ motorista.Horas_de_motor }}</td>
-            <td>{{ motorista.Velocidade_média|floatformat:2 }}</td>
-            <td>{{ motorista.Emissões_CO2|floatformat:2 }}</td>
+        {% for viagem in viagens_motoristas %}
+          <tr data-month="{{ viagem.mês|lower }}">
+            <td>{{ viagem.agrupamento.agrupamento }}</td>
+            <td>{{ viagem.mês }}</td>
+            <td>{{ viagem.quilometragem|floatformat:2 }}</td>
+            <td>{{ viagem.Consumido|floatformat:2 }}</td>
+            <td>{{ viagem.Quilometragem_média|floatformat:2 }}</td>
+            <td>{{ viagem.Horas_de_motor }}</td>
+            <td>{{ viagem.Velocidade_média|floatformat:2 }}</td>
+            <td>{{ viagem.Emissões_CO2|floatformat:2 }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="7">Nenhum motorista cadastrado.</td>
+            <td colspan="8">Nenhuma viagem de motorista registrada.</td>
           </tr>
         {% endfor %}
-      </tbody>
-    </table>
       </tbody>
     </table>
 
