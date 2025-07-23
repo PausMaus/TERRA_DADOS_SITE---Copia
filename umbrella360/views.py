@@ -123,6 +123,12 @@ def report(request):
 
     # Cálculos com base nas viagens de caminhões filtradas
     total_quilometragem_caminhoes = viagens_caminhoes_filtradas.aggregate(total=Sum('quilometragem'))['total']
+
+    total_emissoes_caminhoes = viagens_caminhoes_filtradas.aggregate(total=Sum('Emissões_CO2'))['total']
+    rpm_medio_caminhoes = viagens_caminhoes_filtradas.aggregate(media=Avg('RPM_médio'))['media']
+    velocidade_media_caminhoes = viagens_caminhoes_filtradas.aggregate(media=Avg('Velocidade_média'))['media']
+
+
     
     # Usar limite de consumo configurável
     consumo_max_normal = Config.consumo_maximo_normal()
@@ -192,6 +198,9 @@ def report(request):
         'custo_atual': custo_atual,
         'km_atual': km_atual,
         'economia_potencial': economia_potencial,
+        'emissoes_caminhoes': total_emissoes_caminhoes,
+        'rpm_medio_caminhoes': rpm_medio_caminhoes,
+        'velocidade_media_caminhoes': velocidade_media_caminhoes,
     })
 
     return render(request, 'umbrella360/report.html', context)

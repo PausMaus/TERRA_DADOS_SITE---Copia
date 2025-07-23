@@ -1,6 +1,5 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=8">
-<link rel="stylesheet" href="{% static 'umbrella360/theme-fixes.css' %}?v=1">
 <script src="{% static 'umbrella360/theme-toggle.js' %}?v=2"></script>
 <script src="{% static 'umbrella360/table-sort.js' %}?v=1"></script>
 
@@ -61,15 +60,15 @@
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
             <div style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; padding: 1rem; border-radius: 10px; text-align: center;">
               <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Velocidade Média</h5>
-              <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">44.36</p>
+              <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">{{ velocidade_media_caminhoes|floatformat:0 }}</p>
             </div>
             <div style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 1rem; border-radius: 10px; text-align: center;">
               <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">RPM Médio</h5>
-              <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">875.26</p>
+              <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">{{ rpm_medio_caminhoes|floatformat:0 }}</p>
             </div>
             <div style="background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%); color: white; padding: 1rem; border-radius: 10px; text-align: center;">
-              <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Emissões CO2</h5>
-              <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">425.56</p>
+              <h5 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Emissões CO2 (t)</h5>
+              <p style="margin: 0; font-size: 1.5rem; font-weight: bold;">{{ emissoes_caminhoes|floatformat:0 }}</p>
             </div>
           </div>
 
