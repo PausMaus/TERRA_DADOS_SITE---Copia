@@ -124,6 +124,40 @@ class Viagem_CAM(models.Model):
         verbose_name_plural = "Viagens Caminhões"
 
 
+##############################################################################
+#novos modelos para o sistema UMBRELLA 360
+##############################################################################
 
 
+#empresa
+class Empresa(models.Model):
+    nome = models.CharField(max_length=100, unique=True, verbose_name="Nome da Empresa")
+
+    def __str__(self):
+        return self.nome
+
+    class Meta:
+        verbose_name = "Empresa"
+        verbose_name_plural = "Empresas"
+        ordering = ['nome']
+
+
+
+
+class Unidade(models.Model):
+    nm = models.CharField(max_length=100, unique=True, verbose_name="Nome da Unidade", blank=True, null=True)
+    cls = models.CharField(max_length=50, verbose_name="Classe da Unidade", blank=True, null=True)
+    id = models.CharField(max_length=50, primary_key=True, verbose_name="ID da Unidade")
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, blank=True, null=True, verbose_name="Empresa Associada")
+    descricao = models.TextField(verbose_name="Descrição da Unidade", blank=True, null=True)
+    marca = models.CharField(max_length=50, verbose_name="Marca da Unidade", blank=True, null=True)
+    placa = models.CharField(max_length=20, verbose_name="Placa da Unidade", blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.id} - {self.nm} ({self.cls})"
+    
+    class Meta:
+        verbose_name = "Unidade"
+        verbose_name_plural = "Unidades"
+        ordering = ['id']
 

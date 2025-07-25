@@ -31,7 +31,7 @@ DATABASES_URL = os.getenv('DATABASE_URL')
 DEBUG = False
 
 
-ALLOWED_HOSTS = ['terradados.space', 'www.terradados.space']
+ALLOWED_HOSTS = ['terradados.space', 'www.terradados.space',"127.0.0.1", "localhost"]
 
 
 # Application definition

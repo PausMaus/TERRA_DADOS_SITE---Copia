@@ -209,3 +209,23 @@ class Config:
     @staticmethod
     def registros_por_pagina():
         return int(get_config('registros_por_pagina', 50))
+    
+    @classmethod
+    def media_consumo_minima(cls):
+        """Média mínima realista de consumo (km/l)"""
+        try:
+            from .models import ConfiguracaoSistema
+            config = ConfiguracaoSistema.objects.get(chave='media_consumo_minima')
+            return config.valor
+        except ConfiguracaoSistema.DoesNotExist:
+            return 0.5  # Valor padrão
+    
+    @classmethod
+    def media_consumo_maxima(cls):
+        """Média máxima realista de consumo (km/l)"""
+        try:
+            from .models import ConfiguracaoSistema
+            config = ConfiguracaoSistema.objects.get(chave='media_consumo_maxima')
+            return config.valor
+        except ConfiguracaoSistema.DoesNotExist:
+            return 8.0  # Valor padrão
