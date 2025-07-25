@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Motorista, Caminhao, Viagem_CAM, Viagem_MOT, ConfiguracaoSistema
+from .models import Motorista, Caminhao, Viagem_CAM, Viagem_MOT, ConfiguracaoSistema, Empresa, Unidade
 
 # Register your models here.
 
@@ -62,3 +62,22 @@ admin.site.register(Motorista, MotoristaAdmin)
 admin.site.register(Caminhao, CaminhaoAdmin)
 admin.site.register(Viagem_CAM, ViagemCAMAdmin)
 admin.site.register(Viagem_MOT, ViagemMOTAdmin)
+
+
+
+##############################################################################
+#novos modelos para o sistema UMBRELLA 360
+##############################################################################
+@admin.register(Empresa)
+class EmpresaAdmin(admin.ModelAdmin):
+    list_display = ('nome',)
+    search_fields = ('nome',)
+    ordering = ('nome',)
+
+
+
+
+@admin.register(Unidade)
+class UnidadeAdmin(admin.ModelAdmin):
+    list_display = ('nm', 'cls', 'placa', 'marca')
+    ordering = ('nm',)
