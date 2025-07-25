@@ -51,7 +51,7 @@ class ViagemCAMAdmin(admin.ModelAdmin):
     list_display = ('agrupamento',  'quilometragem', 'Consumido', 'Quilometragem_média',
                     'Horas_de_motor', 'Velocidade_média', 'RPM_médio',
                     'Temperatura_média', 'Emissões_CO2', 'mês')
-    list_filter = ('mês',  'agrupamento')
+    list_filter = ('mês',  'Quilometragem_média')
     list_editable = ('quilometragem', 'Consumido')
 
 
