@@ -55,13 +55,13 @@ def aplicar_filtro_combustivel(queryset, filtro_combustivel):
     elif filtro_combustivel == 'normais':
         # Valores normais: 
         # - Consumo total: maior que 0 e menor ou igual ao limite configurado
-        # - Média de consumo: entre 0.5 e 8.0 km/l (valores realistas para caminhões)
+        # - Média de consumo: entre 0.5 e 3.5 km/l (valores realistas para caminhões)
         consumo_max = Config.consumo_maximo_normal()
         return queryset.filter(
             Consumido__gt=0, 
             Consumido__lte=consumo_max,
             Quilometragem_média__gt=0.5,  # Mínimo realista para caminhões
-            Quilometragem_média__lte=8.0   # Máximo realista para caminhões
+            Quilometragem_média__lte=3.5   # Máximo realista para caminhões
         )
     elif filtro_combustivel == 'erros':
         # Erros de leitura: consumo muito alto OU média muito alta/baixa

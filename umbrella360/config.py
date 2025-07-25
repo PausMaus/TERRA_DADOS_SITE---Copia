@@ -228,4 +228,4 @@ class Config:
             config = ConfiguracaoSistema.objects.get(chave='media_consumo_maxima')
             return config.valor
         except ConfiguracaoSistema.DoesNotExist:
-            return 8.0  # Valor padrão
+            return 3.5   # Valor padrão
