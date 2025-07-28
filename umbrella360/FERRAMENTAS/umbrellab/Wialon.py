@@ -295,7 +295,86 @@ def motoristas_simples(session_id):
         response = requests.post(API_URL, data=params)
         response.raise_for_status()
         result = response.json()
-        return result
+        resultado = result.get("items", [])
+        return resultado
+    except Exception as e:
+        comm(f"Erro ao buscar motoristas: {e}")
+        return []
+    
+
+       
+def motoristas_simples2(session_id):
+    """
+    Retrieve all available drivers (avl_resource) from Wialon and extract driver details.
+    """
+    nome = "Buscadora de Motoristas Simples v2"
+    def comm(msg):
+        print(colored("="*30, "yellow"))
+        print(colored(f"{nome}:","green"))
+        print(f"{msg}")
+        print(colored("="*30, "yellow"))
+    
+    params = {
+        "svc": "core/search_items",
+        "params": json.dumps({
+            "spec": {
+                "itemsType": "avl_resource",
+                "propName": "sys_name",
+                "propValueMask": "*",
+                "sortType": "sys_name",
+            },
+            "force": 1,
+            "flags": 257,  # 1 (basic info) + 256 (drivers info)
+            "from": 0,
+            "to": 0
+        }),
+        "sid": session_id
+    }
+    
+    try:
+        response = requests.post(API_URL, data=params)
+        response.raise_for_status()
+        result = response.json()
+        
+        resources = result.get("items", [])
+        motoristas_lista = []
+        
+        for resource in resources:
+            resource_name = resource.get("nm", "Recurso sem nome")
+            resource_id = resource.get("id", 0)
+            
+            # Extrai os motoristas do campo 'drvrs'
+            drivers_dict = resource.get("drvrs", {})
+            
+            if drivers_dict:
+                comm(f"Recurso '{resource_name}' (ID: {resource_id}): {len(drivers_dict)} motorista(s)")
+                
+                # Itera sobre o dicionário de motoristas
+                for driver_key, driver_data in drivers_dict.items():
+                    motorista_info = {
+                        "resource_id": resource_id,
+                        "resource_name": resource_name,
+                        "driver_id": driver_data.get("id", 0),
+                        "driver_name": driver_data.get("n", "Nome não disponível"),
+                        "driver_code": driver_data.get("c", ""),
+                        "driver_description": driver_data.get("ds", ""),
+                        "phone": driver_data.get("p", ""),
+                        "creation_time": driver_data.get("ct", 0),
+                        "modification_time": driver_data.get("mt", 0),
+                        "bound_unit": driver_data.get("pu", 0),  # Unidade vinculada
+                        "bind_time": driver_data.get("bt", 0),   # Tempo de vinculação
+                        "position": driver_data.get("pos", {}),  # Posição atual
+                    }
+                    motoristas_lista.append(motorista_info)
+        
+        comm(f"Total de motoristas encontrados: {len(motoristas_lista)}")
+        
+        # Log dos motoristas encontrados
+        for motorista in motoristas_lista:
+            comm(f"ID: {motorista['driver_id']} | Nome: {motorista['driver_name']} | Código: {motorista['driver_code']}")
+        
+        return motoristas_lista
+        
     except Exception as e:
         comm(f"Erro ao buscar motoristas: {e}")
         return []
@@ -622,6 +701,88 @@ def exec_report(sid, resource_id, template_id, unit_id, interval_from, interval_
     except Exception as e:
         comm(f"Erro inesperado: {e}")
         return None
+    
+
+def exec_report_motorista(sid, resource_id, template_id, unit_id, interval_from, interval_to):
+    """
+    Executa um relatório específico para uma unidade no Wialon.
+    
+    :param sid: Session ID obtido após o login.
+    :param resource_id: ID do recurso onde o relatório está localizado.
+    :param template_id: ID do modelo de relatório a ser executado.
+    :param unit_id: ID da unidade para a qual o relatório será gerado.
+    :return: Resultado do relatório ou None em caso de erro.
+    """
+    nome = "exec_report_motorista"
+    def comm(msg):
+        print(colored("="*30, "yellow"))
+        print(colored(f"{nome}:","green"))
+        print(f"{msg}")
+        print(colored("="*30, "yellow"))
+    
+
+    payload = {
+        "svc": "report/exec_report",
+        "params": json.dumps({
+            "reportResourceId": resource_id,
+            "reportTemplateId": template_id,
+            "reportObjectId": 0,
+            "reportObjectSecId": unit_id,
+            "interval": {
+                "from": interval_from,
+                "to": interval_to,
+                "flags": 0  # CORREÇÃO: 0 para timestamps absolutos Unix
+            }
+        }),
+        "sid": sid
+    }
+    
+    try:
+        
+        response = requests.post(API_URL, data=payload)
+        response.raise_for_status()
+        data = response.json()
+        
+        
+        if "error" in data:
+            error_code = data["error"]
+            comm(f"Erro {error_code} ao executar relatório")
+            
+            # Códigos de erro comuns
+            error_messages = {
+                1: "Token inválido ou expirado",
+                4: "Acesso negado - verificar permissões do usuário",
+                5: "Erro na requisição - parâmetros inválidos (IDs ou interval)",
+                6: "Não autorizado - usuário sem permissão para este relatório",
+                7: "Limite de tempo excedido",
+                14: "Relatório não encontrado",
+                1001: "Parâmetros inválidos",
+                1002: "Recurso não encontrado",
+                1003: "Template não encontrado"
+            }
+            
+            if error_code in error_messages:
+                comm(f"Descrição: {error_messages[error_code]}")
+            
+            return None
+            
+        # Verifica se o relatório foi executado com sucesso
+        if isinstance(data, dict) and data.get("error") is None:
+            #comm(f"Relatório executado com sucesso")
+            return data
+            
+        return data
+        
+    except requests.exceptions.RequestException as e:
+        comm(f"Erro de conexão HTTP: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        comm(f"Erro ao decodificar JSON: {e}")
+        return None
+    except Exception as e:
+        comm(f"Erro inesperado: {e}")
+        return None
+
 
 
 
@@ -963,7 +1124,9 @@ def wait_for_report_completion(sid, timeout=300, check_interval=5):
     comm(f"Timeout atingido ({timeout}s) - Relatório não concluído")
     return False
 
-def Colheitadeira_JSON(sid, unit_id, id_relatorio, tempo_dias, periodo):
+
+
+def Colheitadeira_JSON(sid, resource_id, unit_id, id_relatorio, tempo_dias, periodo):
     """
     Função para coletar dados de relatório de uma unidade específica para um período.
     
@@ -990,7 +1153,7 @@ def Colheitadeira_JSON(sid, unit_id, id_relatorio, tempo_dias, periodo):
         # Executa o relatório
         relatorio = exec_report(
             sid=sid, 
-            resource_id=401756219, 
+            resource_id=resource_id, 
             template_id=id_relatorio, 
             unit_id=unit_id, 
             interval_from=interval_from, 
@@ -1000,9 +1163,9 @@ def Colheitadeira_JSON(sid, unit_id, id_relatorio, tempo_dias, periodo):
         if not relatorio:
             comm(f"❌ Falha ao executar relatório para unidade {unit_id}")
             return None
-        
-        print(f"Relatório executado: {relatorio}")
-        
+
+        #print(f"Relatório executado: {relatorio}")
+
         # Verifica se há tabelas no resultado
         tables = relatorio.get('reportResult', {}).get('tables', [])
         if not tables:
@@ -1015,7 +1178,7 @@ def Colheitadeira_JSON(sid, unit_id, id_relatorio, tempo_dias, periodo):
             comm(f"⚠️ Nenhum header encontrado no relatório para unidade {unit_id}")
             return None
         
-        print(f"Headers do relatório: {headers}")
+        #print(f"Headers do relatório: {headers}")
         
         # Obtém as linhas de dados
         rows = get_result_rows(sid)
@@ -1023,7 +1186,7 @@ def Colheitadeira_JSON(sid, unit_id, id_relatorio, tempo_dias, periodo):
             comm(f"⚠️ Nenhuma linha de dados encontrada para unidade {unit_id}")
             return None
         
-        print(f"Linhas obtidas: {len(rows)}")
+        #print(f"Linhas obtidas: {len(rows)}")
         
         # Verifica se há dados na primeira linha
         if len(rows) == 0:
@@ -1040,7 +1203,7 @@ def Colheitadeira_JSON(sid, unit_id, id_relatorio, tempo_dias, periodo):
             comm(f"⚠️ Dados de relatório vazios para unidade {unit_id}")
             return None
         
-        print(f"Dados do relatório: {report_data}")
+        #print(f"Dados do relatório: {report_data}")
         
         # Verifica compatibilidade entre headers e dados
         if len(headers) != len(report_data):
@@ -1061,9 +1224,118 @@ def Colheitadeira_JSON(sid, unit_id, id_relatorio, tempo_dias, periodo):
         relatorio_df['timestamp_from'] = interval_from
         relatorio_df['timestamp_to'] = interval_to
         
-        print(f"✅ DataFrame criado com sucesso:")
-        print(relatorio_df)
-        print(f"Headers do DataFrame: {relatorio_df.columns.tolist()}")
+        #print(f"✅ DataFrame criado com sucesso:")
+        #print(relatorio_df)
+        #print(f"Headers do DataFrame: {relatorio_df.columns.tolist()}")
+        
+        return relatorio_df
+        
+    except Exception as e:
+        comm(f"❌ Erro inesperado ao processar unidade {unit_id}: {str(e)}")
+        return None
+    
+
+
+def Colheitadeira_JSON_motorista(sid, unit_id, id_relatorio, tempo_dias, periodo):
+    """
+    Função para coletar dados de relatório de uma unidade específica para um período.
+    
+    :param sid: Session ID da API Wialon
+    :param unit_id: ID da unidade
+    :param id_relatorio: ID do template de relatório
+    :param tempo_dias: Número de dias para buscar (7 ou 30)
+    :param periodo: String descritiva do período
+    :return: DataFrame com os dados ou None se não houver dados
+    """
+    nome = "Colheitadeira_JSON"
+    def comm(msg):
+        print(colored("="*30, "blue"))
+        print(colored(f"{nome}:", "green"))
+        print(f"{msg}")
+        print(colored("="*30, "blue"))
+
+    # CORREÇÃO: Calcula timestamps UNIX corretos
+    current_time = int(time.time())
+    interval_from = current_time - (tempo_dias * 24 * 3600)  # X dias atrás
+    interval_to = current_time  # Agora
+    
+    try:
+        # Executa o relatório
+        relatorio = exec_report_motorista(
+            sid=sid, 
+            resource_id=401756219, 
+            template_id=id_relatorio, 
+            unit_id=unit_id, 
+            interval_from=interval_from, 
+            interval_to=interval_to
+        )
+        if not relatorio:
+            comm(f"❌ Falha ao executar relatório para unidade {unit_id}")
+            return None
+
+        #print(f"Relatório executado: {relatorio}")
+
+        # Verifica se há tabelas no resultado
+        tables = relatorio.get('reportResult', {}).get('tables', [])
+        if not tables:
+            comm(f"⚠️ Nenhuma tabela encontrada no relatório para unidade {unit_id}")
+            return None
+        
+        # Extrai headers
+        headers = extract_report_headers(relatorio)
+        if not headers:
+            comm(f"⚠️ Nenhum header encontrado no relatório para unidade {unit_id}")
+            return None
+        
+        #print(f"Headers do relatório: {headers}")
+        
+        # Obtém as linhas de dados
+        rows = get_result_rows(sid)
+        if not rows:
+            comm(f"⚠️ Nenhuma linha de dados encontrada para unidade {unit_id}")
+            return None
+        
+        #print(f"Linhas obtidas: {len(rows)}")
+        
+        # Verifica se há dados na primeira linha
+        if len(rows) == 0:
+            comm(f"⚠️ Array de linhas vazio para unidade {unit_id}")
+            return None
+        
+        first_row = rows[0]
+        if not isinstance(first_row, dict) or 'c' not in first_row:
+            comm(f"⚠️ Estrutura de dados inválida para unidade {unit_id}: {first_row}")
+            return None
+        
+        report_data = first_row['c']
+        if not report_data:
+            comm(f"⚠️ Dados de relatório vazios para unidade {unit_id}")
+            return None
+        
+        #print(f"Dados do relatório: {report_data}")
+        
+        # Verifica compatibilidade entre headers e dados
+        if len(headers) != len(report_data):
+            comm(f"⚠️ Incompatibilidade: {len(headers)} headers vs {len(report_data)} dados para unidade {unit_id}")
+            # Tenta ajustar usando o menor tamanho
+            min_length = min(len(headers), len(report_data))
+            headers = headers[:min_length]
+            report_data = report_data[:min_length]
+            comm(f"🔧 Ajustado para {min_length} colunas")
+        
+        # Cria o DataFrame
+        relatorio_df = pd.DataFrame([report_data], columns=headers)
+        
+        # Adiciona metadados
+        relatorio_df['id'] = f"{interval_from}_{interval_to}_{unit_id}"
+        relatorio_df['unit_id'] = unit_id
+        relatorio_df['periodo'] = periodo
+        relatorio_df['timestamp_from'] = interval_from
+        relatorio_df['timestamp_to'] = interval_to
+        
+        #print(f"✅ DataFrame criado com sucesso:")
+        #print(relatorio_df)
+        #print(f"Headers do DataFrame: {relatorio_df.columns.tolist()}")
         
         return relatorio_df
         

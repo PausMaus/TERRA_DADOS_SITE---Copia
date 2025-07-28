@@ -1,0 +1,342 @@
+{% load static %}
+{% load umbrella_tags %}
+<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=9">
+<link rel="stylesheet" href="{% static 'umbrella360/style_refatorado.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'umbrella360/report_novo.css' %}?v=1">
+<script src="{% static 'umbrella360/theme-toggle.js' %}?v=2"></script>
+<script src="{% static 'umbrella360/table-sort.js' %}?v=1"></script>
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Unidade {{ unidade.id }} - Umbrella360</title>
+  </head>
+  <body>
+    <!-- Botão de alternância de tema -->
+    <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
+      <span class="theme-icon">◐</span> Noite de Verão
+    </button>
+    
+    <div class="header">
+      <h1>Detalhes da Unidade: {{ unidade.id }}</h1>
+      <div class="menu-buttons">
+        <a href="{% url 'lista_unidades' %}" class="btn btn-secondary">← Voltar à Lista</a>
+        <a href="{% url 'index' %}" class="btn btn-secondary">Página Inicial</a>
+      </div>
+    </div>
+
+    <main>
+      <!-- Informações Básicas da Unidade -->
+      <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
+        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-width: 1200px; width: 100%;">
+          
+          <!-- Cabeçalho da Unidade -->
+          <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 2rem; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+            <div style="font-size: 4rem;">
+              {% if unidade.cls == 'motorista' %}
+                👨‍💼
+              {% elif unidade.cls == 'veiculo' %}
+                🚛
+              {% else %}
+                📋
+              {% endif %}
+            </div>
+            <div>
+              <h2 style="margin: 0; color: #2c3e50;">{{ unidade.nm|default:unidade.id }}</h2>
+              <p style="margin: 0.5rem 0 0 0; color: #6c757d; font-size: 1.1rem;">
+                <strong>{{ unidade.cls|title }}</strong> - {{ unidade.empresa.nome }}
+              </p>
+              {% if unidade.marca %}
+                <p style="margin: 0.25rem 0 0 0; color: #495057;">
+                  <strong>Marca:</strong> {{ unidade.marca }}
+                </p>
+              {% endif %}
+              {% if unidade.placa %}
+                <p style="margin: 0.25rem 0 0 0; color: #495057;">
+                  <strong>Placa:</strong> {{ unidade.placa }}
+                </p>
+              {% endif %}
+            </div>
+            <div style="text-align: center;">
+              {% if stats_gerais.total_viagens > 0 %}
+                <div class="status-badge status-active">
+                  ✅ ATIVO
+                </div>
+              {% else %}
+                <div class="status-badge status-inactive">
+                  ⚠️ INATIVO
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- KPIs Principais -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="kpi-card kpi-quilometragem">
+              <h4>Total de Viagens</h4>
+              <p>{{ stats_gerais.total_viagens|default:0 }}</p>
+            </div>
+            <div class="kpi-card kpi-consumo">
+              <h4>Quilometragem Total</h4>
+              <p>{{ stats_gerais.total_quilometragem|floatformat:0|default:0 }} km</p>
+            </div>
+            <div class="kpi-card kpi-eficiencia">
+              <h4>Eficiência Média</h4>
+              <p>{{ stats_gerais.media_eficiencia|floatformat:2|default:0 }} km/L</p>
+            </div>
+            <div class="kpi-card kpi-custos">
+              <h4>Custo Total</h4>
+              <p>R$ {{ custo_total|floatformat:2|default:0 }}</p>
+            </div>
+          </div>
+
+          <!-- Métricas Detalhadas -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div class="metric-card">
+              <h5>Consumo Total</h5>
+              <p>{{ stats_gerais.total_consumo|floatformat:0|default:0 }} L</p>
+            </div>
+            {% if unidade.cls == 'veiculo' %}
+            <div class="metric-card">
+              <h5>Velocidade Média</h5>
+              <p>{{ stats_gerais.media_velocidade|floatformat:1|default:0 }} km/h</p>
+            </div>
+            <div class="metric-card">
+              <h5>RPM Médio</h5>
+              <p>{{ stats_gerais.media_rpm|floatformat:0|default:0 }}</p>
+            </div>
+            <div class="metric-card">
+              <h5>Temperatura Média</h5>
+              <p>{{ stats_gerais.media_temperatura|floatformat:1|default:0 }}°C</p>
+            </div>
+            {% endif %}
+            <div class="metric-card">
+              <h5>Emissões CO2</h5>
+              <p>{{ stats_gerais.total_emissoes|floatformat:0|default:0 }} g</p>
+            </div>
+          </div>
+
+          <!-- Comparação com Média do Sistema -->
+          <div class="comparison-section">
+            <h4>Comparação com Média do Sistema</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+              <div class="comparison-item">
+                <p>Esta Unidade</p>
+                <p class="comparison-value">{{ stats_gerais.media_eficiencia|floatformat:2|default:0 }} km/L</p>
+              </div>
+              <div class="comparison-item">
+                <p>Média de {{ unidade.cls|title }}s</p>
+                <p class="comparison-value">{{ media_sistema|floatformat:2 }} km/L</p>
+              </div>
+            </div>
+            <div class="performance-indicator">
+              {% if stats_gerais.media_eficiencia > media_sistema %}
+                <span class="indicator-good">📈 Acima da Média (+{{ stats_gerais.media_eficiencia|sub:media_sistema|floatformat:2 }} km/L)</span>
+              {% elif stats_gerais.media_eficiencia < media_sistema %}
+                <span class="indicator-poor">📉 Abaixo da Média (-{{ media_sistema|sub:stats_gerais.media_eficiencia|floatformat:2 }} km/L)</span>
+              {% else %}
+                <span class="indicator-average">📊 Na Média do Sistema</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estatísticas por Período -->
+      {% if stats_por_periodo %}
+      <h3 class="h3">Desempenho por Período</h3>
+      <table class="sortable-table">
+        <thead>
+          <tr>
+            <th>Período</th>
+            <th>Viagens</th>
+            <th>Quilometragem (km)</th>
+            <th>Consumo (L)</th>
+            <th>Eficiência Média (km/L)</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for periodo in stats_por_periodo %}
+          <tr>
+            <td><strong>{{ periodo.período|title }}</strong></td>
+            <td>{{ periodo.viagens_periodo }}</td>
+            <td>{{ periodo.quilometragem_periodo|floatformat:0|default:0 }}</td>
+            <td>{{ periodo.consumo_periodo|floatformat:0|default:0 }}</td>
+            <td>
+              <span class="efficiency-indicator" data-efficiency="{{ periodo.eficiencia_periodo }}">
+                {{ periodo.eficiencia_periodo|floatformat:2|default:0 }}
+              </span>
+            </td>
+            <td>
+              {% if periodo.eficiencia_periodo > media_sistema %}
+                <span class="status-excellent">🟢 Excelente</span>
+              {% elif periodo.eficiencia_periodo > 2.0 %}
+                <span class="status-good">🟡 Bom</span>
+              {% else %}
+                <span class="status-poor">🔴 Precisa Melhorar</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+      <!-- Histórico de Viagens Recentes -->
+      {% if viagens %}
+      <h3 class="h3">Últimas Viagens ({{ total_viagens }} no total)</h3>
+      <table class="sortable-table">
+        <thead>
+          <tr>
+            <th>Período</th>
+            <th>Quilometragem (km)</th>
+            <th>Consumo (L)</th>
+            <th>Eficiência (km/L)</th>
+            <th>Horas Motor</th>
+            {% if unidade.cls == 'veiculo' %}
+            <th>Velocidade Média</th>
+            <th>RPM Médio</th>
+            <th>Temperatura</th>
+            {% endif %}
+            <th>Emissões CO2</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for viagem in viagens %}
+          <tr>
+            <td>{{ viagem.período|title }}</td>
+            <td>{{ viagem.quilometragem|floatformat:2 }}</td>
+            <td>{{ viagem.Consumido }}</td>
+            <td>
+              <span class="efficiency-indicator" data-efficiency="{{ viagem.Quilometragem_média }}">
+                {{ viagem.Quilometragem_média|floatformat:2 }}
+              </span>
+            </td>
+            <td>{{ viagem.Horas_de_motor|default:"-" }}</td>
+            {% if unidade.cls == 'veiculo' %}
+            <td>{{ viagem.Velocidade_média|floatformat:1|default:"-" }} km/h</td>
+            <td>{{ viagem.RPM_médio|floatformat:0|default:"-" }}</td>
+            <td>{{ viagem.Temperatura_média|floatformat:1|default:"-" }}°C</td>
+            {% endif %}
+            <td>{{ viagem.Emissões_CO2|floatformat:1|default:"-" }} g</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      
+      {% if total_viagens > 20 %}
+      <div style="text-align: center; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+        <p style="margin: 0; color: #6c757d;">
+          <em>Mostrando apenas as 20 viagens mais recentes. Total de viagens: {{ total_viagens }}</em>
+        </p>
+      </div>
+      {% endif %}
+      {% else %}
+      <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 12px; margin: 2rem 0;">
+        <h4 style="color: #6c757d; margin-bottom: 1rem;">📋 Nenhuma Viagem Registrada</h4>
+        <p style="color: #6c757d; margin: 0;">Esta unidade ainda não possui dados de viagens registrados no sistema.</p>
+      </div>
+      {% endif %}
+
+    </main>
+    
+    <footer class="footer">
+      <p>&copy; 2025 Umbrella360. Detalhes da Unidade {{ unidade.id }}</p>
+    </footer>
+
+    <style>
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    
+    .status-active {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+    
+    .status-inactive {
+        background: linear-gradient(135deg, #dc3545, #e83e8c);
+        color: white;
+    }
+    
+    .metric-card {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid #dee2e6;
+    }
+    
+    .metric-card h5 {
+        margin: 0 0 0.5rem 0;
+        color: #495057;
+        font-size: 0.9rem;
+    }
+    
+    .metric-card p {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    
+    .comparison-section {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+    }
+    
+    .comparison-item p:first-child {
+        margin: 0;
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .comparison-value {
+        margin: 0.5rem 0 0 0 !important;
+        font-size: 1.8rem !important;
+        font-weight: bold !important;
+    }
+    
+    .performance-indicator {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .indicator-good {
+        color: #d4edda;
+        font-weight: bold;
+    }
+    
+    .indicator-poor {
+        color: #f8d7da;
+        font-weight: bold;
+    }
+    
+    .indicator-average {
+        color: #fff3cd;
+        font-weight: bold;
+    }
+    
+    .kpi-eficiencia {
+        --bg-start: #6f42c1;
+        --bg-end: #e83e8c;
+    }
+    
+    .kpi-custos {
+        --bg-start: #fd7e14;
+        --bg-end: #dc3545;
+    }
+    </style>
+  </body>
+</html>

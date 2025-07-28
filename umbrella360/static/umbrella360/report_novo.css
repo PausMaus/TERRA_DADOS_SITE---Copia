@@ -1,0 +1,314 @@
+/* Estilos específicos para o Relatório Unificado Umbrella360 */
+
+/* Container dos filtros */
+.filters-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.filters-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.filter-group select {
+    padding: 0.75rem;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.95);
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.filter-group select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+}
+
+/* Botão de aplicar filtros */
+.filters-form .btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.filters-form .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+}
+
+/* Cards de KPI */
+.kpi-card {
+    background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    transition: transform 0.3s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-5px);
+}
+
+.kpi-card h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.kpi-card p {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Cores específicas para diferentes tipos de KPI */
+.kpi-quilometragem {
+    --bg-start: #3498db;
+    --bg-end: #2980b9;
+}
+
+.kpi-consumo {
+    --bg-start: #e74c3c;
+    --bg-end: #c0392b;
+}
+
+.kpi-unidades {
+    --bg-start: #27ae60;
+    --bg-end: #229954;
+}
+
+.kpi-empresas {
+    --bg-start: #9b59b6;
+    --bg-end: #8e44ad;
+}
+
+.kpi-velocidade {
+    --bg-start: #f39c12;
+    --bg-end: #e67e22;
+}
+
+.kpi-rpm {
+    --bg-start: #1abc9c;
+    --bg-end: #16a085;
+}
+
+.kpi-emissoes {
+    --bg-start: #e67e22;
+    --bg-end: #d35400;
+}
+
+/* Seção de análise de eficiência */
+.efficiency-analysis {
+    background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.efficiency-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.efficiency-item p:first-child {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.efficiency-item p:last-child {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+.efficiency-item p.economy {
+    color: #2ecc71;
+}
+
+/* Tabelas melhoradas */
+.sortable-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.sortable-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.sortable-table thead th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.sortable-table tbody tr {
+    transition: background-color 0.3s ease;
+}
+
+.sortable-table tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.sortable-table tbody tr:hover {
+    background: #e3f2fd;
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.sortable-table tbody td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Seções de título */
+.h3 {
+    color: #2c3e50;
+    border-bottom: 3px solid #3498db;
+    padding-bottom: 0.5rem;
+    margin: 2rem 0 1rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .filters-form {
+        grid-template-columns: 1fr;
+    }
+    
+    .kpi-card p {
+        font-size: 1.5rem;
+    }
+    
+    .efficiency-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .sortable-table {
+        font-size: 0.85rem;
+    }
+    
+    .sortable-table thead th,
+    .sortable-table tbody td {
+        padding: 0.5rem;
+    }
+}
+
+/* Estados de carregamento */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: " (Carregando...)";
+    color: #666;
+    font-style: italic;
+}
+
+/* Animações */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sortable-table,
+.kpi-card {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Indicadores de status */
+.status-excellent {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.status-good {
+    color: #f39c12;
+    font-weight: bold;
+}
+
+.status-poor {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+/* Tooltips e ajuda */
+.tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.tooltip::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 1000;
+}
+
+.tooltip:hover::before {
+    opacity: 1;
+}

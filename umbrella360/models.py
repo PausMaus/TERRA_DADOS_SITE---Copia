@@ -161,3 +161,34 @@ class Unidade(models.Model):
         verbose_name_plural = "Unidades"
         ordering = ['id']
 
+
+
+class Viagem_Base(models.Model):
+    unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE, related_name='viagens')
+    quilometragem = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00, verbose_name="Quilometragem Atual (km)", blank=True, null=True
+    )
+    Consumido = models.PositiveIntegerField(
+        default=0.00, verbose_name="Combustível Total (litros)", blank=True, null=True
+    )
+    Quilometragem_média = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0.00, verbose_name="Média de Consumo (km/l)", blank=True, null=True
+    )
+    Horas_de_motor = models.CharField(
+        default=0.00, verbose_name="Horas de Motor", blank=True, null=True, max_length=100
+    )
+    Velocidade_média = models.FloatField(
+     default=0.00, verbose_name="Velocidade Média (km/h)", blank=True, null=True
+    )
+    RPM_médio = models.FloatField(
+     default=0.00, verbose_name="RPM Médio do Motor", blank=True, null=True
+    )
+    Temperatura_média = models.FloatField(
+     default=0.00, verbose_name="Temperatura Média (°C)", blank=True, null=True
+    )
+    Emissões_CO2 = models.FloatField(
+     default=0.00, verbose_name="Emissões de CO2 (g/km)", blank=True, null=True
+    )
+    período = models.CharField(
+        max_length=20, default="Maio", verbose_name="Período de Referência", blank=True, null=True
+    )

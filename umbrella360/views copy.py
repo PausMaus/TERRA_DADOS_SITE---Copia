@@ -50,16 +50,28 @@ def aplicar_filtro_mes(queryset, mes_selecionado):
 def aplicar_filtro_combustivel(queryset, filtro_combustivel):
     """Aplica filtro de combustível baseado no tipo selecionado usando configuração dinâmica"""
     if filtro_combustivel == 'sem_zero':
-        # Remove apenas zeros
-        return queryset.exclude(Consumido=0)
+        # Remove apenas zeros de consumo E média
+        return queryset.exclude(Consumido=0).exclude(Quilometragem_média=0)
     elif filtro_combustivel == 'normais':
-        # Valores normais: maior que 0 e menor ou igual ao limite configurado
+        # Valores normais: 
+        # - Consumo total: maior que 0 e menor ou igual ao limite configurado
+        # - Média de consumo: entre 0.5 e 3.5 km/l (valores realistas para caminhões)
         consumo_max = Config.consumo_maximo_normal()
-        return queryset.filter(Consumido__gt=0, Consumido__lte=consumo_max)
+        return queryset.filter(
+            Consumido__gt=0, 
+            Consumido__lte=consumo_max,
+            Quilometragem_média__gt=0.5,  # Mínimo realista para caminhões
+            Quilometragem_média__lte=3.5   # Máximo realista para caminhões
+        )
     elif filtro_combustivel == 'erros':
-        # Apenas erros de leitura: maior que o limite configurado
+        # Erros de leitura: consumo muito alto OU média muito alta/baixa
         consumo_limite = Config.consumo_limite_erro()
-        return queryset.filter(Consumido__gt=consumo_limite)
+        return queryset.filter(
+            models.Q(Consumido__gt=consumo_limite) |  # Consumo excessivo
+            models.Q(Quilometragem_média__gt=8.0) |   # Média muito alta (suspeita)
+            models.Q(Quilometragem_média=0) |         # Média zero
+            models.Q(Quilometragem_média__lt=0.5)     # Média muito baixa
+        )
     else:
         # 'todos' - inclui todos os valores
         return queryset

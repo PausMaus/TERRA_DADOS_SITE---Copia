@@ -1,0 +1,194 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=9">
+<link rel="stylesheet" href="{% static 'umbrella360/style_refatorado.css' %}?v=2">
+<script src="{% static 'umbrella360/theme-toggle.js' %}?v=2"></script>
+<script src="{% static 'umbrella360/table-sort.js' %}?v=1"></script>
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Umbrella360</title>
+  </head>
+  <body>
+    <!-- Botão de alternância de tema -->
+    <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
+      <span class="theme-icon">◐</span> Noite de Verão
+    </button>
+    
+    <div class="header">
+      <h1>Umbrella360</h1>
+        <div class="menu-buttons">
+          <a href="{% url 'index' %}" class="btn btn-secondary">Página Inicial</a>
+          <a href="{% url 'report_novo' %}" class="btn btn-secondary">Relatório</a>
+          <a href="{% url 'lista_unidades' %}" class="btn btn-primary">Lista de Unidades</a>
+        </div>
+    </div>
+
+    <main>
+      <!-- Informações Gerais -->
+      <div style="background: rgba(255, 255, 255, 0.95); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        <h3 style="margin-bottom: 1rem; color: #2c3e50;">📋 Resumo do Sistema</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
+            <h4 style="margin: 0; font-size: 2rem;">{{ total_unidades }}</h4>
+            <p style="margin: 0.5rem 0 0 0;">Total de Unidades</p>
+          </div>
+          <div style="background: linear-gradient(135deg, #27ae60, #229954); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
+            <h4 style="margin: 0; font-size: 2rem;">{{ total_empresas }}</h4>
+            <p style="margin: 0.5rem 0 0 0;">Empresas Cadastradas</p>
+          </div>
+          <div style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
+            <h4 style="margin: 0; font-size: 2rem;">{{ motoristas_count }}</h4>
+            <p style="margin: 0.5rem 0 0 0;">Motoristas</p>
+          </div>
+          <div style="background: linear-gradient(135deg, #f39c12, #e67e22); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
+            <h4 style="margin: 0; font-size: 2rem;">{{ veiculos_count }}</h4>
+            <p style="margin: 0.5rem 0 0 0;">Veículos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Busca Simples -->
+      <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+        <label for="busca-rapida" style="font-weight: 600; color: #495057; display: block; margin-bottom: 0.5rem;">🔍 Busca Rápida:</label>
+        <input type="text" id="busca-rapida" placeholder="Digite nome, ID, placa ou empresa..." onkeyup="buscarUnidades()" style="width: 100%; padding: 0.75rem; border: 2px solid #ced4da; border-radius: 6px; font-size: 1rem;">
+        <p style="margin: 0.5rem 0 0 0; color: #6c757d; font-size: 0.9rem;">💡 Clique no nome de qualquer unidade para ver seus detalhes completos</p>
+      </div>
+
+      <!-- Contador de Resultados -->
+      <div id="contador-resultados" class="results-counter" style="background: #e9ecef; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; color: #495057;">
+         Mostrando <strong id="total-visivel">{{ total_unidades }}</strong> de <strong>{{ total_unidades }}</strong> unidades
+      </div>
+
+      <!-- Tabela de Unidades -->
+      <table border="1" cellpadding="8" cellspacing="0" class="sortable-table" id="tabela-unidades" style="width: 100%; margin-bottom: 2rem;">
+        <thead>
+          <tr>
+            <th style="background: #34495e; color: white;">ID/Código</th>
+            <th style="background: #34495e; color: white;">Nome/Descrição</th>
+            <th style="background: #34495e; color: white;">Tipo</th>
+            <th style="background: #34495e; color: white;">Empresa</th>
+            <th style="background: #34495e; color: white;">Marca</th>
+            <th style="background: #34495e; color: white;">Placa</th>
+            <th style="background: #34495e; color: white;">Eficiência Média</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for unidade in todas_unidades %}
+          <tr data-busca="{{ unidade.id|lower }} {{ unidade.nm|lower }} {{ unidade.placa|lower|default:'' }} {{ unidade.empresa.nome|lower }}" style="transition: all 0.3s ease;">
+            <td>
+              <a href="{% url 'detalhes_unidade' unidade.id %}" class="link-unidade" title="Clique para ver detalhes completos">
+                <strong style="color: #007bff;">{{ unidade.id }}</strong>
+              </a>
+            </td>
+            <td>
+              <a href="{% url 'detalhes_unidade' unidade.id %}" class="link-unidade" style="color: #007bff; text-decoration: none; font-weight: 500;">
+                {{ unidade.nm|default:unidade.id }}
+              </a>
+            </td>
+            <td style="text-align: center;">
+              {% if unidade.cls == 'Motorista' %}
+                <span style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                  Motorista
+                </span>
+              {% elif unidade.cls == 'Veículo' %}
+                <span style="background: linear-gradient(135deg, #007bff, #6610f2); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                  Veículo
+                </span>
+              {% else %}
+                <span style="background: linear-gradient(135deg, #6c757d, #495057); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                  {{ unidade.cls|title }}
+                </span>
+              {% endif %}
+            </td>
+            <td style="font-weight: 500;">{{ unidade.empresa.nome }}</td>
+            <td>{{ unidade.marca|default:"<span style='color: #6c757d;'>-</span>"|safe }}</td>
+            <td>{{ unidade.placa|default:"<span style='color: #6c757d;'>-</span>"|safe }}</td>
+            <td style="text-align: center;">
+              {% if unidade.eficiencia_media %}
+                {% if unidade.eficiencia_media >= 3 %}
+                  <span style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">
+                    {{ unidade.eficiencia_media|floatformat:2 }} km/L
+                  </span>
+                {% elif unidade.eficiencia_media >= 2 %}
+                  <span style="background: linear-gradient(135deg, #ffc107, #fd7e14); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">
+                    {{ unidade.eficiencia_media|floatformat:2 }} km/L
+                  </span>
+                {% else %}
+                  <span style="background: linear-gradient(135deg, #dc3545, #e83e8c); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">
+                    {{ unidade.eficiencia_media|floatformat:2 }} km/L
+                  </span>
+                {% endif %}
+              {% else %}
+                <span style="color: #6c757d; font-style: italic;">N/A</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" style="text-align: center; padding: 3rem; color: #6c757d; font-style: italic;">
+              <strong>Nenhuma unidade cadastrada no sistema.</strong>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </main>
+    
+    <footer class="footer">
+      <p>&copy; 2025 Umbrella360. Sistema de Gerenciamento de Unidades.</p>
+      <p><em>"Lista completa de todas as unidades cadastradas no sistema"</em></p>
+    </footer>
+
+    <style>
+    .link-unidade:hover {
+        background: rgba(0, 123, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+    
+    .hidden-row {
+        display: none !important;
+    }
+    
+    tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    </style>
+
+    <script>
+    function buscarUnidades() {
+        const filtro = document.getElementById('busca-rapida').value.toLowerCase();
+        const tabela = document.getElementById('tabela-unidades');
+        const linhas = tabela.querySelectorAll('tbody tr');
+        let contadorVisivel = 0;
+        
+        linhas.forEach(linha => {
+            const textoBusca = linha.getAttribute('data-busca');
+            
+            if (!filtro || textoBusca.includes(filtro)) {
+                linha.classList.remove('hidden-row');
+                contadorVisivel++;
+            } else {
+                linha.classList.add('hidden-row');
+            }
+        });
+        
+        // Atualizar contador
+        document.getElementById('total-visivel').textContent = contadorVisivel;
+        
+        const contador = document.getElementById('contador-resultados');
+        contador.innerHTML = `📊 Mostrando <strong>${contadorVisivel}</strong> de <strong>${linhas.length}</strong> unidades${filtro ? ` (filtradas por: "${filtro}")` : ''}`;
+    }
+    
+    // Debug inicial
+    document.addEventListener('DOMContentLoaded', function() {
+        const linhas = document.querySelectorAll('#tabela-unidades tbody tr');
+        console.log('Total de unidades carregadas na tabela:', linhas.length);
+    });
+    </script>
+  </body>
+</html>
