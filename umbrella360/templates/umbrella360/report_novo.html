@@ -141,7 +141,6 @@
           <!-- KPIs Principais -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
             <div class="kpi-card kpi-quilometragem">
-              <div class="kpi-icon-placeholder"></div>
               <h4>Quilometragem Total</h4>
               <p class="kpi-value">{{ total_quilometragem|floatformat:0|default:"0" }}</p>
               <span class="kpi-unit">km</span>
@@ -149,7 +148,6 @@
             </div>
             
             <div class="kpi-card kpi-consumo">
-              <div class="kpi-icon-placeholder"></div>
               <h4>Consumo de Combustível</h4>
               <p class="kpi-value">{{ total_consumo|floatformat:0|default:"0" }}</p>
               <span class="kpi-unit">L</span>
@@ -157,7 +155,6 @@
             </div>
             
             <div class="kpi-card kpi-unidades">
-              <div class="kpi-icon-placeholder"></div>
               <h4>Unidades Monitoradas</h4>
               <p class="kpi-value">{{ total_unidades|default:"0" }}</p>
               <span class="kpi-unit">unidades</span>
@@ -168,32 +165,28 @@
           <!-- KPIs Secundários -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
             <div class="kpi-card kpi-velocidade">
-              <div class="kpi-icon-placeholder-small"></div>
-              <h5>Velocidade Média</h5>
+              <h4>Velocidade Média</h4>
               <p class="kpi-value-small">{{ velocidade_media|floatformat:1|default:"0.0" }}</p>
               <span class="kpi-unit">km/h</span>
               <div class="kpi-indicator kpi-velocidade-indicator"></div>
             </div>
             
             <div class="kpi-card kpi-rpm">
-              <div class="kpi-icon-placeholder-small"></div>
-              <h5>RPM Médio</h5>
+              <h4>RPM Médio</h4>
               <p class="kpi-value-small">{{ rpm_medio|floatformat:0|default:"0" }}</p>
               <span class="kpi-unit">rpm</span>
               <div class="kpi-indicator kpi-rpm-indicator"></div>
             </div>
             
             <div class="kpi-card kpi-eficiencia">
-              <div class="kpi-icon-placeholder-small"></div>
-              <h5>Eficiência Média</h5>
+              <h4>Eficiência Média</h4>
               <p class="kpi-value-small">{{ media_km_atual|floatformat:2|default:"0.00" }}</p>
               <span class="kpi-unit">km/L</span>
               <div class="kpi-indicator kpi-eficiencia-indicator"></div>
             </div>
             
             <div class="kpi-card kpi-emissoes">
-              <div class="kpi-icon-placeholder-small"></div>
-              <h5>Emissões CO2</h5>
+              <h4>Emissões CO2</h4>
               <p class="kpi-value-small">{{ total_emissoes|floatformat:1|default:"0.0" }}</p>
               <span class="kpi-unit">t</span>
               <div class="kpi-indicator kpi-emissoes-indicator"></div>
