@@ -3,11 +3,15 @@ from umbrella360.FERRAMENTAS.umbrellab import Wialon
 from umbrella360.FERRAMENTAS.umbrellab import base
 from umbrella360.FERRAMENTAS.umbrellab.Wialon import *
 from umbrella360.FERRAMENTAS.umbrellab.base import  search_units, unidades_simples
-from umbrella360.models import Empresa, Unidade, Viagem_CAM, Caminhao
+from umbrella360.models import Empresa, Unidade, Viagem_Base, Viagem_CAM, Caminhao
 import json
 import pandas as pd
 import time
 from termcolor import colored
+from datetime import datetime
+from decimal import Decimal
+from dataclasses import dataclass
+
 
 
 deposito = rf"C:\TERRA DADOS\laboratorium\Site\terra_dados_site\TERRA_DADOS_SITE\umbrella360\deposito"
@@ -27,9 +31,16 @@ Tokens_Wialon = {
 class Command(BaseCommand):
     help = 'Importa dados da API Wialon'
     def handle(self, *args, **kwargs):
-
+        start_time = datetime.now()
+        self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
+        
         self.principal(WIALON_TOKEN_BRAS, "CPBRASCELL")
         #self.principal(WIALON_TOKEN_PLAC, "PLACIDO")
+        
+        end_time = datetime.now()
+        execution_time = end_time - start_time
+        self.stdout.write(self.style.SUCCESS(f'Comando concluído às {end_time.strftime("%H:%M:%S")}'))
+        self.stdout.write(self.style.SUCCESS(f'Tempo total de execução: {execution_time}'))
 
 
     def principal(self, token, empresa_nome):
@@ -44,9 +55,13 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
                 return
 
+        self.atualiza_unidades(sid, empresa_nome)
 
         #processa as unidades
-        self.process_units(sid)
+        #self.process_units(sid)
+
+        #self.comparar_unidades_caminhoes()
+
 
 
 
@@ -109,6 +124,21 @@ class Command(BaseCommand):
                     'empresa': empresa
                 }
             )
+            #adiciona também os motoristas
+
+        motoristas = Wialon.motoristas_simples2(sid)
+        df_motoristas = pd.DataFrame(motoristas)
+        print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
+        print(f'Motoristas: {df_motoristas}')
+
+        for motorista in df_motoristas.itertuples(index=False):
+            motorista_id = motorista.id
+            motorista_nome = motorista.nm
+            print(f'Motorista: {motorista_nome} | ID: {motorista_id}')
+            
+
+
+
 
 
 
@@ -119,19 +149,152 @@ class Command(BaseCommand):
         unidades_db_ids = [unidade.id for unidade in unidades_db]
         print(f'Unidades no banco de dados:' , colored(f'{len(unidades_db_ids)}', 'green'))
 
-
-        #separa as 10 primeiras unidades para teste
-        unidades_db = unidades_db[:3]
+        processamento_df = pd.DataFrame()
 
 
-        # Coleta dados de relatório para 7 dias
+        #separa as unidades pertencentes a empresa
+        if unidades_db_ids:
+            unidades_db = unidades_db.filter(empresa__nome='CPBRASCELL')
+
+        #pega as primmeiras 10 unidades
+        unidades_db = unidades_db[:5]
+
+        # Coleta dados de relatório para 1 dia
+        processamento_df = self.retrieve_unit_data(sid, unidades_db, processamento_df, tempo_dias=1, periodo='Ontem')
+
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+
+        # Atualiza ou cria as viagens no model Viagem_Base
+        #self.update_or_create_trip(processamento_df)
+
+
+        #coleta dados de relatorio para 7 dias
+        #processamento_df = self.retrieve_unit_data(sid, unidades_db, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+
+        #procecessa os valores numéricos
+
+        # Atualiza ou cria as viagens no model Viagem_Base
+        #self.update_or_create_trip(processamento_df)
+
+
+        #coleta dados de relatorio para 30 dias
+        #processamento_df = self.retrieve_unit_data(sid, unidades_db, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+
+        # Atualiza ou cria as viagens no model Viagem_Base
+        self.update_or_create_trip(processamento_df)
+        print(processamento_df)
+
+    def update_or_create_trip(self, processamento_df):
+        if not processamento_df.empty:
+            for index, row in processamento_df.iterrows():
+                try:
+                    unidade_instance = Unidade.objects.get(nm=row['Grouping'])
+                    
+                    # Processa os valores numericos
+                    quilometragem = self.processar_valor_numerico(row.get('Quilometragem', '0'))
+                    consumo = self.processar_valor_numerico(row.get('Consumido por AbsFCS', '0'))
+                    km_media = self.processar_valor_numerico(row.get('Quilometragem média por unidade de combustível por AbsFCS', '0'))
+                    velocidade_media = self.processar_valor_numerico(row.get('Velocidade média', '0'))
+                    rpm_medio = self.processar_valor_numerico(row.get('RPM médio do motor', '0'))
+                    temperatura_media = self.processar_valor_numerico(row.get('Temperatura média', '0'))
+                    co2 = self.processar_valor_numerico(row.get('Emissões de CO2', '0'))
+
+
+                    try:
+                        quilometragem_value = float(quilometragem)
+                        consumo_value = float(consumo)
+                        km_media_value = float(km_media)
+                        velocidade_media_value = float(velocidade_media)
+                        rpm_medio_value = float(rpm_medio)
+                        temperatura_media_value = float(temperatura_media)
+                        co2_value = float(co2)
+                    except (ValueError, TypeError):
+                        km_media_value = 0.00
+                        velocidade_media_value = 0.00
+                        rpm_medio_value = 0.00
+                        temperatura_media_value = 0.00
+                        co2_value = 0.00
+
+                    
+                    Viagem_Base.objects.update_or_create(
+                        unidade=unidade_instance,
+                        período=row['periodo'],
+                        defaults={
+                            'quilometragem': quilometragem_value,
+                            'Consumido': consumo_value,
+                            'Quilometragem_média': km_media_value,
+                            'Velocidade_média': velocidade_media_value,
+                            'RPM_médio': rpm_medio_value,
+                            'Temperatura_média': temperatura_media_value,
+                            'Emissões_CO2': co2_value,
+
+                        }
+                    )
+                    self.stdout.write(self.style.SUCCESS(f'Viagem atualizada ou criada para a unidade {row["Grouping"]} no período {row["periodo"]} com quilometragem {quilometragem_value}'))
+                
+                except Unidade.DoesNotExist:
+                    self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
+                    continue
+
+    def retrieve_unit_data(self, sid, unidades_db, processamento_df, tempo_dias, periodo):
         for unidade in unidades_db:
             unidade_id = unidade.id
             unidade_nome = unidade.nm
-            self.stdout.write(f'Processando unidade: {unidade_nome} (ID: {unidade_id})')
+            #self.stdout.write(f'Processando unidade: {unidade_nome} (ID: {unidade_id})')
 
-            # Coleta dados de relatório para 7 dias
-            Wialon.Colheitadeira_JSON(sid, unidade_id, id_relatorio=59, tempo_dias=7, periodo='Ultimos 7 dias')
+            # Coleta dados de relatório para 1 dia
+            relatorio = Wialon.Colheitadeira_JSON(sid, unidade_id, id_relatorio=59, tempo_dias=tempo_dias, periodo=periodo)
+
+            processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
             Wialon.clean_up_result(sid)
             time.sleep(1)
+        return processamento_df
+
+
+
+    def processar_valor_numerico(self, valor_str, unidade='', valor_padrao=0.0):
+        """
+        Processa valores string para numérico, removendo unidades e tratando casos especiais
+        """
+        try:
+            # Verifica valores nulos ou vazios
+            if pd.isna(valor_str) or valor_str == '-----' or valor_str == '' or valor_str is None:
+                return Decimal(str(valor_padrao))
+            
+            # Converte para string se não for
+            valor_str = str(valor_str).strip()
+            
+            # Verifica se é vazio após strip
+            if not valor_str:
+                return Decimal(str(valor_padrao))
+            
+            # Remove unidades de medida comuns
+            valor_limpo = valor_str.replace(' km', '').replace(' l', '').replace(' km/h', '').replace(' °C', '').replace(' t', '').replace(' g/km', '').replace(' rpm', '')
+            valor_limpo = valor_limpo.replace(',', '.').strip()
+            
+            # Verifica se ainda tem conteúdo válido
+            if not valor_limpo or valor_limpo == '.' or valor_limpo == '-':
+                return Decimal(str(valor_padrao))
+            
+            # Remove caracteres não numéricos (exceto ponto e sinal negativo)
+            import re
+            valor_limpo = re.sub(r'[^\d\.\-]', '', valor_limpo)
+            
+            # Verifica se o valor resultante é válido
+            if not valor_limpo or valor_limpo == '.' or valor_limpo == '-':
+                return Decimal(str(valor_padrao))
+            
+            # Converte para Decimal
+            decimal_value = Decimal(valor_limpo)
+            return decimal_value
+            
+        except (ValueError, TypeError, decimal.InvalidOperation) as e:
+            # Log do erro para debug
+            self.stdout.write(self.style.WARNING(f'Erro ao processar valor "{valor_str}": {e}. Usando valor padrão {valor_padrao}'))
+            return Decimal(str(valor_padrao))

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Motorista, Caminhao, Viagem_CAM, Viagem_MOT, ConfiguracaoSistema, Empresa, Unidade
+from .models import Motorista, Caminhao, Viagem_CAM, Viagem_MOT, ConfiguracaoSistema, Empresa, Unidade, Viagem_Base
 
 # Register your models here.
 
@@ -80,4 +80,16 @@ class EmpresaAdmin(admin.ModelAdmin):
 @admin.register(Unidade)
 class UnidadeAdmin(admin.ModelAdmin):
     list_display = ('nm', 'cls', 'placa', 'marca')
+    list_filter = ('cls', 'marca', 'empresa')
     ordering = ('nm',)
+
+
+
+@admin.register(Viagem_Base)
+class ViagemBaseAdmin(admin.ModelAdmin):
+    list_display = ('unidade', 'quilometragem', 'Consumido', 'Quilometragem_média',
+                    'Horas_de_motor', 'Velocidade_média', 'RPM_médio',
+                    'Temperatura_média', 'Emissões_CO2', 'período')
+    list_filter = ('período',  'Quilometragem_média','unidade__empresa')
+    list_editable = ('quilometragem', 'Consumido')
+    

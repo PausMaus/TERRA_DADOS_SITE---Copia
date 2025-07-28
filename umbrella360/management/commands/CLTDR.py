@@ -3,11 +3,17 @@ from umbrella360.FERRAMENTAS.umbrellab import Wialon
 from umbrella360.FERRAMENTAS.umbrellab import base
 from umbrella360.FERRAMENTAS.umbrellab.Wialon import *
 from umbrella360.FERRAMENTAS.umbrellab.base import  search_units, unidades_simples
-from umbrella360.models import Empresa, Unidade, Viagem_CAM, Caminhao
+from umbrella360.models import Empresa, Unidade, Viagem_Base, Viagem_CAM, Caminhao
 import json
 import pandas as pd
 import time
 from termcolor import colored
+from datetime import datetime
+from decimal import Decimal
+from dataclasses import dataclass
+from tqdm import tqdm
+import decimal
+
 
 
 deposito = rf"C:\TERRA DADOS\laboratorium\Site\terra_dados_site\TERRA_DADOS_SITE\umbrella360\deposito"
@@ -27,9 +33,16 @@ Tokens_Wialon = {
 class Command(BaseCommand):
     help = 'Importa dados da API Wialon'
     def handle(self, *args, **kwargs):
-
+        start_time = datetime.now()
+        self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
+        
         self.principal(WIALON_TOKEN_BRAS, "CPBRASCELL")
-        #self.principal(WIALON_TOKEN_PLAC, "PLACIDO")
+        self.principal(WIALON_TOKEN_PLAC, "PLACIDO")
+        
+        end_time = datetime.now()
+        execution_time = end_time - start_time
+        self.stdout.write(self.style.SUCCESS(f'Comando concluído às {end_time.strftime("%H:%M:%S")}'))
+        self.stdout.write(self.style.SUCCESS(f'Tempo total de execução: {execution_time}'))
 
 
     def principal(self, token, empresa_nome):
@@ -44,13 +57,20 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
                 return
 
+        #self.atualiza_unidades(sid, empresa_nome)
+
+        #busca os relatorios
+        print(Wialon.buscadora_reports(sid))
+
 
         #processa as unidades
-        self.process_units(sid)
+        if empresa_nome == "CPBRASCELL":
 
+            self.process_units_CP(sid)
 
+        elif empresa_nome == "PLACIDO":
 
-
+            self.process_units_PLAC(sid)
 
 
         # Encerra a sessão Wialon
@@ -94,6 +114,8 @@ class Command(BaseCommand):
             if not empresa:
                 self.stdout.write(self.style.ERROR(f'Empresa {empresa_nome} não encontrada no banco de dados.'))
                 return
+            if empresa.nome == 'PLACIDO':
+                marca = 'DAF'
 
             print(f'Unidade: {placa} | ID: {unidade_id} | Restante do nome: {restante_nome} | Marca: {marca} | Classe: {cls} | Empresa: {empresa.nome}')
 
@@ -109,338 +131,220 @@ class Command(BaseCommand):
                     'empresa': empresa
                 }
             )
+            #adiciona também os motoristas
+
+        motoristas = Wialon.motoristas_simples2(sid)
+        df_motoristas = pd.DataFrame(motoristas)
+        print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
+        print(f'Motoristas: {df_motoristas}')
+        for motorista in df_motoristas.itertuples(index=False):
+            motorista_id = motorista.driver_id
+            motorista_nome = motorista.driver_name
+            cls = 'Motorista'
+            empresa = Empresa.objects.filter(nome=empresa_nome).first()
+            if not empresa:
+                self.stdout.write(self.style.ERROR(f'Empresa {empresa_nome} não encontrada no banco de dados.'))
+                return
+            
+            print(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
+
+            # Atualiza o motorista no banco de dados
+            Unidade.objects.update_or_create(
+                id=motorista_id,
+                defaults={
+                    'nm': motorista_nome,
+                    'cls': cls,
+                    'empresa': empresa,
+                }
+            )
 
 
 
-    def process_units(self, sid):
-        """Função para executar a coleta de dados de unidades por relatórios"""
-        # Recupera as unidades do banco de dados
+
+    def process_units_CP(self, sid):
+        # CAMINHOES BRASCELL#######################
         unidades_db = Unidade.objects.all()
         unidades_db_ids = [unidade.id for unidade in unidades_db]
-        print(f'Unidades no banco de dados:', colored(f'{len(unidades_db_ids)}', 'green'))
+        if unidades_db_ids:
+            unidades_db = unidades_db.filter(empresa__nome='CPBRASCELL')
+            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
 
-        # Separa as 10 primeiras unidades para teste
-        unidades_db = unidades_db[:10]  # Aumentei para 10 para ver mais casos
-        
-        contador_sucesso = 0
-        contador_erro = 0
-        contador_sem_dados = 0
-        
-        # Lista para armazenar todos os DataFrames
-        lista_dataframes = []
+        processamento_df = pd.DataFrame()
+        #pega as primmeiras 10 unidades
+        unidades_db = unidades_db
+        # Coleta dados de relatório para 1 dia
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
 
+        
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+
+
+
+        # Atualiza ou cria as viagens no model Viagem_Base
+        self.update_or_create_trip(processamento_df)
+        print(processamento_df)
+
+
+    def process_units_PLAC(self, sid):
+        # CAMINHOES PLACIDO#######################
+        unidades_db = Unidade.objects.all()
+        unidades_db_ids = [unidade.id for unidade in unidades_db]
+        if unidades_db_ids:
+            unidades_db = unidades_db.filter(empresa__nome='PLACIDO')
+            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
+
+        processamento_df = pd.DataFrame()
+
+        # Coleta dados de relatório para 1 dia
+        processamento_df = self.retrieve_unit_data(sid, 401768999, unidades_db, 45, processamento_df, tempo_dias=1, periodo='Ontem')
+        processamento_df = self.retrieve_unit_data(sid, 401768999, unidades_db, 45, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+        processamento_df = self.retrieve_unit_data(sid, 401768999, unidades_db, 45, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+
+        # Atualiza ou cria as viagens no model Viagem_Base
+        self.update_or_create_trip(processamento_df)
+        print(processamento_df)
+
+    def process_motoristas_CP(self, sid):
+        #MOTORISTAS BRASCELL####################################################################################
+        unidades_db = Unidade.objects.all()
+        unidades_db_ids = [unidade.id for unidade in unidades_db]
+        if unidades_db_ids:
+            unidades_db = unidades_db.filter(empresa__nome='CPBRASCELL')
+            unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
+
+        processamento_df = pd.DataFrame()
+        #pega as primmeiras 5 unidades
+        unidades_db = unidades_db[:5]
+        print(f"ids_motoristas: {unidades_db}")
         # Coleta dados de relatório para 7 dias
+        processamento_df = self.retrieve_unit_data_motorista(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=7, periodo='Ultimos 7 dias')
+        print(f'Relatórios coletados para {len(processamento_df)} motoristas.')
+        print(processamento_df)
+
+
+ 
+
+    def update_or_create_trip(self, processamento_df):
+        if not processamento_df.empty:
+            for index, row in processamento_df.iterrows():
+                try:
+                    unidade_instance = Unidade.objects.get(nm=row['Grouping'])
+                    
+                    # Processa os valores numericos
+                    quilometragem = self.processar_valor_numerico(row.get('Quilometragem', '0'))
+                    consumo = self.processar_valor_numerico(row.get('Consumido por AbsFCS', '0'))
+                    km_media = self.processar_valor_numerico(row.get('Quilometragem média por unidade de combustível por AbsFCS', '0'))
+                    velocidade_media = self.processar_valor_numerico(row.get('Velocidade média', '0'))
+                    rpm_medio = self.processar_valor_numerico(row.get('RPM médio do motor', '0'))
+                    temperatura_media = self.processar_valor_numerico(row.get('Temperatura média', '0'))
+                    co2 = self.processar_valor_numerico(row.get('Emissões de CO2', '0'))
+
+
+                    try:
+                        quilometragem_value = float(quilometragem)
+                        consumo_value = float(consumo)
+                        km_media_value = float(km_media)
+                        velocidade_media_value = float(velocidade_media)
+                        rpm_medio_value = float(rpm_medio)
+                        temperatura_media_value = float(temperatura_media)
+                        co2_value = float(co2)
+                    except (ValueError, TypeError):
+                        km_media_value = 0.00
+                        velocidade_media_value = 0.00
+                        rpm_medio_value = 0.00
+                        temperatura_media_value = 0.00
+                        co2_value = 0.00
+
+                    
+                    Viagem_Base.objects.update_or_create(
+                        unidade=unidade_instance,
+                        período=row['periodo'],
+                        defaults={
+                            'quilometragem': quilometragem_value,
+                            'Consumido': consumo_value,
+                            'Quilometragem_média': km_media_value,
+                            'Velocidade_média': velocidade_media_value,
+                            'RPM_médio': rpm_medio_value,
+                            'Temperatura_média': temperatura_media_value,
+                            'Emissões_CO2': co2_value,
+
+                        }
+                    )
+                    self.stdout.write(self.style.SUCCESS(f'Viagem atualizada ou criada para a unidade {row["Grouping"]} no período {row["periodo"]} com quilometragem {quilometragem_value}'))
+                
+                except Unidade.DoesNotExist:
+                    self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
+                    continue
+
+    def retrieve_unit_data(self, sid, resource_id, unidades_db, id_relatorio, processamento_df, tempo_dias, periodo):
+        for unidade in tqdm(unidades_db, desc="Processando unidades", unit="unidade"):
+            unidade_id = unidade.id
+
+            # Coleta dados de relatório para 1 dia
+            relatorio = Wialon.Colheitadeira_JSON(sid, resource_id, unidade_id, id_relatorio, tempo_dias=tempo_dias, periodo=periodo)
+
+            processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
+
+            Wialon.clean_up_result(sid)
+            time.sleep(1)
+        return processamento_df
+
+
+    def retrieve_unit_data_motorista(self, sid, unidades_db, id_relatorio, processamento_df, tempo_dias, periodo):
         for unidade in unidades_db:
             unidade_id = unidade.id
-            unidade_nome = unidade.nm
-            
-            self.stdout.write(f'🔄 Processando unidade: {unidade_nome} (ID: {unidade_id})')
 
-            try:
-                # Coleta dados de relatório para 7 dias
-                resultado = Wialon.Colheitadeira_JSON(
-                    sid, 
-                    unidade_id, 
-                    id_relatorio=59, 
-                    tempo_dias=7, 
-                    periodo='Ultimos 7 dias'
-                )
-                
-                if resultado is not None and not resultado.empty:
-                    contador_sucesso += 1
-                    
-                    # Adiciona informações da unidade ao DataFrame
-                    resultado['unidade_nome'] = unidade_nome
-                    resultado['unidade_placa'] = getattr(unidade, 'placa', 'N/A')
-                    resultado['unidade_marca'] = getattr(unidade, 'marca', 'N/A')
-                    resultado['unidade_empresa'] = unidade.empresa.nome if unidade.empresa else 'N/A'
-                    
-                    # Adiciona o DataFrame à lista
-                    lista_dataframes.append(resultado)
-                    
-                    self.stdout.write(
-                        self.style.SUCCESS(f'✅ Dados coletados para {unidade_nome}')
-                    )
-                    
-                else:
-                    contador_sem_dados += 1
-                    self.stdout.write(
-                        self.style.WARNING(f'⚠️ Sem dados para {unidade_nome}')
-                    )
-                    
-            except Exception as e:
-                contador_erro += 1
-                self.stdout.write(
-                    self.style.ERROR(f'❌ Erro ao processar {unidade_nome}: {str(e)}')
-                )
-            
-            # Limpa o resultado da memória do servidor
+            # Coleta dados de relatório para 1 dia
+            relatorio = Wialon.Colheitadeira_JSON_motorista(sid, unidade_id, id_relatorio, tempo_dias=tempo_dias, periodo=periodo)
+
+            processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
+
             Wialon.clean_up_result(sid)
-            time.sleep(1)  # Pausa para evitar sobrecarga
-        
-        # Concatena todos os DataFrames
-        if lista_dataframes:
-            df_consolidado = pd.concat(lista_dataframes, ignore_index=True)
-            self.gerar_estatisticas(df_consolidado)
-            #self.salvar_dados_consolidados(df_consolidado)
-        else:
-            self.stdout.write(self.style.WARNING('⚠️ Nenhum dado foi coletado para análise.'))
-        
-        # Resumo final
-        self.stdout.write('\n' + '='*50)
-        self.stdout.write(f'📊 RESUMO DO PROCESSAMENTO:')
-        self.stdout.write(f'✅ Sucessos: {contador_sucesso}')
-        self.stdout.write(f'⚠️ Sem dados: {contador_sem_dados}')
-        self.stdout.write(f'❌ Erros: {contador_erro}')
-        self.stdout.write(f'📱 Total processado: {contador_sucesso + contador_sem_dados + contador_erro}')
-        self.stdout.write('='*50)
+            time.sleep(1)
+        return processamento_df
 
-    def gerar_estatisticas(self, df):
-        """
-        Gera estatísticas detalhadas sobre os dados coletados
-        """
-        self.stdout.write('\n' + '='*60)
-        self.stdout.write(colored('📊 ESTATÍSTICAS GERAIS', 'cyan', attrs=['bold']))
-        self.stdout.write('='*60)
-        
-        # Informações básicas
-        total_unidades = len(df)
-        self.stdout.write(f'🚛 Total de unidades com dados: {colored(str(total_unidades), "green")}')
-        
-        # Processa quilometragem
-        if 'Quilometragem' in df.columns:
-            # Remove unidades de medida e converte para float
-            df['km_numerico'] = pd.to_numeric(
-                df['Quilometragem'].str.replace(' km', '').str.replace(',', '.'),
-                errors='coerce'
-            ).fillna(0)
-            
-            total_km = df['km_numerico'].sum()
-            media_km = df['km_numerico'].mean()
-            max_km = df['km_numerico'].max()
-            min_km = df['km_numerico'].min()
-            
-            self.stdout.write(f'🛣️  QUILOMETRAGEM:')
-            self.stdout.write(f'   Total: {colored(f"{total_km:,.2f} km", "yellow")}')
-            self.stdout.write(f'   Média: {colored(f"{media_km:,.2f} km", "yellow")}')
-            self.stdout.write(f'   Máxima: {colored(f"{max_km:,.2f} km", "green")}')
-            self.stdout.write(f'   Mínima: {colored(f"{min_km:,.2f} km", "red")}')
-        
-        # Processa consumo de combustível
-        if 'Consumido por AbsFCS' in df.columns:
-            # Remove unidades e converte, tratando valores problemáticos
-            df['combustivel_numerico'] = pd.to_numeric(
-                df['Consumido por AbsFCS'].str.replace(' l', '').str.replace(',', '.').str.replace('-----', '0'),
-                errors='coerce'
-            ).fillna(0)
-            
-            total_combustivel = df['combustivel_numerico'].sum()
-            media_combustivel = df['combustivel_numerico'].mean()
-            
-            # Verifica se há valores extremos (possíveis erros de dados)
-            valores_validos = df[df['combustivel_numerico'] > 0]['combustivel_numerico']
-            if len(valores_validos) > 0:
-                max_combustivel = valores_validos.max()
-                min_combustivel = valores_validos.min()
-                
-                # Se há valores muito altos (acima de 10.000L), considera como erro
-                if max_combustivel > 10000:
-                    self.stdout.write(f'⚠️  ATENÇÃO: Detectados valores de combustível extremos (máx: {max_combustivel:,.2f}L)')
-                    # Filtra valores razoáveis para estatísticas mais precisas
-                    valores_razoaveis = df[(df['combustivel_numerico'] > 0) & (df['combustivel_numerico'] <= 5000)]['combustivel_numerico']
-                    if len(valores_razoaveis) > 0:
-                        total_combustivel_filtrado = valores_razoaveis.sum()
-                        media_combustivel_filtrado = valores_razoaveis.mean()
-                        
-                        self.stdout.write(f'⛽ COMBUSTÍVEL (valores filtrados até 5.000L):')
-                        self.stdout.write(f'   Total consumido: {colored(f"{total_combustivel_filtrado:,.2f} litros", "green")}')
-                        self.stdout.write(f'   Média por unidade: {colored(f"{media_combustivel_filtrado:,.2f} litros", "green")}')
-                        
-                        # Calcula eficiência com valores filtrados
-                        if 'km_numerico' in df.columns:
-                            df_filtrado = df[(df['combustivel_numerico'] > 0) & (df['combustivel_numerico'] <= 5000) & (df['km_numerico'] > 0)]
-                            if len(df_filtrado) > 0:
-                                df_filtrado['eficiencia_km_l'] = df_filtrado['km_numerico'] / df_filtrado['combustivel_numerico']
-                                eficiencia_media = df_filtrado['eficiencia_km_l'].mean()
-                                self.stdout.write(f'   Eficiência média: {colored(f"{eficiencia_media:.2f} km/l", "cyan")}')
-                    else:
-                        self.stdout.write(f'⛽ COMBUSTÍVEL: Todos os valores parecem estar fora do padrão')
-                else:
-                    # Valores normais
-                    self.stdout.write(f'⛽ COMBUSTÍVEL:')
-                    self.stdout.write(f'   Total consumido: {colored(f"{total_combustivel:,.2f} litros", "orange")}')
-                    self.stdout.write(f'   Média por unidade: {colored(f"{media_combustivel:,.2f} litros", "orange")}')
-                    
-                    # Calcula eficiência se tiver ambos os dados
-                    if 'km_numerico' in df.columns:
-                        df_validos = df[(df['combustivel_numerico'] > 0) & (df['km_numerico'] > 0)]
-                        if len(df_validos) > 0:
-                            df_validos['eficiencia_km_l'] = df_validos['km_numerico'] / df_validos['combustivel_numerico']
-                            eficiencia_media = df_validos['eficiencia_km_l'].mean()
-                            self.stdout.write(f'   Eficiência média: {colored(f"{eficiencia_media:.2f} km/l", "cyan")}')
-            else:
-                self.stdout.write(f'⛽ COMBUSTÍVEL: Nenhum valor válido encontrado')
-        
-        # Processa velocidade média
-        if 'Velocidade média' in df.columns:
-            df['velocidade_numerica'] = pd.to_numeric(
-                df['Velocidade média'].str.replace(' km/h', '').str.replace(',', '.').str.replace('-----', '0'),
-                errors='coerce'
-            ).fillna(0)
-            
-            velocidades_validas = df[df['velocidade_numerica'] > 0]['velocidade_numerica']
-            if len(velocidades_validas) > 0:
-                velocidade_media = velocidades_validas.mean()
-                self.stdout.write(f'🏃 Velocidade média geral: {colored(f"{velocidade_media:.2f} km/h", "blue")}')
-        
-        # Processa horas de motor
-        if 'Horas de motor' in df.columns:
-            # Converte formato HH:MM:SS para horas decimais
-            def converter_tempo_para_horas(tempo_str):
-                try:
-                    if tempo_str == '-----' or pd.isna(tempo_str):
-                        return 0
-                    partes = str(tempo_str).split(':')
-                    horas = float(partes[0])
-                    minutos = float(partes[1]) / 60 if len(partes) > 1 else 0
-                    segundos = float(partes[2]) / 3600 if len(partes) > 2 else 0
-                    return horas + minutos + segundos
-                except:
-                    return 0
-            
-            df['horas_motor_numerico'] = df['Horas de motor'].apply(converter_tempo_para_horas)
-            total_horas = df['horas_motor_numerico'].sum()
-            media_horas = df['horas_motor_numerico'].mean()
-            
-            self.stdout.write(f'⏰ HORAS DE MOTOR:')
-            self.stdout.write(f'   Total: {colored(f"{total_horas:.2f} horas", "magenta")}')
-            self.stdout.write(f'   Média: {colored(f"{media_horas:.2f} horas", "magenta")}')
-        
-        # Processa RPM médio
-        if 'RPM médio do motor' in df.columns:
-            df['rpm_numerico'] = pd.to_numeric(
-                df['RPM médio do motor'].str.replace('-----', '0'),
-                errors='coerce'
-            ).fillna(0)
-            
-            rpms_validos = df[df['rpm_numerico'] > 0]['rpm_numerico']
-            if len(rpms_validos) > 0:
-                rpm_medio = rpms_validos.mean()
-                self.stdout.write(f'🔧 RPM médio do motor: {colored(f"{rpm_medio:.0f} RPM", "cyan")}')
-        
-        # Processa temperatura média
-        if 'Temperatura média' in df.columns:
-            df['temp_numerica'] = pd.to_numeric(
-                df['Temperatura média'].str.replace(' °C', '').str.replace(',', '.').str.replace('-----', '0'),
-                errors='coerce'
-            ).fillna(0)
-            
-            temps_validas = df[df['temp_numerica'] > 0]['temp_numerica']
-            if len(temps_validas) > 0:
-                temp_media = temps_validas.mean()
-                self.stdout.write(f'🌡️  Temperatura média: {colored(f"{temp_media:.1f} °C", "red")}')
-        
-        # Estatísticas por empresa
-        if 'unidade_empresa' in df.columns:
-            self.stdout.write(f'\n📈 ESTATÍSTICAS POR EMPRESA:')
-            
-            for empresa in df['unidade_empresa'].unique():
-                dados_empresa = df[df['unidade_empresa'] == empresa]
-                self.stdout.write(f'   🏢 {empresa}:')
-                self.stdout.write(f'      Unidades: {len(dados_empresa)}')
-                if 'km_numerico' in df.columns:
-                    self.stdout.write(f'      Total KM: {dados_empresa["km_numerico"].sum():,.2f}')
-                if 'combustivel_numerico' in df.columns:
-                    # Mostra combustível filtrado se necessário
-                    combustivel_empresa = dados_empresa['combustivel_numerico'].sum()
-                    if combustivel_empresa > 50000:  # Valor suspeito
-                        combustivel_filtrado = dados_empresa[(dados_empresa['combustivel_numerico'] > 0) & 
-                                                           (dados_empresa['combustivel_numerico'] <= 5000)]['combustivel_numerico'].sum()
-                        self.stdout.write(f'      Total Combustível (filtrado): {combustivel_filtrado:,.2f}L')
-                    else:
-                        self.stdout.write(f'      Total Combustível: {combustivel_empresa:,.2f}L')
-        
-        # Top 5 unidades por quilometragem
-        if 'km_numerico' in df.columns and 'unidade_nome' in df.columns:
-            self.stdout.write(f'\n🏆 TOP 5 UNIDADES POR QUILOMETRAGEM:')
-            top_km = df.nlargest(5, 'km_numerico')[['unidade_nome', 'unidade_placa', 'km_numerico', 'unidade_empresa']]
-            
-            for i, (idx, row) in enumerate(top_km.iterrows(), 1):
-                self.stdout.write(f'   {i}. {row["unidade_nome"]} ({row["unidade_placa"]}) - {row["km_numerico"]:,.2f} km - {row["unidade_empresa"]}')
-        
-        # Processa emissões de CO2 com tratamento de valores inválidos
-        if 'Emissões de CO2' in df.columns:
-            # Trata valores problemáticos antes da conversão
-            df['co2_str_limpo'] = df['Emissões de CO2'].str.replace(' t', '').str.replace(',', '.').str.replace('-----', '0')
-            df['co2_numerico'] = pd.to_numeric(df['co2_str_limpo'], errors='coerce').fillna(0)
-            
-            total_co2 = df['co2_numerico'].sum()
-            co2_validos = df[df['co2_numerico'] > 0]
-            
-            if len(co2_validos) > 0:
-                self.stdout.write(f'🌍 Emissões de CO2:')
-                self.stdout.write(f'   Total: {colored(f"{total_co2:.2f} toneladas", "red")}')
-                self.stdout.write(f'   Unidades com dados válidos: {len(co2_validos)}/{len(df)}')
-            else:
-                self.stdout.write(f'🌍 Emissões de CO2: Nenhum dado válido encontrado')
-        
-        # Mostra algumas estatísticas de qualidade dos dados
-        self.stdout.write(f'\n📋 QUALIDADE DOS DADOS:')
-        for col in ['Quilometragem', 'Consumido por AbsFCS', 'Velocidade média', 'Emissões de CO2']:
-            if col in df.columns:
-                valores_com_traco = df[df[col].str.contains('-----', na=False)].shape[0]
-                if valores_com_traco > 0:
-                    self.stdout.write(f'   ⚠️  {col}: {valores_com_traco} valores sem dados (-----)')
-        
-        self.stdout.write('='*60)
 
-    def salvar_dados_consolidados(self, df):
+
+    def processar_valor_numerico(self, valor_str, unidade='', valor_padrao=0.0):
         """
-        Salva o DataFrame consolidado em arquivo Excel
+        Processa valores string para numérico, removendo unidades e tratando casos especiais
         """
         try:
-            import os
-            if not os.path.exists(deposito):
-                os.makedirs(deposito)
+            # Verifica valores nulos ou vazios
+            if pd.isna(valor_str) or valor_str == '-----' or valor_str == '' or valor_str is None:
+                return Decimal(str(valor_padrao))
             
-            timestamp = time.strftime('%Y%m%d_%H%M%S')
-            arquivo_excel = os.path.join(deposito, f"relatorio_consolidado_{timestamp}.xlsx")
+            # Converte para string se não for
+            valor_str = str(valor_str).strip()
             
-            # Cria um arquivo Excel com múltiplas abas
-            with pd.ExcelWriter(arquivo_excel, engine='openpyxl') as writer:
-                # Aba principal com todos os dados
-                df.to_excel(writer, sheet_name='Dados_Completos', index=False)
-                
-                # Aba com resumo por empresa
-                if 'unidade_empresa' in df.columns:
-                    resumo_empresa = df.groupby('unidade_empresa').agg({
-                        'unidade_nome': 'count',
-                        'km_numerico': ['sum', 'mean'] if 'km_numerico' in df.columns else 'count',
-                        'combustivel_numerico': ['sum', 'mean'] if 'combustivel_numerico' in df.columns else 'count'
-                    }).round(2)
-                    resumo_empresa.to_excel(writer, sheet_name='Resumo_por_Empresa')
-                
-                # Aba com ranking de unidades
-                if 'km_numerico' in df.columns:
-                    ranking = df.sort_values('km_numerico', ascending=False)[
-                        ['unidade_nome', 'unidade_placa', 'km_numerico', 'combustivel_numerico', 'unidade_empresa']
-                    ]
-                    ranking.to_excel(writer, sheet_name='Ranking_Quilometragem', index=False)
+            # Verifica se é vazio após strip
+            if not valor_str:
+                return Decimal(str(valor_padrao))
             
-            self.stdout.write(f'💾 Dados consolidados salvos em: {colored(arquivo_excel, "green")}')
+            # Remove unidades de medida comuns
+            valor_limpo = valor_str.replace(' km', '').replace(' l', '').replace(' km/h', '').replace(' °C', '').replace(' t', '').replace(' g/km', '').replace(' rpm', '')
+            valor_limpo = valor_limpo.replace(',', '.').strip()
             
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f'❌ Erro ao salvar dados consolidados: {str(e)}'))
-
-    def salvar_relatorio_no_banco(self, df_relatorio, unidade):
-        """
-        Método opcional para salvar os dados do relatório no banco de dados
-        """
-        try:
-            # Aqui você pode criar uma model para salvar os dados de relatório
-            # Por exemplo, criar uma model Relatorio_Unidade
-            pass
-        except Exception as e:
-            self.stdout.write(
-                self.style.ERROR(f'Erro ao salvar relatório no banco: {str(e)}')
-            )
+            # Verifica se ainda tem conteúdo válido
+            if not valor_limpo or valor_limpo == '.' or valor_limpo == '-':
+                return Decimal(str(valor_padrao))
+            
+            # Remove caracteres não numéricos (exceto ponto e sinal negativo)
+            import re
+            valor_limpo = re.sub(r'[^\d\.\-]', '', valor_limpo)
+            
+            # Verifica se o valor resultante é válido
+            if not valor_limpo or valor_limpo == '.' or valor_limpo == '-':
+                return Decimal(str(valor_padrao))
+            
+            # Converte para Decimal
+            decimal_value = Decimal(valor_limpo)
+            return decimal_value
+            
+        except (ValueError, TypeError, decimal.InvalidOperation) as e:
+            # Log do erro para debug
+            self.stdout.write(self.style.WARNING(f'Erro ao processar valor "{valor_str}": {e}. Usando valor padrão {valor_padrao}'))
+            return Decimal(str(valor_padrao))
