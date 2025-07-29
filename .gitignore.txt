@@ -25,3 +25,7 @@ staticfiles/
 # Configurações locais (opcional, se você tiver)
 .env
 local_settings.py
+
+
+__pycache__/
+*.pyc
