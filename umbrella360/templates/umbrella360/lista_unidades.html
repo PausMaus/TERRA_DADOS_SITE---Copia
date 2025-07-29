@@ -27,39 +27,11 @@
     </div>
 
     <main>
-      <!-- Informações Gerais -->
-      <div style="background: rgba(255, 255, 255, 0.95); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-        <h3 style="margin-bottom: 1rem; color: #2c3e50;">📋 Resumo do Sistema</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-          <div style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
-            <h4 style="margin: 0; font-size: 2rem;">{{ total_unidades }}</h4>
-            <p style="margin: 0.5rem 0 0 0;">Total de Unidades</p>
-          </div>
-          <div style="background: linear-gradient(135deg, #27ae60, #229954); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
-            <h4 style="margin: 0; font-size: 2rem;">{{ total_empresas }}</h4>
-            <p style="margin: 0.5rem 0 0 0;">Empresas Cadastradas</p>
-          </div>
-          <div style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
-            <h4 style="margin: 0; font-size: 2rem;">{{ motoristas_count }}</h4>
-            <p style="margin: 0.5rem 0 0 0;">Motoristas</p>
-          </div>
-          <div style="background: linear-gradient(135deg, #f39c12, #e67e22); color: white; padding: 1rem; border-radius: 8px; text-align: center;">
-            <h4 style="margin: 0; font-size: 2rem;">{{ veiculos_count }}</h4>
-            <p style="margin: 0.5rem 0 0 0;">Veículos</p>
-          </div>
-        </div>
-      </div>
-
       <!-- Busca Simples -->
       <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
         <label for="busca-rapida" style="font-weight: 600; color: #495057; display: block; margin-bottom: 0.5rem;">🔍 Busca Rápida:</label>
         <input type="text" id="busca-rapida" placeholder="Digite nome, ID, placa ou empresa..." onkeyup="buscarUnidades()" style="width: 100%; padding: 0.75rem; border: 2px solid #ced4da; border-radius: 6px; font-size: 1rem;">
-        <p style="margin: 0.5rem 0 0 0; color: #6c757d; font-size: 0.9rem;">💡 Clique no nome de qualquer unidade para ver seus detalhes completos</p>
-      </div>
-
-      <!-- Contador de Resultados -->
-      <div id="contador-resultados" class="results-counter" style="background: #e9ecef; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; color: #495057;">
-         Mostrando <strong id="total-visivel">{{ total_unidades }}</strong> de <strong>{{ total_unidades }}</strong> unidades
+        <p style="margin: 0.5rem 0 0 0; color: #6c757d; font-size: 0.9rem;">Clique no nome de qualquer unidade para ver seus detalhes completos</p>
       </div>
 
       <!-- Tabela de Unidades -->

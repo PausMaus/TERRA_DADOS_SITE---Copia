@@ -9,7 +9,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Unidades - Umbrella360</title>
+    <title>Umbrella360</title>
   </head>
   <body>
     <!-- Botão de alternância de tema -->
@@ -18,10 +18,10 @@
     </button>
     
     <div class="header">
-      <h1>Lista de Todas as Unidades</h1>
+      <h1>Umbrella360</h1>
         <div class="menu-buttons">
           <a href="{% url 'index' %}" class="btn btn-secondary">Página Inicial</a>
-          <a href="{% url 'report_novo' %}" class="btn btn-secondary">Relatório Unificado</a>
+          <a href="{% url 'report_novo' %}" class="btn btn-secondary">Relatório</a>
           <a href="{% url 'lista_unidades' %}" class="btn btn-primary">Lista de Unidades</a>
         </div>
     </div>
@@ -59,7 +59,7 @@
 
       <!-- Contador de Resultados -->
       <div id="contador-resultados" class="results-counter" style="background: #e9ecef; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; color: #495057;">
-        📊 Mostrando <strong id="total-visivel">{{ total_unidades }}</strong> de <strong>{{ total_unidades }}</strong> unidades
+         Mostrando <strong id="total-visivel">{{ total_unidades }}</strong> de <strong>{{ total_unidades }}</strong> unidades
       </div>
 
       <!-- Tabela de Unidades -->
@@ -72,10 +72,7 @@
             <th style="background: #34495e; color: white;">Empresa</th>
             <th style="background: #34495e; color: white;">Marca</th>
             <th style="background: #34495e; color: white;">Placa</th>
-            <th style="background: #34495e; color: white;">Última Viagem</th>
-            <th style="background: #34495e; color: white;">Total Viagens</th>
             <th style="background: #34495e; color: white;">Eficiência Média</th>
-            <th style="background: #34495e; color: white;">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -92,13 +89,13 @@
               </a>
             </td>
             <td style="text-align: center;">
-              {% if unidade.cls == 'motorista' %}
+              {% if unidade.cls == 'Motorista' %}
                 <span style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
-                  👨‍💼 Motorista
+                  Motorista
                 </span>
-              {% elif unidade.cls == 'veiculo' %}
+              {% elif unidade.cls == 'Veículo' %}
                 <span style="background: linear-gradient(135deg, #007bff, #6610f2); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
-                  🚛 Veículo
+                  Veículo
                 </span>
               {% else %}
                 <span style="background: linear-gradient(135deg, #6c757d, #495057); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
@@ -109,20 +106,6 @@
             <td style="font-weight: 500;">{{ unidade.empresa.nome }}</td>
             <td>{{ unidade.marca|default:"<span style='color: #6c757d;'>-</span>"|safe }}</td>
             <td>{{ unidade.placa|default:"<span style='color: #6c757d;'>-</span>"|safe }}</td>
-            <td style="text-align: center;">
-              {% if unidade.ultima_viagem %}
-                <span style="background: #e9ecef; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 500;">
-                  {{ unidade.ultima_viagem.período }}
-                </span>
-              {% else %}
-                <span style="color: #dc3545; font-weight: 600;">Sem dados</span>
-              {% endif %}
-            </td>
-            <td style="text-align: center;">
-              <span style="background: linear-gradient(135deg, #17a2b8, #6f42c1); color: white; padding: 0.25rem 0.5rem; border-radius: 15px; font-weight: 600; font-size: 0.9rem;">
-                {{ unidade.total_viagens|default:0 }}
-              </span>
-            </td>
             <td style="text-align: center;">
               {% if unidade.eficiencia_media %}
                 {% if unidade.eficiencia_media >= 3 %}
@@ -140,13 +123,6 @@
                 {% endif %}
               {% else %}
                 <span style="color: #6c757d; font-style: italic;">N/A</span>
-              {% endif %}
-            </td>
-            <td style="text-align: center;">
-              {% if unidade.total_viagens > 0 %}
-                <span style="color: #28a745; font-weight: 600;"> Ativo</span>
-              {% else %}
-                <span style="color: #dc3545; font-weight: 600;"> Inativo</span>
               {% endif %}
             </td>
           </tr>
