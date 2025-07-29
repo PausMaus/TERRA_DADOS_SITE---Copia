@@ -57,7 +57,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
                 return
 
-        #self.atualiza_unidades(sid, empresa_nome)
+        self.atualiza_unidades(sid, empresa_nome)
 
         #busca os relatorios
         print(Wialon.buscadora_reports(sid))
@@ -65,12 +65,30 @@ class Command(BaseCommand):
 
         #processa as unidades
         if empresa_nome == "CPBRASCELL":
+            #pergunta se deseja processar as unidades de caminhões
+            #pergunta se deseja real
+            processar_caminhoes = input("Deseja processar as unidades de caminhões? (s/n): ").strip().lower()   
+            if processar_caminhoes == 's':
+                self.process_units_CP(sid)
+            else:
+                self.stdout.write(self.style.WARNING('Processamento de caminhões pulado.'))
+            #pergunta se deseja realizar o teste de processamento
+            realizar_teste = input("Deseja realizar o teste de processamento? (s/n): ").strip().lower()
+            if realizar_teste == 's':
+                self.teste_processamento(sid)
+            else:
+                self.stdout.write(self.style.WARNING('Teste de processamento pulado.'))
+                
 
-            self.process_units_CP(sid)
 
         elif empresa_nome == "PLACIDO":
+            #pergunta se deseja processar as unidades de caminhões
+            processar_caminhoes = input("Deseja processar as unidades de caminhões? (s/n): ").strip().lower()
+            if processar_caminhoes == 's':
+                self.process_units_PLAC(sid)
+            else:
+                self.stdout.write(self.style.WARNING('Processamento de caminhões pulado.'))
 
-            self.process_units_PLAC(sid)
 
 
         # Encerra a sessão Wialon
@@ -158,6 +176,19 @@ class Command(BaseCommand):
                 }
             )
 
+    def teste_processamento(self, sid):
+        unidades_db = Unidade.objects.all()
+        unidades_db_ids = [unidade.id for unidade in unidades_db]
+        if unidades_db_ids:
+            unidades_db = unidades_db.filter(empresa__nome='CPBRASCELL')
+            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
+        unidade_id = unidades_db_ids
+        unit_id_first = unidade_id[0] if unidade_id else None
+
+
+
+        relatorio = Wialon.Colheitadeira_JSON_m(sid, 401756219, unit_id_first, unidade_id, 59, tempo_dias=1, periodo='Ontem')
+        print(f'Relatório coletado: {relatorio}')
 
 
 
@@ -170,12 +201,11 @@ class Command(BaseCommand):
             unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
 
         processamento_df = pd.DataFrame()
-        #pega as primmeiras 10 unidades
         unidades_db = unidades_db
         # Coleta dados de relatório para 1 dia
         processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
 
         
         print(f'Relatórios coletados para {len(processamento_df)} unidades.')

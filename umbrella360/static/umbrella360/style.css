@@ -574,14 +574,14 @@ body.tema_cafe .cta-section h2 {
 
 /* Buttons tema café */
 body.tema-cafe .btn {
-    border: 2px solid #8B4513;
+    border: 2px solid #f1d3bd;
     color: #F5DEB3;
     background: rgba(139, 69, 19, 0.8);
 }
 
 body.tema-cafe .btn-primary {
     background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
-    border-color: #654321;
+    border-color: #dabb9d;
 }
 
 body.tema-cafe .btn-primary:hover {
