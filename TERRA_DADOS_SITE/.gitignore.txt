@@ -5,7 +5,6 @@ venv/
 # Compilados Python
 *.py[cod]
 __pycache__/
-*.pyc
 
 # Arquivos de log
 *.log
@@ -26,6 +25,3 @@ staticfiles/
 # Configurações locais (opcional, se você tiver)
 .env
 local_settings.py
-
-
-
