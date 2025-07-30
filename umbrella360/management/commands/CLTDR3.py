@@ -65,11 +65,31 @@ class Command(BaseCommand):
 
         #processa as unidades
         if empresa_nome == "CPBRASCELL":
-            self.process_units_CP(sid)
+            #pergunta se deseja processar as unidades de caminhões
+            #pergunta se deseja real
+            processar_caminhoes = input("Deseja processar as unidades de caminhões? (s/n): ").strip().lower()   
+            if processar_caminhoes == 's':
+                self.process_units_CP(sid)
+            else:
+                self.stdout.write(self.style.WARNING('Processamento de caminhões pulado.'))
+            #pergunta se deseja realizar o teste de processamento
+            realizar_teste = input("Deseja realizar o teste de processamento? (s/n): ").strip().lower()
+            if realizar_teste == 's':
+                self.teste_processamento(sid)
+            else:
+                self.stdout.write(self.style.WARNING('Teste de processamento pulado.'))
+
 
 
         elif empresa_nome == "PLACIDO":
-            self.process_units_PLAC(sid)
+            #pergunta se deseja processar as unidades de caminhões
+            processar_caminhoes = input("Deseja processar as unidades de caminhões? (s/n): ").strip().lower()
+            if processar_caminhoes == 's':
+                self.process_units_PLAC(sid)
+            else:
+                self.stdout.write(self.style.WARNING('Processamento de caminhões pulado.'))
+
+
 
         # Encerra a sessão Wialon
         Wialon.wialon_logout(sid)
@@ -183,9 +203,9 @@ class Command(BaseCommand):
         processamento_df = pd.DataFrame()
         unidades_db = unidades_db
         # Coleta dados de relatório para 1 dia
-        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
+        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
 
         
         print(f'Relatórios coletados para {len(processamento_df)} unidades.')
@@ -193,7 +213,7 @@ class Command(BaseCommand):
 
 
         # Atualiza ou cria as viagens no model Viagem_Base
-        self.update_or_create_trip(processamento_df)
+
         print(processamento_df)
 
 
@@ -298,6 +318,7 @@ class Command(BaseCommand):
 
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
+
             Wialon.clean_up_result(sid)
             time.sleep(1)
         return processamento_df
@@ -311,6 +332,7 @@ class Command(BaseCommand):
             relatorio = Wialon.Colheitadeira_JSON_motorista(sid, unidade_id, id_relatorio, tempo_dias=tempo_dias, periodo=periodo)
 
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
+            self.update_or_create_trip(processamento_df)
 
             Wialon.clean_up_result(sid)
             time.sleep(1)
