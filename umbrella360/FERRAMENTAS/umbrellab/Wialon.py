@@ -701,48 +701,57 @@ def exec_report(sid, resource_id, template_id, unit_id, interval_from, interval_
     except Exception as e:
         comm(f"Erro inesperado: {e}")
         return None
-    
-def exec_report_m(sid, resource_id, template_id, unit_id, interval_from, interval_to):
+
+def exec_report_m(sid, resource_id, template_id, unit_id_first, unit_ids_list, interval_from, interval_to):
     """
-    Executa um relatório específico para mmultiplas unidades no Wialon.
-    
+    Executa um relatório específico para múltiplas unidades no Wialon.
+
     :param sid: Session ID obtido após o login.
     :param resource_id: ID do recurso onde o relatório está localizado.
     :param template_id: ID do modelo de relatório a ser executado.
-    :param unit_id: ID da unidade para a qual o relatório será gerado.
+    :param unit_id_first: ID da primeira unidade (objeto principal).
+    :param unit_ids_list: Lista de IDs das unidades para o relatório.
+    :param interval_from: Timestamp Unix de início do período.
+    :param interval_to: Timestamp Unix de fim do período.
     :return: Resultado do relatório ou None em caso de erro.
     """
-    nome = "exec_report"
+    nome = "exec_report_m"
     def comm(msg):
         print(colored("="*30, "yellow"))
         print(colored(f"{nome}:","green"))
         print(f"{msg}")
         print(colored("="*30, "yellow"))
     
-
+    # Garante que unit_ids_list é uma lista
+    if not isinstance(unit_ids_list, list):
+        unit_ids_list = [unit_ids_list]
+    
     payload = {
         "svc": "report/exec_report",
         "params": json.dumps({
             "reportResourceId": resource_id,
             "reportTemplateId": template_id,
-            "reportObjectId": unit_id,
+            "reportObjectId": unit_id_first,  # ID da primeira unidade (objeto principal)
             "reportObjectSecId": 0,
-            "reportObjectIdList":[unit_id],
+            "reportObjectIdList": unit_ids_list,  # CORREÇÃO: Lista de IDs
+            "reportObjectIdListType": "avl_unit",  # ADICIONADO: Tipo dos objetos
             "interval": {
                 "from": interval_from,
                 "to": interval_to,
-                "flags": 0  # CORREÇÃO: 0 para timestamps absolutos Unix
+                "flags": 0  # 0 para timestamps absolutos Unix
             }
         }),
         "sid": sid
     }
     
     try:
+        comm(f"Executando relatório para {len(unit_ids_list)} unidades...")
+        comm(f"Unidade principal: {unit_id_first}")
+        comm(f"Lista de unidades: {unit_ids_list}")
         
         response = requests.post(API_URL, data=payload)
         response.raise_for_status()
         data = response.json()
-        
         
         if "error" in data:
             error_code = data["error"]
@@ -768,7 +777,7 @@ def exec_report_m(sid, resource_id, template_id, unit_id, interval_from, interva
             
         # Verifica se o relatório foi executado com sucesso
         if isinstance(data, dict) and data.get("error") is None:
-            #comm(f"Relatório executado com sucesso")
+            comm(f"Relatório executado com sucesso para {len(unit_ids_list)} unidades")
             return data
             
         return data
@@ -782,7 +791,6 @@ def exec_report_m(sid, resource_id, template_id, unit_id, interval_from, interva
     except Exception as e:
         comm(f"Erro inesperado: {e}")
         return None
-    
 
 def exec_report_motorista(sid, resource_id, template_id, unit_id, interval_from, interval_to):
     """
@@ -1316,7 +1324,7 @@ def Colheitadeira_JSON(sid, resource_id, unit_id, id_relatorio, tempo_dias, peri
         return None
     
 
-def Colheitadeira_JSON_m(sid, resource_id, unit_id, id_relatorio, tempo_dias, periodo):
+def Colheitadeira_JSON_m(sid, resource_id, unit_id_first, unit_ids_list, id_relatorio, tempo_dias, periodo):
     """
     Função para coletar dados de relatório de multiplas unidades  para um período.
 
@@ -1341,17 +1349,18 @@ def Colheitadeira_JSON_m(sid, resource_id, unit_id, id_relatorio, tempo_dias, pe
     
     try:
         # Executa o relatório
-        relatorio = exec_report(
+        relatorio = exec_report_m(
             sid=sid, 
             resource_id=resource_id, 
             template_id=id_relatorio, 
-            unit_id=unit_id, 
+            unit_id_first=unit_id_first,
+            unit_ids_list=unit_ids_list,  # CORREÇÃO: Passa a lista completa
             interval_from=interval_from, 
             interval_to=interval_to
         )
-        
+    
         if not relatorio:
-            comm(f"❌ Falha ao executar relatório para unidade {unit_id}")
+            comm(f"❌ Falha ao executar relatório para unidade {unit_id_first}")
             return None
 
         #print(f"Relatório executado: {relatorio}")
@@ -1359,13 +1368,13 @@ def Colheitadeira_JSON_m(sid, resource_id, unit_id, id_relatorio, tempo_dias, pe
         # Verifica se há tabelas no resultado
         tables = relatorio.get('reportResult', {}).get('tables', [])
         if not tables:
-            comm(f"⚠️ Nenhuma tabela encontrada no relatório para unidade {unit_id}")
+            comm(f"⚠️ Nenhuma tabela encontrada no relatório para unidade {unit_id_first}")
             return None
         
         # Extrai headers
         headers = extract_report_headers(relatorio)
         if not headers:
-            comm(f"⚠️ Nenhum header encontrado no relatório para unidade {unit_id}")
+            comm(f"⚠️ Nenhum header encontrado no relatório para unidade {unit_id_first}")
             return None
         
         #print(f"Headers do relatório: {headers}")
@@ -1373,31 +1382,31 @@ def Colheitadeira_JSON_m(sid, resource_id, unit_id, id_relatorio, tempo_dias, pe
         # Obtém as linhas de dados
         rows = get_result_rows(sid)
         if not rows:
-            comm(f"⚠️ Nenhuma linha de dados encontrada para unidade {unit_id}")
+            comm(f"⚠️ Nenhuma linha de dados encontrada para unidade {unit_id_first}")
             return None
         
         #print(f"Linhas obtidas: {len(rows)}")
         
         # Verifica se há dados na primeira linha
         if len(rows) == 0:
-            comm(f"⚠️ Array de linhas vazio para unidade {unit_id}")
+            comm(f"⚠️ Array de linhas vazio para unidade {unit_id_first}")
             return None
         
         first_row = rows[0]
         if not isinstance(first_row, dict) or 'c' not in first_row:
-            comm(f"⚠️ Estrutura de dados inválida para unidade {unit_id}: {first_row}")
+            comm(f"⚠️ Estrutura de dados inválida para unidade {unit_id_first}: {first_row}")
             return None
         
         report_data = first_row['c']
         if not report_data:
-            comm(f"⚠️ Dados de relatório vazios para unidade {unit_id}")
+            comm(f"⚠️ Dados de relatório vazios para unidade {unit_id_first}")
             return None
         
         #print(f"Dados do relatório: {report_data}")
         
         # Verifica compatibilidade entre headers e dados
         if len(headers) != len(report_data):
-            comm(f"⚠️ Incompatibilidade: {len(headers)} headers vs {len(report_data)} dados para unidade {unit_id}")
+            comm(f"⚠️ Incompatibilidade: {len(headers)} headers vs {len(report_data)} dados para unidade {unit_id_first}")
             # Tenta ajustar usando o menor tamanho
             min_length = min(len(headers), len(report_data))
             headers = headers[:min_length]
@@ -1408,8 +1417,8 @@ def Colheitadeira_JSON_m(sid, resource_id, unit_id, id_relatorio, tempo_dias, pe
         relatorio_df = pd.DataFrame([report_data], columns=headers)
         
         # Adiciona metadados
-        relatorio_df['id'] = f"{interval_from}_{interval_to}_{unit_id}"
-        relatorio_df['unit_id'] = unit_id
+        relatorio_df['id'] = f"{interval_from}_{interval_to}_{unit_id_first}"
+        relatorio_df['unit_id'] = unit_id_first
         relatorio_df['periodo'] = periodo
         relatorio_df['timestamp_from'] = interval_from
         relatorio_df['timestamp_to'] = interval_to
@@ -1421,7 +1430,7 @@ def Colheitadeira_JSON_m(sid, resource_id, unit_id, id_relatorio, tempo_dias, pe
         return relatorio_df
         
     except Exception as e:
-        comm(f"❌ Erro inesperado ao processar unidade {unit_id}: {str(e)}")
+        comm(f"❌ Erro inesperado ao processar unidade {unit_id_first}: {str(e)}")
         return None
 
 def Colheitadeira_JSON_motorista(sid, unit_id, id_relatorio, tempo_dias, periodo):

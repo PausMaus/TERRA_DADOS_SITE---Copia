@@ -37,7 +37,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
         
         self.principal(WIALON_TOKEN_BRAS, "CPBRASCELL")
-        self.principal(WIALON_TOKEN_PLAC, "PLACIDO")
+        #self.principal(WIALON_TOKEN_PLAC, "PLACIDO")
         
         end_time = datetime.now()
         execution_time = end_time - start_time
@@ -57,19 +57,13 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
                 return
 
-        self.atualiza_unidades(sid, empresa_nome)
+        #self.atualiza_unidades(sid, empresa_nome)
 
         #busca os relatorios
-        print(Wialon.buscadora_reports(sid))
+        #print(Wialon.buscadora_reports(sid))
 
 
-        #processa as unidades
-        if empresa_nome == "CPBRASCELL":
-            self.process_units_CP(sid)
-
-
-        elif empresa_nome == "PLACIDO":
-            self.process_units_PLAC(sid)
+        self.teste_processamento(sid)
 
         # Encerra a sessão Wialon
         Wialon.wialon_logout(sid)
@@ -159,12 +153,15 @@ class Command(BaseCommand):
     def teste_processamento(self, sid):
         unidades_db = Unidade.objects.all()
         unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='CPBRASCELL')
-            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
-        unidade_id = unidades_db_ids
-        unit_id_first = unidade_id[0] if unidade_id else None
+        #seleciona os ids dos veiculos brascell e coloca em uma lista
 
+        if unidades_db_ids:
+
+            unidades_db = unidades_db.filter(empresa__nome='CPBRASCELL')
+            unidades_db = unidades_db.filter(cls__icontains='Veículo')
+
+            
+        unit_id_first = unidade_id[0] if unidade_id else None
 
 
         relatorio = Wialon.Colheitadeira_JSON_m(sid, 401756219, unit_id_first, unidade_id, 59, tempo_dias=1, periodo='Ontem')
@@ -183,9 +180,9 @@ class Command(BaseCommand):
         processamento_df = pd.DataFrame()
         unidades_db = unidades_db
         # Coleta dados de relatório para 1 dia
-        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
+        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
 
         
         print(f'Relatórios coletados para {len(processamento_df)} unidades.')

@@ -15,13 +15,15 @@
     <div class="grid-container">
       {% for item in itens %}
         <div class="grid-item">
-          {% if item.imagem %}
-            <img src="{{ item.imagem.url }}" alt="{{ item.nome }}">
-          {% endif %}
-          <h3>{{ item.nome }}</h3>
-          {% if item.descricao %}
-            <p>{{ item.descricao }}</p>
-          {% endif %}
+          <a href="{% url 'academia_virtual:detalhe' item.id %}" class="item-link">
+            {% if item.imagem %}
+              <img src="{{ item.imagem.url }}" alt="{{ item.nome }}">
+            {% endif %}
+            <h3>{{ item.nome }}</h3>
+            {% if item.descricao %}
+              <p>{{ item.descricao|truncatewords:20 }}</p>
+            {% endif %}
+          </a>
         </div>
       {% empty %}
         <p>Nenhum item cadastrado ainda.</p>
