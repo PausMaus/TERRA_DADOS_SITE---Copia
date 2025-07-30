@@ -1,0 +1,31 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academia Virtual</title>
+    <link rel="stylesheet" href="{% static 'academia_virtual/style.css' %}?v=4">
+  </head>
+  <body>
+    <div class="header">
+      <h1>Academia Virtual</h1>
+    </div>
+
+    <div class="grid-container">
+      {% for item in itens %}
+        <div class="grid-item">
+          {% if item.imagem %}
+            <img src="{{ item.imagem.url }}" alt="{{ item.nome }}">
+          {% endif %}
+          <h3>{{ item.nome }}</h3>
+          {% if item.descricao %}
+            <p>{{ item.descricao }}</p>
+          {% endif %}
+        </div>
+      {% empty %}
+        <p>Nenhum item cadastrado ainda.</p>
+      {% endfor %}
+    </div>
+  </body>
+</html>
