@@ -866,7 +866,7 @@ def detalhes_unidade(request, unidade_id):
     
     # Obter todas as viagens da unidade
     viagens = Viagem_Base.objects.filter(unidade=unidade).order_by('-período')
-    
+
     # Calcular estatísticas gerais
     stats_gerais = viagens.aggregate(
         total_viagens=Count('id'),
@@ -880,7 +880,24 @@ def detalhes_unidade(request, unidade_id):
         melhor_eficiencia=Max('Quilometragem_média'),
         pior_eficiencia=Min('Quilometragem_média')
     )
-    
+    #estatisticas filtradas
+    viagens = Viagem_Base.objects.filter(unidade=unidade).order_by('-período')
+    #filtrar viagens pelo período dos "Últimos 30 dias"
+    viagens_filtradas = viagens.filter(período="Últimos 30 dias")
+    stats_filtrados = viagens_filtradas.aggregate(
+        total_viagens=Count('id'),
+        total_quilometragem=Sum('quilometragem'),
+        total_consumo=Sum('Consumido'),
+        media_eficiencia=Avg('Quilometragem_média'),
+        media_velocidade=Avg('Velocidade_média'),
+        media_rpm=Avg('RPM_médio'),
+        media_temperatura=Avg('Temperatura_média'),
+        total_emissoes=Sum('Emissões_CO2'),
+        melhor_eficiencia=Max('Quilometragem_média'),
+        pior_eficiencia=Min('Quilometragem_média')
+    )
+
+
     # Estatísticas por período
     stats_por_periodo = viagens.values('período').annotate(
         viagens_periodo=Count('id'),
@@ -904,6 +921,7 @@ def detalhes_unidade(request, unidade_id):
         'unidade': unidade,
         'viagens': viagens[:20],  # Últimas 20 viagens
         'stats_gerais': stats_gerais,
+        'stats_filtrados': stats_filtrados,
         'stats_por_periodo': stats_por_periodo,
         'custo_total': custo_total,
         'custo_diesel': custo_diesel,

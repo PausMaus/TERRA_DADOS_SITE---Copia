@@ -163,6 +163,369 @@ body {
     margin-top: 20px;
 }
 
+.banner-header {
+  height: 300px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.banner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+}
+
+.banner-content h1 {
+  color: white;
+  margin: 0;
+  font-size: 2.5rem;
+}
+
+.banner-content .btn-voltar {
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 10px 15px;
+  border-radius: 5px;
+  text-decoration: none;
+}
+
+/* Estilos para áreas coloridas */
+.area-section {
+    margin: 40px 0;
+}
+
+/* Layout da Academia - Seções Verticais */
+.academia-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+}
+
+.secao-academia {
+    display: flex;
+    min-height: 400px;
+    gap: 3px;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.sala-principal {
+    flex: 4;
+    position: relative;
+    padding: 20px;
+}
+
+.corredor-lateral {
+    flex: 1;
+    min-width: 180px;
+    max-width: 200px;
+    position: relative;
+    padding: 15px;
+    border-left: 3px solid rgba(0,0,0,0.1);
+}
+
+/* Sala de Cardio */
+.sala-cardio {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.05), rgba(192, 57, 43, 0.02));
+    border-right: 3px solid rgba(231, 76, 60, 0.3);
+}
+
+.sala-cardio::before {
+    content: '🏃‍♀️ SALA DE CARDIO';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 0.8em;
+    font-weight: 600;
+    color: rgba(231, 76, 60, 0.7);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.corredor-cardio {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.02), rgba(192, 57, 43, 0.01));
+    border-left-color: rgba(231, 76, 60, 0.3);
+}
+
+/* Sala de Musculação */
+.sala-musculacao {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(41, 128, 185, 0.02));
+    border-right: 3px solid rgba(52, 152, 219, 0.3);
+}
+
+.sala-musculacao::before {
+    content: '💪 SALA DE MUSCULAÇÃO';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 0.8em;
+    font-weight: 600;
+    color: rgba(52, 152, 219, 0.7);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.corredor-musculacao {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.02), rgba(41, 128, 185, 0.01));
+    border-left-color: rgba(52, 152, 219, 0.3);
+}
+
+/* Sala de Fitness */
+.sala-fitness {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.05), rgba(39, 174, 96, 0.02));
+    border-right: 3px solid rgba(46, 204, 113, 0.3);
+}
+
+.sala-fitness::before {
+    content: '🏋️‍♂️ SALA DE FITNESS';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 0.8em;
+    font-weight: 600;
+    color: rgba(46, 204, 113, 0.7);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.corredor-fitness {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.02), rgba(39, 174, 96, 0.01));
+    border-left-color: rgba(46, 204, 113, 0.3);
+}
+
+/* Estilos dos corredores laterais */
+.corredor-header {
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    background: rgba(108, 117, 125, 0.1);
+}
+
+.corredor-header h3 {
+    margin: 0;
+    font-size: 0.9em;
+    color: rgba(108, 117, 125, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.corredor-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.corredor-item {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.corredor-item:hover {
+    transform: translateX(-5px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.corredor-item img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-bottom: 5px;
+    object-fit: cover;
+}
+
+.corredor-item h4 {
+    margin: 0;
+    font-size: 0.7em;
+    color: #333;
+    line-height: 1.2;
+}
+
+/* Ajustes dos grids para salas principais */
+.sala-principal .grid-container {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    padding: 20px 10px;
+}
+
+.sala-principal .grid-item {
+    width: 150px;
+    height: 150px;
+    padding: 20px 15px;
+}
+
+.sala-principal .grid-item img {
+    width: 60px;
+    height: 60px;
+}
+
+.sala-principal .grid-item h3 {
+    font-size: 0.95em;
+}
+
+.sala-principal .grid-item p {
+    font-size: 0.75em;
+}
+
+/* Área Musculação - Azul */
+.area-musculacao .area-header {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+}
+
+.area-musculacao .grid-item {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(41, 128, 185, 0.05));
+    border: 2px solid rgba(52, 152, 219, 0.3);
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+}
+
+.area-musculacao .grid-item:hover {
+    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+    border-color: rgba(52, 152, 219, 0.6);
+}
+
+.area-musculacao .grid-item img {
+    border-color: rgba(52, 152, 219, 0.5);
+}
+
+.area-musculacao .tipo-badge {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+}
+
+/* Área Fitness - Verde */
+.area-fitness .area-header {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+}
+
+.area-fitness .grid-item {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(39, 174, 96, 0.05));
+    border: 2px solid rgba(46, 204, 113, 0.3);
+    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.2);
+}
+
+.area-fitness .grid-item:hover {
+    box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
+    border-color: rgba(46, 204, 113, 0.6);
+}
+
+.area-fitness .grid-item img {
+    border-color: rgba(46, 204, 113, 0.5);
+}
+
+.area-fitness .tipo-badge {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+}
+
+/* Estilos do corredor - removidos os antigos estilos gerais */
+
+.area-header {
+    text-align: center;
+    padding: 30px 20px;
+    margin-bottom: 20px;
+    border-radius: 15px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.area-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.1;
+    z-index: -1;
+}
+
+.area-header h2 {
+    margin: 0 0 10px 0;
+    font-size: 2.5em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.area-descricao {
+    margin: 0;
+    font-size: 1.1em;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.tipo-badge {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #333;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.7em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 5px;
+    display: inline-block;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+    font-size: 1.2em;
+}
+
+/* Área Cardio - Vermelho */
+.area-section:has(.area-header:contains("Cardio")) .area-header,
+.area-cardio .area-header {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.area-section:has(.area-header:contains("Cardio")) .grid-item,
+.area-cardio .grid-item {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(192, 57, 43, 0.05));
+    border: 2px solid rgba(231, 76, 60, 0.3);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2);
+}
+
+.area-section:has(.area-header:contains("Cardio")) .grid-item:hover,
+.area-cardio .grid-item:hover {
+    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+    border-color: rgba(231, 76, 60, 0.6);
+}
+
+.area-section:has(.area-header:contains("Cardio")) .grid-item img,
+.area-cardio .grid-item img {
+    border-color: rgba(231, 76, 60, 0.5);
+}
+
+.area-section:has(.area-header:contains("Cardio")) .tipo-badge,
+.area-cardio .tipo-badge {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
 @media (max-width: 768px) {
     .header nav {
         position: static;
@@ -170,29 +533,76 @@ body {
         margin-bottom: 10px;
     }
     
-    .grid-container {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 20px;
-        padding: 20px;
+    /* Layout responsivo - reorganiza seções em mobile */
+    .academia-layout {
+        padding: 10px;
+        gap: 15px;
     }
     
-    .grid-item {
-        width: 150px;
-        height: 150px;
-        padding: 20px 15px;
+    .secao-academia {
+        flex-direction: column;
+        min-height: auto;
     }
     
-    .grid-item img {
-        width: 60px;
-        height: 60px;
+    .sala-principal {
+        flex: none;
+        border-right: none;
+        border-bottom: 2px solid rgba(0,0,0,0.1);
+        padding-bottom: 15px;
     }
     
-    .grid-item h3 {
-        font-size: 1em;
+    .corredor-lateral {
+        flex: none;
+        min-width: auto;
+        max-width: none;
+        border-left: none;
+        border-top: 2px solid rgba(0,0,0,0.1);
+        padding-top: 15px;
     }
     
-    .grid-item p {
-        font-size: 0.8em;
+    .corredor-items {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .corredor-item {
+        flex: 1;
+        min-width: 80px;
+    }
+    
+    .corredor-item img {
+        width: 25px;
+        height: 25px;
+    }
+    
+    .corredor-item h4 {
+        font-size: 0.65em;
+    }
+    
+    .sala-principal .grid-container {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+        padding: 15px 5px;
+    }
+    
+    .sala-principal .grid-item {
+        width: 120px;
+        height: 120px;
+        padding: 15px 10px;
+    }
+    
+    .sala-principal .grid-item img {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .sala-principal .grid-item h3 {
+        font-size: 0.85em;
+    }
+    
+    .sala-principal .grid-item p {
+        font-size: 0.7em;
     }
     
     .detalhe-content {

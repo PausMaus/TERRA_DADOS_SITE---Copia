@@ -41,6 +41,8 @@ class Equipamento(ItemAcademia):
     def __str__(self):
         return f"{self.nome} ({self.tipo})"
     
+
+    
 class Professor(ItemAcademia):
     especialidade = models.CharField(max_length=100, verbose_name="Especialidade do Professor", blank=True, null=True)
 
