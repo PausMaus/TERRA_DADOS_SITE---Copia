@@ -12,22 +12,195 @@
       <h1>Academia Virtual</h1>
     </div>
 
-    <div class="grid-container">
-      {% for item in itens %}
-        <div class="grid-item">
-          <a href="{% url 'academia_virtual:detalhe' item.id %}" class="item-link">
-            {% if item.imagem %}
-              <img src="{{ item.imagem.url }}" alt="{{ item.nome }}">
-            {% endif %}
-            <h3>{{ item.nome }}</h3>
-            {% if item.descricao %}
-              <p>{{ item.descricao|truncatewords:20 }}</p>
-            {% endif %}
-          </a>
+    <div class="academia-layout">
+      <!-- Seção Cardio -->
+      {% if area_cardio or corredor_cardio %}
+        <div class="secao-academia">
+          <!-- Sala de Cardio -->
+          {% if area_cardio %}
+            <div class="sala-principal sala-cardio">
+              <div class="area-section area-cardio">
+                <div class="area-header">
+                  <h2>{{ area_cardio.nome }}</h2>
+                  {% if area_cardio.descricao %}
+                    <p class="area-descricao">{{ area_cardio.descricao }}</p>
+                  {% endif %}
+                </div>
+                
+                {% if equipamentos_cardio %}
+                  <div class="grid-container">
+                    {% for equipamento in equipamentos_cardio %}
+                      <div class="grid-item">
+                        <a href="{% url 'academia_virtual:detalhe' equipamento.id %}" class="item-link">
+                          {% if equipamento.imagem %}
+                            <img src="{{ equipamento.imagem.url }}" alt="{{ equipamento.nome }}">
+                          {% endif %}
+                          <h3>{{ equipamento.nome }}</h3>
+                          {% if equipamento.descricao %}
+                            <p>{{ equipamento.descricao|truncatewords:20 }}</p>
+                          {% endif %}
+                          {% if equipamento.tipo %}
+                            <span class="tipo-badge">{{ equipamento.tipo }}</span>
+                          {% endif %}
+                        </a>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+
+          <!-- Corredor do Cardio -->
+          {% if corredor_cardio %}
+            <div class="corredor-lateral corredor-cardio">
+              <div class="corredor-header">
+                <h3>Corredor</h3>
+              </div>
+              <div class="corredor-items">
+                {% for item in corredor_cardio %}
+                  <div class="corredor-item">
+                    <a href="{% url 'academia_virtual:detalhe' item.id %}" class="item-link">
+                      {% if item.imagem %}
+                        <img src="{{ item.imagem.url }}" alt="{{ item.nome }}">
+                      {% endif %}
+                      <h4>{{ item.nome }}</h4>
+                    </a>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
         </div>
-      {% empty %}
-        <p>Nenhum item cadastrado ainda.</p>
-      {% endfor %}
+      {% endif %}
+
+      <!-- Seção Musculação -->
+      {% if area_musculacao or corredor_musculacao %}
+        <div class="secao-academia">
+          <!-- Sala de Musculação -->
+          {% if area_musculacao %}
+            <div class="sala-principal sala-musculacao">
+              <div class="area-section area-musculacao">
+                <div class="area-header">
+                  <h2>{{ area_musculacao.nome }}</h2>
+                  {% if area_musculacao.descricao %}
+                    <p class="area-descricao">{{ area_musculacao.descricao }}</p>
+                  {% endif %}
+                </div>
+                
+                {% if equipamentos_musculacao %}
+                  <div class="grid-container">
+                    {% for equipamento in equipamentos_musculacao %}
+                      <div class="grid-item">
+                        <a href="{% url 'academia_virtual:detalhe' equipamento.id %}" class="item-link">
+                          {% if equipamento.imagem %}
+                            <img src="{{ equipamento.imagem.url }}" alt="{{ equipamento.nome }}">
+                          {% endif %}
+                          <h3>{{ equipamento.nome }}</h3>
+                          {% if equipamento.descricao %}
+                            <p>{{ equipamento.descricao|truncatewords:20 }}</p>
+                          {% endif %}
+                          {% if equipamento.tipo %}
+                            <span class="tipo-badge">{{ equipamento.tipo }}</span>
+                          {% endif %}
+                        </a>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+
+          <!-- Corredor da Musculação -->
+          {% if corredor_musculacao %}
+            <div class="corredor-lateral corredor-musculacao">
+              <div class="corredor-header">
+                <h3>Corredor</h3>
+              </div>
+              <div class="corredor-items">
+                {% for item in corredor_musculacao %}
+                  <div class="corredor-item">
+                    <a href="{% url 'academia_virtual:detalhe' item.id %}" class="item-link">
+                      {% if item.imagem %}
+                        <img src="{{ item.imagem.url }}" alt="{{ item.nome }}">
+                      {% endif %}
+                      <h4>{{ item.nome }}</h4>
+                    </a>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <!-- Seção Fitness -->
+      {% if area_fitness or corredor_fitness %}
+        <div class="secao-academia">
+          <!-- Sala de Fitness -->
+          {% if area_fitness %}
+            <div class="sala-principal sala-fitness">
+              <div class="area-section area-fitness">
+                <div class="area-header">
+                  <h2>{{ area_fitness.nome }}</h2>
+                  {% if area_fitness.descricao %}
+                    <p class="area-descricao">{{ area_fitness.descricao }}</p>
+                  {% endif %}
+                </div>
+                
+                {% if equipamentos_fitness %}
+                  <div class="grid-container">
+                    {% for equipamento in equipamentos_fitness %}
+                      <div class="grid-item">
+                        <a href="{% url 'academia_virtual:detalhe' equipamento.id %}" class="item-link">
+                          {% if equipamento.imagem %}
+                            <img src="{{ equipamento.imagem.url }}" alt="{{ equipamento.nome }}">
+                          {% endif %}
+                          <h3>{{ equipamento.nome }}</h3>
+                          {% if equipamento.descricao %}
+                            <p>{{ equipamento.descricao|truncatewords:20 }}</p>
+                          {% endif %}
+                          {% if equipamento.tipo %}
+                            <span class="tipo-badge">{{ equipamento.tipo }}</span>
+                          {% endif %}
+                        </a>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+
+          <!-- Corredor do Fitness -->
+          {% if corredor_fitness %}
+            <div class="corredor-lateral corredor-fitness">
+              <div class="corredor-header">
+                <h3>Corredor</h3>
+              </div>
+              <div class="corredor-items">
+                {% for item in corredor_fitness %}
+                  <div class="corredor-item">
+                    <a href="{% url 'academia_virtual:detalhe' item.id %}" class="item-link">
+                      {% if item.imagem %}
+                        <img src="{{ item.imagem.url }}" alt="{{ item.nome }}">
+                      {% endif %}
+                      <h4>{{ item.nome }}</h4>
+                    </a>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
     </div>
+
+    {% if not area_cardio and not area_musculacao and not area_fitness and not corredor_cardio and not corredor_musculacao and not corredor_fitness %}
+      <div class="empty-state">
+        <p>Nenhum item cadastrado ainda.</p>
+      </div>
+    {% endif %}
   </body>
 </html>

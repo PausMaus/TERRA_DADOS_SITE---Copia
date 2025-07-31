@@ -8,23 +8,30 @@
     <link rel="stylesheet" href="{% static 'academia_virtual/style.css' %}?v=4">
   </head>
   <body>
-    <div class="header">
-      <h1>Academia Virtual</h1>
-      <nav>
-        <a href="{% url 'academia_virtual:index' %}" class="btn-voltar">← Voltar</a>
-      </nav>
-    </div>
+    {% if item.imagem %}
+      <div class="banner-header" style="background-image: url('{{ item.imagem.url }}');">
+        <div class="banner-overlay">
+          <div class="banner-content">
+            <nav>
+              <a href="{% url 'academia_virtual:index' %}" class="btn-voltar">← Voltar</a>
+            </nav>
+            <h1>{{ item.nome }}</h1>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="header">
+        <h1>Academia Virtual</h1>
+        <nav>
+          <a href="{% url 'academia_virtual:index' %}" class="btn-voltar">← Voltar</a>
+        </nav>
+      </div>
+    {% endif %}
 
     <div class="detalhe-container">
       <div class="detalhe-content">
-        {% if item.imagem %}
-          <div class="detalhe-imagem">
-            <img src="{{ item.imagem.url }}" alt="{{ item.nome }}">
-          </div>
-        {% endif %}
         
         <div class="detalhe-info">
-          <h1>{{ item.nome }}</h1>
           {% if item.descricao %}
             <div class="descricao">
               <h3>Descrição</h3>
