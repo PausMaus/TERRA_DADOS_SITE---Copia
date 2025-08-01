@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ item.nome }} - Academia Virtual</title>
-    <link rel="stylesheet" href="{% static 'academia_virtual/style.css' %}?v=4">
+    <link rel="stylesheet" href="{% static 'academia_virtual/style.css' %}?v=5">
   </head>
   <body>
     {% if item.imagem %}
@@ -34,13 +34,53 @@
         <div class="detalhe-info">
           {% if item.descricao %}
             <div class="descricao">
-              <h3>Descrição</h3>
               <p>{{ item.descricao|linebreaks }}</p>
             </div>
           {% else %}
             <p class="sem-descricao">Nenhuma descrição disponível para este item.</p>
           {% endif %}
         </div>
+
+        <!-- Seção de Exercícios Relacionados -->
+        {% if exercicios_relacionados %}
+          <div class="exercicios-relacionados">
+            <h3>Exercícios que utilizam este equipamento</h3>
+            <div class="exercicios-grid">
+              {% for exercicio in exercicios_relacionados %}
+                <div class="exercicio-card">
+                  {% if exercicio.imagem %}
+                    <img src="{{ exercicio.imagem.url }}" alt="{{ exercicio.nome }}" class="exercicio-imagem">
+                  {% endif %}
+                  <div class="exercicio-info">
+                    <h4>{{ exercicio.nome }}</h4>
+                    {% if exercicio.descricao %}
+                      <p class="exercicio-descricao">{{ exercicio.descricao|truncatewords:15 }}</p>
+                    {% endif %}
+                    <div class="exercicio-detalhes">
+                      {% if exercicio.dificuldade %}
+                      
+                        <span class="dificuldade-badge">{{ exercicio.dificuldade }}</span>
+                      {% endif %}
+                      {% if exercicio.duracao %}
+                        <span class="duracao-info">⏱️ {{ exercicio.duracao }} min</span>
+                      {% endif %}
+                      {% if exercicio.series and exercicio.repeticoes %}
+                        <span class="series-info">🔢 {{ exercicio.series }}x{{ exercicio.repeticoes }}</span>
+                      {% elif exercicio.series %}
+                        <span class="series-info">🔢 {{ exercicio.series }} séries</span>
+                      {% elif exercicio.repeticoes %}
+                        <span class="series-info">🔢 {{ exercicio.repeticoes }} rep</span>
+                      {% endif %}
+                      {% if exercicio.professor %}
+                        <span class="professor-info">👨‍🏫 {{ exercicio.professor.nome }}</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
       </div>
     </div>
   </body>
