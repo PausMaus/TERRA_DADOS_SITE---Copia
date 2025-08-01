@@ -202,16 +202,16 @@
           <!-- Tabs para diferentes métricas -->
           <div class="chart-tabs" style="margin-bottom: 2rem;">
             <button class="chart-tab active" data-metric="quilometragem" onclick="showChart('quilometragem')">
-              Quilometragem por Veículo
+              Quilometragem Total
             </button>
             <button class="chart-tab" data-metric="consumo" onclick="showChart('consumo')">
-              Consumo por Veículo
+              Consumo de Combustível
             </button>
             <button class="chart-tab" data-metric="eficiencia" onclick="showChart('eficiencia')">
               Eficiência Média
             </button>
             <button class="chart-tab" data-metric="emissoes" onclick="showChart('emissoes')">
-              Emissões por Veículo
+              Emissões CO2
             </button>
           </div>
           
@@ -618,11 +618,10 @@
     const marcasData = {
     {% for marca, stats in marcas_stats.items %}
     "{{ marca }}": {
-        quilometragem: {{ stats.quilometragem_por_veiculo|floatformat:1|default:0 }},
-        consumo: {{ stats.consumo_por_veiculo|floatformat:1|default:0 }},
-        eficiencia: {{ stats.eficiencia_por_veiculo|floatformat:2|default:0 }},
-        emissoes: {{ stats.emissoes_por_veiculo|floatformat:3|default:0 }},
-        total_veiculos: {{ stats.total_veiculos|default:0 }}
+        quilometragem: {{ stats.total_quilometragem|default:0 }},
+        consumo: {{ stats.total_consumido|default:0 }},
+        eficiencia: {{ stats.media_quilometragem|default:0 }},
+        emissoes: {{ stats.total_emissoes|default:0 }}
     }{% if not forloop.last %},{% endif %}
     {% endfor %}
     };
@@ -644,16 +643,16 @@
     // Configurações dos gráficos por métrica
     const chartConfigs = {
         quilometragem: {
-            label: 'Quilometragem Média por Veículo (km)',
+            label: 'Quilometragem Total (km)',
             backgroundColor: marcaCores.map(cor => cor.bg),
             borderColor: marcaCores.map(cor => cor.border),
-            yAxisLabel: 'Quilômetros por Veículo (km)'
+            yAxisLabel: 'Quilômetros (km)'
         },
         consumo: {
-            label: 'Consumo Médio por Veículo (L)',
+            label: 'Consumo Total (L)',
             backgroundColor: marcaCores.map(cor => cor.bg),
             borderColor: marcaCores.map(cor => cor.border),
-            yAxisLabel: 'Litros por Veículo (L)'
+            yAxisLabel: 'Litros (L)'
         },
         eficiencia: {
             label: 'Eficiência Média (km/L)',
@@ -662,10 +661,10 @@
             yAxisLabel: 'Km por Litro'
         },
         emissoes: {
-            label: 'Emissões Médias por Veículo (t CO2)',
+            label: 'Emissões CO2 (t)',
             backgroundColor: marcaCores.map(cor => cor.bg),
             borderColor: marcaCores.map(cor => cor.border),
-            yAxisLabel: 'Toneladas CO2 por Veículo'
+            yAxisLabel: 'Toneladas CO2'
         }
     };
     
@@ -726,11 +725,6 @@
                                 }
                                 
                                 return `${config.label}: ${formattedValue}`;
-                            },
-                            afterLabel: function(context) {
-                                const marca = marcas[context.dataIndex];
-                                const totalVeiculos = marcasData[marca].total_veiculos;
-                                return `Total de veículos: ${totalVeiculos}`;
                             }
                         }
                     }

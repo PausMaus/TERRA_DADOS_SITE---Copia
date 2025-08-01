@@ -1,7 +1,7 @@
 from django.db import models
 
 # Create your models here.
-#modelo basico para itens de academia virtual, tanto equipamentos quanto treinos e professores.
+
 class Area(models.Model):
     nome = models.CharField(max_length=100, verbose_name="Nome da Área")
     descricao = models.TextField(verbose_name="Descrição da Área", blank=True, null=True)

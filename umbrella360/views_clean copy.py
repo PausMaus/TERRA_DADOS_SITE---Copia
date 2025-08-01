@@ -77,14 +77,6 @@ def aplicar_filtro_classe_unidade(queryset, classe_selecionada):
             return queryset.filter(unidade__cls__icontains='motorista')
     return queryset
 
-def aplicar_filtro_eficiencia_minima(queryset, eficiencia_minima=1.0):
-    """Aplica filtro de eficiência mínima para remover dados irreais/com erros"""
-    return queryset.filter(Quilometragem_média__gte=eficiencia_minima)
-
-def aplicar_filtro_eficiencia_maxima(queryset, eficiencia_maxima=4.0):
-    """Aplica filtro de eficiência máxima para remover dados irreais/com erros"""
-    return queryset.filter(Quilometragem_média__lte=eficiencia_maxima)
-
 def aplicar_filtro_mes(queryset, mes_selecionado):
     """Aplica filtro de mês no queryset (para sistema antigo)"""
     if mes_selecionado and mes_selecionado != 'todos':
@@ -177,30 +169,15 @@ def calcular_stats_marca(viagens_filtradas, marca):
 
 def calcular_stats_marca_novo(viagens_filtradas, marca):
     """Calcula estatísticas agregadas para uma marca específica usando dados unificados"""
-    viagens_marca = viagens_filtradas.filter(unidade__marca=marca)
-    
-    # Estatísticas básicas
-    stats = viagens_marca.aggregate(
+    return viagens_filtradas.filter(unidade__marca=marca).aggregate(
         total_quilometragem=Sum('quilometragem'),
         total_consumido=Sum('Consumido'),
         media_quilometragem=Avg('Quilometragem_média'),
         media_velocidade=Avg('Velocidade_média'),
         media_rpm=Avg('RPM_médio'),
         media_temperatura=Avg('Temperatura_média'),
-        total_emissoes=Sum('Emissões_CO2'),
-        total_veiculos=Count('unidade', distinct=True)
+        total_emissoes=Sum('Emissões_CO2')
     )
-    
-    # Calcular médias por veículo
-    total_veiculos = stats['total_veiculos'] or 1  # Evitar divisão por zero
-    
-    stats['quilometragem_por_veiculo'] = (stats['total_quilometragem'] or 0) / total_veiculos
-    stats['consumo_por_veiculo'] = (stats['total_consumido'] or 0) / total_veiculos
-    stats['emissoes_por_veiculo'] = (stats['total_emissoes'] or 0) / total_veiculos
-    # A eficiência média já é uma média, não precisa dividir por veículos
-    stats['eficiencia_por_veiculo'] = stats['media_quilometragem'] or 0
-    
-    return stats
 
 def calcular_stats_empresa(viagens_filtradas, empresa_nome):
     """Calcula estatísticas agregadas para uma empresa específica"""
@@ -225,9 +202,8 @@ def obter_unidades_com_stats(empresa_selecionada=None):
     unidades_list = []
     
     for unidade in unidades_query.order_by('empresa__nome', 'cls', 'id'):
-        # Buscar estatísticas da unidade (filtrar eficiência abaixo de 4 km/L)
+        # Buscar estatísticas da unidade
         viagens_unidade = Viagem_Base.objects.filter(unidade=unidade)
-
         
         stats = viagens_unidade.aggregate(
             total_viagens=Count('id'),
@@ -271,10 +247,6 @@ def report_novo(request):
         periodo_selecionado, filtro_combustivel, classe_selecionada
     )
     
-    # Filtrar viagens com eficiência abaixo de 4 km/L (dados irreais/com erros)
-    viagens_filtradas = aplicar_filtro_eficiencia_minima(viagens_filtradas)
-    viagens_filtradas = aplicar_filtro_eficiencia_maxima(viagens_filtradas)
-    
     # Separar por tipo de unidade (motoristas e veículos)
     viagens_motoristas = viagens_filtradas.filter(unidade__cls__icontains='motorista').order_by('-Quilometragem_média')[:10]
     viagens_veiculos = viagens_filtradas.filter(unidade__cls__icontains='veículo').order_by('-Quilometragem_média')[:10]
@@ -284,7 +256,6 @@ def report_novo(request):
     total_emissoes = viagens_filtradas.aggregate(total=Sum('Emissões_CO2'))['total'] or 0
     rpm_medio = viagens_filtradas.aggregate(media=Avg('RPM_médio'))['media'] or 0
     velocidade_media = viagens_filtradas.aggregate(media=Avg('Velocidade_média'))['media'] or 0
-    media_quilometragem = viagens_filtradas.aggregate(media=Avg('Quilometragem_média'))['media'] or 0
     
     # Consumo com limite configurável
     consumo_max_normal = Config.consumo_maximo_normal()
@@ -371,7 +342,6 @@ def report_novo(request):
         'custo_atual': custo_atual,
         'custo_objetivo': custo_objetivo,
         'economia_potencial': economia_potencial,
-        'media_quilometragem': media_quilometragem,
     })
     
     return render(request, 'umbrella360/report_novo.html', context)
@@ -400,9 +370,8 @@ def detalhes_unidade(request, unidade_id):
     """View para mostrar detalhes completos de uma unidade específica"""
     unidade = get_object_or_404(Unidade, id=unidade_id)
     
-    # Obter todas as viagens da unidade (filtrar eficiência abaixo de 4 km/L)
+    # Obter todas as viagens da unidade
     viagens = Viagem_Base.objects.filter(unidade=unidade).order_by('-período')
-    viagens = aplicar_filtro_eficiencia_minima(viagens)
 
     # Calcular estatísticas gerais
     stats_gerais = viagens.aggregate(
