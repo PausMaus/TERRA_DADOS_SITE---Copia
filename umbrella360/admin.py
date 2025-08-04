@@ -90,6 +90,6 @@ class ViagemBaseAdmin(admin.ModelAdmin):
     list_display = ('unidade', 'quilometragem', 'Consumido', 'Quilometragem_média',
                     'Horas_de_motor', 'Velocidade_média', 'RPM_médio',
                     'Temperatura_média', 'Emissões_CO2', 'período')
-    list_filter = ('período',  'Quilometragem_média','unidade__empresa')
+    list_filter = ('período','unidade__empresa', 'Quilometragem_média')
     list_editable = ('quilometragem', 'Consumido')
     
