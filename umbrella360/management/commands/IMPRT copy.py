@@ -18,9 +18,16 @@ class Command(BaseCommand):
             help='Caminho para o arquivo Excel',
             required=True
         )
+        parser.add_argument(
+            '--periodo',
+            type=str,
+            help='Período a ser usado para todas as viagens importadas',
+            required=True
+        )
 
     def handle(self, *args, **options):
         file_path = options['file']
+        periodo = options['periodo']
         
         # Verifica se o arquivo existe
         if not os.path.exists(file_path):
@@ -28,9 +35,9 @@ class Command(BaseCommand):
             return
         
         try:
-            # Lê o arquivo Excel
-            self.stdout.write(f'Lendo arquivo: {file_path}')
-            processamento_df = pd.read_excel(file_path, engine='openpyxl')
+            # Lê o arquivo Excel - segunda planilha (index 1)
+            self.stdout.write(f'Lendo arquivo: {file_path} (segunda planilha)')
+            processamento_df = pd.read_excel(file_path, sheet_name=1, engine='openpyxl')
             
             # Debug: mostra as colunas presentes no arquivo
             self.stdout.write(f'Colunas encontradas no arquivo: {list(processamento_df.columns)}')
@@ -43,7 +50,6 @@ class Command(BaseCommand):
                 'Quilometragem média por unidade de combustível por AbsFCS',
                 'Velocidade média',
                 'Emissões de CO2',
-                'Período'
             ]
             
             colunas_faltantes = [col for col in colunas_esperadas if col not in processamento_df.columns]
@@ -55,12 +61,12 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f'Arquivo carregado com sucesso. {len(processamento_df)} registros encontrados.'))
             
             # Chama o método para processar os dados
-            self.update_or_create_trip(processamento_df)
+            self.update_or_create_trip(processamento_df, periodo)
             
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Erro ao ler o arquivo: {str(e)}'))
 
-    def update_or_create_trip(self, processamento_df):
+    def update_or_create_trip(self, processamento_df, periodo):
         if not processamento_df.empty:
             for index, row in processamento_df.iterrows():
                 try:
@@ -88,7 +94,7 @@ class Command(BaseCommand):
 
                     Viagem_Base.objects.update_or_create(
                         unidade=unidade_instance,
-                        período=row['Período'],
+                        período=periodo,
                         defaults={
                             'quilometragem': quilometragem_value,
                             'Consumido': consumo_value,
@@ -97,7 +103,7 @@ class Command(BaseCommand):
                             'Emissões_CO2': co2_value,
                         }
                     )
-                    self.stdout.write(self.style.SUCCESS(f'Viagem atualizada ou criada para a unidade {row["Agrupamento"]} no período {row["Período"]} com quilometragem {quilometragem_value}'))
+                    self.stdout.write(self.style.SUCCESS(f'Viagem atualizada ou criada para a unidade {row["Agrupamento"]} no período {periodo} com quilometragem {quilometragem_value}'))
                 
                 except Unidade.DoesNotExist:
                     self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Agrupamento"]}" não encontrada no banco de dados.'))

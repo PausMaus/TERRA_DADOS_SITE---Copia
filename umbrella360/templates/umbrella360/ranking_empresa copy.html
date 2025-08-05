@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking {{ empresa_logada.nome }} - Umbrella360</title>
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=9">
+    <link rel="stylesheet" href="{% static 'umbrella360/style_refatorado.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'umbrella360/theme-fixes.css' %}?v=1">
+    <script src="{% static 'umbrella360/theme-toggle.js' %}?v=2"></script>
+    
+    <style>
+      .ranking-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+      
+      .ranking-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 3rem;
+      }
+      
+      .ranking-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        border: 1px solid #dee2e6;
+      }
+      
+      .ranking-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e9ecef;
+      }
+      
+      .ranking-header h3 {
+        color: #2c3e50;
+        font-size: 1.5rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+      
+      .ranking-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      
+      .ranking-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+      }
+      
+      .ranking-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        border-color: #007bff;
+      }
+      
+      .ranking-position {
+        font-size: 1.2rem;
+        font-weight: 700;
+        min-width: 40px;
+        text-align: center;
+        margin-right: 1rem;
+      }
+      
+      .ranking-position.top3 {
+        color: #ffd700;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+      }
+      
+      .ranking-position.gold { color: #ffd700; }
+      .ranking-position.silver { color: #c0c0c0; }
+      .ranking-position.bronze { color: #cd7f32; }
+      
+      .ranking-name {
+        flex: 1;
+        font-weight: 600;
+        color: #495057;
+        font-size: 1rem;
+      }
+      
+      .ranking-value {
+        font-weight: 700;
+        color: #28a745;
+        font-size: 1.1rem;
+        padding: 0.25rem 0.75rem;
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        border-radius: 20px;
+        border: 1px solid #28a745;
+      }
+      
+      .stats-overview {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 3rem;
+        border: 1px solid #dee2e6;
+      }
+      
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+      }
+      
+      .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid #e9ecef;
+        transition: transform 0.3s ease;
+      }
+      
+      .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      }
+      
+      .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0.5rem 0;
+      }
+      
+      .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .filter-section {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        border: 1px solid #dee2e6;
+      }
+      
+      .filter-form {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      
+      .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .filter-group label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.9rem;
+      }
+      
+      .filter-group select {
+        padding: 0.5rem 1rem;
+        border: 2px solid #ced4da;
+        border-radius: 6px;
+        background: white;
+        color: #495057;
+        font-size: 0.9rem;
+        transition: border-color 0.3s ease;
+      }
+      
+      .filter-group select:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      }
+      
+      .podium {
+        display: flex;
+        justify-content: center;
+        align-items: end;
+        margin: 2rem 0;
+        gap: 1rem;
+      }
+      
+      .podium-place {
+        text-align: center;
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 2px solid #e9ecef;
+        min-width: 150px;
+      }
+      
+      .podium-place.first {
+        order: 2;
+        border-color: #ffd700;
+        transform: scale(1.1);
+      }
+      
+      .podium-place.second {
+        order: 1;
+        border-color: #c0c0c0;
+      }
+      
+      .podium-place.third {
+        order: 3;
+        border-color: #cd7f32;
+      }
+      
+      .podium-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+      
+      .podium-number.first { color: #ffd700; }
+      .podium-number.second { color: #c0c0c0; }
+      .podium-number.third { color: #cd7f32; }
+      
+      @media (max-width: 768px) {
+        .ranking-grid {
+          grid-template-columns: 1fr;
+        }
+        
+        .stats-grid {
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+        
+        .filter-form {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        
+        .podium {
+          flex-direction: column;
+          align-items: center;
+        }
+        
+        .podium-place {
+          order: initial !important;
+          transform: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- Botão de alternância de tema -->
+    <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
+      <span class="theme-icon">◐</span> Noite de Verão
+    </button>
+
+    <div class="header">
+      <h1>Ranking {{ empresa_logada.nome }}</h1>
+      <p class="tagline">Os Melhores Desempenhos da Sua Frota</p>
+      <div class="menu-buttons">
+        <a href="{% url 'index' %}" class="btn btn-secondary">Início</a>
+        <a href="{% url 'report_empresa' %}" class="btn btn-secondary">Dashboard</a>
+        <a href="{% url 'lista_unidades' %}" class="btn btn-secondary">Unidades</a>
+        <a href="{% url 'logout' %}" class="btn btn-primary">Logout</a>
+      </div>
+    </div>
+
+    <main class="ranking-container">
+      <!-- Filtro por Período -->
+      <div class="filter-section">
+        <form method="get" class="filter-form">
+          <div class="filter-group">
+            <label for="periodo">Período:</label>
+            <select name="periodo" id="periodo" onchange="this.form.submit()">
+              <option value="todos" {% if periodo_selecionado == 'todos' %}selected{% endif %}>Todos os Períodos</option>
+              {% for periodo in periodos_disponiveis %}
+                <option value="{{ periodo }}" {% if periodo_selecionado == periodo %}selected{% endif %}>{{ periodo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if periodo_selecionado != 'todos' %}
+            <a href="{% url 'ranking_empresa' %}" class="btn btn-primary">Limpar Filtro</a>
+          {% endif %}
+        </form>
+      </div>
+
+      <!-- Estatísticas Gerais -->
+      <div class="stats-overview">
+        <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50;">Panorama Geral da Empresa</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">{{ total_motoristas }}</div>
+            <div class="stat-label">Motoristas Ativos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ total_veiculos }}</div>
+            <div class="stat-label">Veículos Ativos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ stats_empresa.media_eficiencia|floatformat:2 }}</div>
+            <div class="stat-label">Eficiência Média (km/L)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ stats_empresa.total_viagens }}</div>
+            <div class="stat-label">Total de Viagens</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rankings -->
+      <div class="ranking-grid">
+        <!-- Top 10 Motoristas -->
+        <div class="ranking-card">
+          <div class="ranking-header">
+            <h3>Top 10 Motoristas</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por eficiência de combustível</p>
+          </div>
+          
+          {% if top_motoristas %}
+            <ul class="ranking-list">
+              {% for viagem in top_motoristas %}
+                <li class="ranking-item">
+                  <div class="ranking-position {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+                    {% if forloop.counter == 1 %}1º{% elif forloop.counter == 2 %}2º{% elif forloop.counter == 3 %}3º{% else %}{{ forloop.counter }}º{% endif %}
+                  </div>
+                  <div class="ranking-name">
+                    <a href="{% url 'detalhes_unidade' viagem.unidade.id %}" style="text-decoration: none; color: inherit;">
+                      {{ viagem.unidade.nm|default:viagem.unidade.id }}
+                    </a>
+                  </div>
+                  <div class="ranking-value">{{ viagem.Quilometragem_média|floatformat:2 }} km/L</div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>Nenhum motorista encontrado</strong></p>
+              <p>Não há dados de motoristas para o período selecionado.</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Top 10 Veículos -->
+        <div class="ranking-card">
+          <div class="ranking-header">
+            <h3>Top 10 Veículos</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por eficiência de combustível</p>
+          </div>
+          
+          {% if top_veiculos %}
+            <ul class="ranking-list">
+              {% for viagem in top_veiculos %}
+                <li class="ranking-item">
+                  <div class="ranking-position {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+                    {% if forloop.counter == 1 %}1º{% elif forloop.counter == 2 %}2º{% elif forloop.counter == 3 %}3º{% else %}{{ forloop.counter }}º{% endif %}
+                  </div>
+                  <div class="ranking-name">
+                    <a href="{% url 'detalhes_unidade' viagem.unidade.id %}" style="text-decoration: none; color: inherit;">
+                      {{ viagem.unidade.nm|default:viagem.unidade.id }}
+                    </a>
+                    {% if viagem.unidade.marca %}
+                      <small style="color: #6c757d;">({{ viagem.unidade.marca }})</small>
+                    {% endif %}
+                  </div>
+                  <div class="ranking-value">{{ viagem.Quilometragem_média|floatformat:2 }} km/L</div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>Nenhum veículo encontrado</strong></p>
+              <p>Não há dados de veículos para o período selecionado.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Pódio dos Top 3 Geral -->
+      {% if top_motoristas or top_veiculos %}
+      <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; margin-top: 3rem; text-align: center; border: 1px solid #dee2e6;">
+        <h3 style="color: #2c3e50; margin-bottom: 2rem;">Pódio de Excelência</h3>
+        <p style="color: #6c757d; margin-bottom: 2rem;">Os três melhores desempenhos da empresa (motoristas e veículos)</p>
+        
+        <!-- Combinar e ordenar top 3 geral -->
+        {% comment %}
+        Aqui idealmente faríamos a combinação no backend, mas para simplificar no template:
+        {% endcomment %}
+        
+        <div style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 1.5rem; border-radius: 10px;">
+          <p style="margin: 0; color: #495057; font-size: 0.9rem;">
+            <strong>Dica:</strong> Os rankings são atualizados com base nos dados de viagem da sua empresa. 
+            Use o filtro de período para ver performance em momentos específicos.
+          </p>
+        </div>
+      </div>
+      {% endif %}
+    </main>
+
+    <footer class="footer">
+      <p>&copy; 2025 Umbrella360. Ranking de Performance - {{ empresa_logada.nome }}</p>
+      <p><em>"Reconhecendo a excelência operacional em cada quilômetro"</em></p>
+    </footer>
+  </body>
+</html>

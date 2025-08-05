@@ -183,18 +183,25 @@ class Command(BaseCommand):
         processamento_df = pd.DataFrame()
         unidades_db = unidades_db
         # Coleta dados de relatório para 1 dia
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-
         
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
         print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        
+
 
 
 
         # Atualiza ou cria as viagens no model Viagem_Base
+
         self.update_or_create_trip(processamento_df)
-        print(processamento_df)
+
 
 
     def process_units_PLAC(self, sid):

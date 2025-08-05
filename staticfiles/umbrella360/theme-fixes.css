@@ -1,0 +1,33 @@
+/* Theme Fixes CSS - Umbrella360 */
+/* Correções específicas para temas e compatibilidade */
+
+/* Correções gerais */
+body {
+    overflow-x: hidden;
+}
+
+/* Correções para formulários */
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary-blue, #667eea);
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+/* Correções para botões */
+.btn {
+    transition: all 0.3s ease;
+}
+
+/* Correções para responsividade */
+@media (max-width: 768px) {
+    .menu-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .menu-buttons .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+}

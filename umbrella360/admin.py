@@ -70,7 +70,7 @@ admin.site.register(Viagem_MOT, ViagemMOTAdmin)
 ##############################################################################
 @admin.register(Empresa)
 class EmpresaAdmin(admin.ModelAdmin):
-    list_display = ('nome',)
+    list_display = ('nome','senha')
     search_fields = ('nome',)
     ordering = ('nome',)
 
