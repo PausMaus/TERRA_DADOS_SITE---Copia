@@ -82,10 +82,18 @@
     </div>
     
     <div class="header">
-      <h1>{% block header_title %}Dashboard Umbrella360{% endblock %}</h1>
+      <h1>
+        {% block header_title %}
+          Dashboard 
+          {% if empresa_logada %}
+        - {{ empresa_logada.nome }}
+          {% endif %}
+        {% endblock %}
+      </h1>
         <div class="menu-buttons">
           <a href="{% url 'index' %}" class="btn btn-secondary">Página Inicial</a>
-          <a href="{% url 'report_empresa' %}" class="btn btn-primary">Relatório {% if empresa_logada %}{{ empresa_logada.nome }}{% else %}Empresa{% endif %}</a>
+          <a href="{% url 'lista_empresa' %}" class="btn btn-primary">Lista de Unidades</a>
+          <a href="{% url 'report_novo' %}" class="btn btn-secondary">Relatório Global</a>
         </div>
     </div>
 

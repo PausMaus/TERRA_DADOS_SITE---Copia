@@ -1,6 +1,5 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=8">
-<link rel="stylesheet" href="{% static 'umbrella360/theme-fixes.css' %}?v=1">
 
 <!doctype html>
 <html lang="pt-BR">
@@ -17,15 +16,27 @@
       <p class="tagline">Transformando a Logística com Dados Inteligentes</p>
         <div class="menu-buttons">
           <a href="{% url 'report_novo' %}" class="btn btn-primary">Relatório Global</a>
+          {% if request.session.empresa_nome %}
+            <a href="{% url 'report_empresa' %}" class="btn btn-primary">Dashboard {{ request.session.empresa_nome }}</a>
+            <a href="{% url 'ranking_empresa' %}" class="btn btn-secondary">Ranking</a>
+            <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+          {% else %}
+            <a href="{% url 'login' %}" class="btn btn-secondary">Login</a>
+          {% endif %}
         </div>
     </div>
 
     <main class="main-content">
+
       <section class="hero-section">
+      {% if request.session.empresa_nome %}
+        <h2>Bem-vindo,<span class="gradient-text">{{ request.session.empresa_nome }}!</span> </h2>
+      {% else %}
         <h2>A Ferramenta do <span class="gradient-text">Gestor Inteligente</span></h2>
         <p class="hero-text">
           Aonde a <span class="solid-text1">INOVAÇÃO</span> encontra a <span class="solid-text2">LOGÍSTICA</span>.
         </p>
+      {% endif %}
       </section>
 
       <section class="features-grid">
@@ -43,6 +54,20 @@
           <h3>Motoristas</h3>
           <p>Gerenciamento eficiente de pessoal.</p>
         </div>
+        
+        {% if request.session.empresa_nome %}
+        <div class="feature-card" style="border: 2px solid #ffd700; background: linear-gradient(135deg, #fff9c4, #ffeaa7);">
+          <h3>Ranking</h3>
+          <p>Veja os melhores desempenhos da {{ request.session.empresa_nome }}.</p>
+          <a href="{% url 'ranking_empresa' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Rankings</a>
+        </div>
+
+        <div class="feature-card" style="border: 2px solid #ffd700; background: linear-gradient(135deg, #ffc4ff, #ffeaa7);">
+          <h3>Relatórios</h3>
+          <p>Veja os Relatórios {{ request.session.empresa_nome }}.</p>
+          <a href="{% url 'report_empresa' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Relatórios</a>
+        </div>
+        {% endif %}
       </section>
 
       <section class="data-importance">

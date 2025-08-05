@@ -132,6 +132,7 @@ class Viagem_CAM(models.Model):
 #empresa
 class Empresa(models.Model):
     nome = models.CharField(max_length=100, unique=True, verbose_name="Nome da Empresa")
+    senha = models.CharField(max_length=100, default='senha', verbose_name="Senha de Acesso", blank=True, null=True)
 
     def __str__(self):
         return self.nome

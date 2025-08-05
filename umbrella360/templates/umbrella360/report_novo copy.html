@@ -1,8 +1,9 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=9">
 <link rel="stylesheet" href="{% static 'umbrella360/style_refatorado.css' %}?v=2">
-<link rel="stylesheet" href="{% static 'umbrella360/report_novo.css' %}?v=1">
 <script src="{% static 'umbrella360/theme-toggle.js' %}?v=2"></script>
+    <!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
 <!doctype html>
 <html lang="pt-BR">
@@ -10,8 +11,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Dashboard KPIs - Umbrella360{% endblock %}</title>
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
   </head>
   <body>
     <!-- Botão de alternância de tema -->
@@ -202,16 +202,16 @@
           <!-- Tabs para diferentes métricas -->
           <div class="chart-tabs" style="margin-bottom: 2rem;">
             <button class="chart-tab active" data-metric="quilometragem" onclick="showChart('quilometragem')">
-              Quilometragem Total
+              Quilometragem por Veículo
             </button>
             <button class="chart-tab" data-metric="consumo" onclick="showChart('consumo')">
-              Consumo de Combustível
+              Consumo por Veículo
             </button>
             <button class="chart-tab" data-metric="eficiencia" onclick="showChart('eficiencia')">
               Eficiência Média
             </button>
             <button class="chart-tab" data-metric="emissoes" onclick="showChart('emissoes')">
-              Emissões CO2
+              Emissões por Veículo
             </button>
           </div>
           
@@ -618,10 +618,11 @@
     const marcasData = {
     {% for marca, stats in marcas_stats.items %}
     "{{ marca }}": {
-        quilometragem: {{ stats.total_quilometragem|default:0 }},
-        consumo: {{ stats.total_consumido|default:0 }},
-        eficiencia: {{ stats.media_quilometragem|default:0 }},
-        emissoes: {{ stats.total_emissoes|default:0 }}
+        quilometragem: {{ stats.quilometragem_por_veiculo|floatformat:1|default:0 }},
+        consumo: {{ stats.consumo_por_veiculo|floatformat:1|default:0 }},
+        eficiencia: {{ stats.eficiencia_por_veiculo|floatformat:2|default:0 }},
+        emissoes: {{ stats.emissoes_por_veiculo|floatformat:3|default:0 }},
+        total_veiculos: {{ stats.total_veiculos|default:0 }}
     }{% if not forloop.last %},{% endif %}
     {% endfor %}
     };
@@ -643,16 +644,16 @@
     // Configurações dos gráficos por métrica
     const chartConfigs = {
         quilometragem: {
-            label: 'Quilometragem Total (km)',
+            label: 'Quilometragem Média por Veículo (km)',
             backgroundColor: marcaCores.map(cor => cor.bg),
             borderColor: marcaCores.map(cor => cor.border),
-            yAxisLabel: 'Quilômetros (km)'
+            yAxisLabel: 'Quilômetros por Veículo (km)'
         },
         consumo: {
-            label: 'Consumo Total (L)',
+            label: 'Consumo Médio por Veículo (L)',
             backgroundColor: marcaCores.map(cor => cor.bg),
             borderColor: marcaCores.map(cor => cor.border),
-            yAxisLabel: 'Litros (L)'
+            yAxisLabel: 'Litros por Veículo (L)'
         },
         eficiencia: {
             label: 'Eficiência Média (km/L)',
@@ -661,10 +662,10 @@
             yAxisLabel: 'Km por Litro'
         },
         emissoes: {
-            label: 'Emissões CO2 (t)',
+            label: 'Emissões Médias por Veículo (t CO2)',
             backgroundColor: marcaCores.map(cor => cor.bg),
             borderColor: marcaCores.map(cor => cor.border),
-            yAxisLabel: 'Toneladas CO2'
+            yAxisLabel: 'Toneladas CO2 por Veículo'
         }
     };
     
@@ -725,6 +726,11 @@
                                 }
                                 
                                 return `${config.label}: ${formattedValue}`;
+                            },
+                            afterLabel: function(context) {
+                                const marca = marcas[context.dataIndex];
+                                const totalVeiculos = marcasData[marca].total_veiculos;
+                                return `Total de veículos: ${totalVeiculos}`;
                             }
                         }
                     }
