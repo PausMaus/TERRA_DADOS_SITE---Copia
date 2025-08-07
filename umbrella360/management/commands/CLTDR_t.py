@@ -23,6 +23,7 @@ WIALON_TOKEN_BRAS = "517e0e42b9a966f628a9b8cffff3ffc3F57FA748F075501F5667A26AFA2
 WIALON_TOKEN_PLAC = "82fee29da11ea1312f1c8235247a0d82DC991707A4435C60FE7FFB27BD0D0F32BF59B709"
 
 
+
 # Tokens para diferentes ambientes
 Tokens_Wialon = {
     "CPBRASCELL": WIALON_TOKEN_BRAS,
@@ -35,15 +36,42 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         start_time = datetime.now()
         self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
+
+        self.teste(WIALON_TOKEN_BRAS, "CPBRASCELL")
+
+
+        #self.principal(Empresa.objects.get(nome="CPBRASCELL").token, "CPBRASCELL")
+        #self.principal(Empresa.objects.get(nome="PLACIDO").token, "PLACIDO")
+
         
-        self.principal(WIALON_TOKEN_BRAS, "CPBRASCELL")
-        #self.principal(WIALON_TOKEN_PLAC, "PLACIDO")
-        
+
         end_time = datetime.now()
         execution_time = end_time - start_time
         self.stdout.write(self.style.SUCCESS(f'Comando concluído às {end_time.strftime("%H:%M:%S")}'))
         self.stdout.write(self.style.SUCCESS(f'Tempo total de execução: {execution_time}'))
+    
 
+
+    def teste(self,token, empresa_nome):
+        self.stdout.write(self.style.SUCCESS(f'Iniciando teste de importação de dados para a empresa: {empresa_nome}'))
+
+        # Inicia a sessão Wialon
+        sid = Wialon.authenticate_with_wialon(token)
+        if not sid:
+            self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+            return
+
+        # Busca unidades
+        unidades = unidades_simples(sid)
+        if not unidades:
+            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
+            return
+        self.stdout.write(self.style.SUCCESS(f'Unidades encontradas: {len(unidades)}'))
+
+        relatorio = Wialon.Colheitadeira_JSON_motorista(sid, unidade_id, id_relatorio, tempo_dias=tempo_dias, periodo=periodo)
+
+        # Encerra a sessão Wialon
+        Wialon.wialon_logout(sid)
 
     def principal(self, token, empresa_nome):
         self.stdout.write(self.style.SUCCESS(f'Iniciando importação de dados para a empresa: {empresa_nome}'))
@@ -57,13 +85,19 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
                 return
 
-        #self.atualiza_unidades(sid, empresa_nome)
+        self.atualiza_unidades(sid, empresa_nome)
 
         #busca os relatorios
-        #print(Wialon.buscadora_reports(sid))
+        print(Wialon.buscadora_reports(sid))
 
 
-        self.teste_processamento(sid)
+        #processa as unidades
+        if empresa_nome == "CPBRASCELL":
+            self.process_units_CP(sid)
+
+
+        elif empresa_nome == "PLACIDO":
+            self.process_units_PLAC(sid)
 
         # Encerra a sessão Wialon
         Wialon.wialon_logout(sid)
@@ -153,15 +187,12 @@ class Command(BaseCommand):
     def teste_processamento(self, sid):
         unidades_db = Unidade.objects.all()
         unidades_db_ids = [unidade.id for unidade in unidades_db]
-        #seleciona os ids dos veiculos brascell e coloca em uma lista
-
         if unidades_db_ids:
-
             unidades_db = unidades_db.filter(empresa__nome='CPBRASCELL')
-            unidades_db = unidades_db.filter(cls__icontains='Veículo')
-
-            
+            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
+        unidade_id = unidades_db_ids
         unit_id_first = unidade_id[0] if unidade_id else None
+
 
 
         relatorio = Wialon.Colheitadeira_JSON_m(sid, 401756219, unit_id_first, unidade_id, 59, tempo_dias=1, periodo='Ontem')
@@ -180,18 +211,25 @@ class Command(BaseCommand):
         processamento_df = pd.DataFrame()
         unidades_db = unidades_db
         # Coleta dados de relatório para 1 dia
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-
         
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
         print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        
+
 
 
 
         # Atualiza ou cria as viagens no model Viagem_Base
+
         self.update_or_create_trip(processamento_df)
-        print(processamento_df)
+
 
 
     def process_units_PLAC(self, sid):
@@ -227,7 +265,7 @@ class Command(BaseCommand):
         unidades_db = unidades_db[:5]
         print(f"ids_motoristas: {unidades_db}")
         # Coleta dados de relatório para 7 dias
-        processamento_df = self.retrieve_unit_data_motorista(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=7, periodo='Ultimos 7 dias')
+        processamento_df = self.retrieve_unit_data_motorista(sid, 401756219, unidades_db, 58,  tempo_dias=7, periodo='Ultimos 7 dias')
         print(f'Relatórios coletados para {len(processamento_df)} motoristas.')
         print(processamento_df)
 
@@ -305,7 +343,7 @@ class Command(BaseCommand):
             unidade_id = unidade.id
 
             # Coleta dados de relatório para 1 dia
-            relatorio = Wialon.Colheitadeira_JSON_motorista(sid, unidade_id, id_relatorio, tempo_dias=tempo_dias, periodo=periodo)
+            relatorio = Wialon.Colheitadeira_JSON_motorista(sid, resource_id, unidade_id, id_relatorio, tempo_dias=tempo_dias, periodo=periodo)
 
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 

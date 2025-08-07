@@ -277,6 +277,7 @@
         <a href="{% url 'index' %}" class="btn btn-secondary">Início</a>
         <a href="{% url 'report_empresa' %}" class="btn btn-secondary">Dashboard</a>
         <a href="{% url 'lista_unidades' %}" class="btn btn-secondary">Unidades</a>
+        <a href="{% url 'report_novo' %}" class="btn btn-secondary">Relatório Global</a>
         <a href="{% url 'logout' %}" class="btn btn-primary">Logout</a>
       </div>
     </div>
@@ -391,25 +392,7 @@
         </div>
       </div>
 
-      <!-- Pódio dos Top 3 Geral -->
-      {% if top_motoristas or top_veiculos %}
-      <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; margin-top: 3rem; text-align: center; border: 1px solid #dee2e6;">
-        <h3 style="color: #2c3e50; margin-bottom: 2rem;">Pódio de Excelência</h3>
-        <p style="color: #6c757d; margin-bottom: 2rem;">Os três melhores desempenhos da empresa (motoristas e veículos)</p>
-        
-        <!-- Combinar e ordenar top 3 geral -->
-        {% comment %}
-        Aqui idealmente faríamos a combinação no backend, mas para simplificar no template:
-        {% endcomment %}
-        
-        <div style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 1.5rem; border-radius: 10px;">
-          <p style="margin: 0; color: #495057; font-size: 0.9rem;">
-            <strong>Dica:</strong> Os rankings são atualizados com base nos dados de viagem da sua empresa. 
-            Use o filtro de período para ver performance em momentos específicos.
-          </p>
-        </div>
-      </div>
-      {% endif %}
+
     </main>
 
     <footer class="footer">

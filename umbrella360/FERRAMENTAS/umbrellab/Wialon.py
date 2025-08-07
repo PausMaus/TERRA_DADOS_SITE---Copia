@@ -1438,6 +1438,7 @@ def Colheitadeira_JSON_motorista(sid, unit_id, id_relatorio, tempo_dias, periodo
     Função para coletar dados de relatório de uma unidade específica para um período.
     
     :param sid: Session ID da API Wialon
+    :param resource_id: ID do recurso
     :param unit_id: ID da unidade
     :param id_relatorio: ID do template de relatório
     :param tempo_dias: Número de dias para buscar (7 ou 30)

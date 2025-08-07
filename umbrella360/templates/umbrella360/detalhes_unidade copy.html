@@ -35,10 +35,10 @@
           <!-- Cabeçalho da Unidade -->
           <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 2rem; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
             <div style="font-size: 4rem;">
-              {% if unidade.cls == 'motorista' %}
-                👨‍💼
-              {% elif unidade.cls == 'veiculo' %}
-                🚛
+              {% if unidade.cls == 'Motorista' %}
+                📋        
+              {% elif unidade.cls == 'Veículo' %}
+                📋              
               {% else %}
                 📋
               {% endif %}
@@ -62,11 +62,11 @@
             <div style="text-align: center;">
               {% if stats_gerais.total_viagens > 0 %}
                 <div class="status-badge status-active">
-                  ✅ ATIVO
+                  ATIVO
                 </div>
               {% else %}
                 <div class="status-badge status-inactive">
-                  ⚠️ INATIVO
+                  INATIVO
                 </div>
               {% endif %}
             </div>
@@ -74,13 +74,9 @@
 
           <!-- KPIs Principais -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-            <div class="kpi-card kpi-quilometragem">
-              <h4>Total de Viagens</h4>
-              <p>{{ stats_gerais.total_viagens|default:0 }}</p>
-            </div>
             <div class="kpi-card kpi-consumo">
               <h4>Quilometragem Total</h4>
-              <p>{{ stats_gerais.total_quilometragem|floatformat:0|default:0 }} km</p>
+              <p>{{ stats_filtrados.total_quilometragem|floatformat:0|default:0 }} km</p>
             </div>
             <div class="kpi-card kpi-eficiencia">
               <h4>Eficiência Média</h4>
@@ -98,7 +94,7 @@
               <h5>Consumo Total</h5>
               <p>{{ stats_gerais.total_consumo|floatformat:0|default:0 }} L</p>
             </div>
-            {% if unidade.cls == 'veiculo' %}
+            {% if unidade.cls == 'Veículo' %}
             <div class="metric-card">
               <h5>Velocidade Média</h5>
               <p>{{ stats_gerais.media_velocidade|floatformat:1|default:0 }} km/h</p>
@@ -114,7 +110,7 @@
             {% endif %}
             <div class="metric-card">
               <h5>Emissões CO2</h5>
-              <p>{{ stats_gerais.total_emissoes|floatformat:0|default:0 }} g</p>
+              <p>{{ stats_gerais.total_emissoes|floatformat:0|default:0 }} t</p>
             </div>
           </div>
 
@@ -133,11 +129,11 @@
             </div>
             <div class="performance-indicator">
               {% if stats_gerais.media_eficiencia > media_sistema %}
-                <span class="indicator-good">📈 Acima da Média (+{{ stats_gerais.media_eficiencia|sub:media_sistema|floatformat:2 }} km/L)</span>
+                <span class="indicator-good">Acima da Média (+{{ stats_gerais.media_eficiencia|sub:media_sistema|floatformat:2 }} km/L)</span>
               {% elif stats_gerais.media_eficiencia < media_sistema %}
-                <span class="indicator-poor">📉 Abaixo da Média (-{{ media_sistema|sub:stats_gerais.media_eficiencia|floatformat:2 }} km/L)</span>
+                <span class="indicator-poor">Abaixo da Média (-{{ media_sistema|sub:stats_gerais.media_eficiencia|floatformat:2 }} km/L)</span>
               {% else %}
-                <span class="indicator-average">📊 Na Média do Sistema</span>
+                <span class="indicator-average">Na Média do Sistema</span>
               {% endif %}
             </div>
           </div>
@@ -151,7 +147,6 @@
         <thead>
           <tr>
             <th>Período</th>
-            <th>Viagens</th>
             <th>Quilometragem (km)</th>
             <th>Consumo (L)</th>
             <th>Eficiência Média (km/L)</th>
@@ -162,7 +157,6 @@
           {% for periodo in stats_por_periodo %}
           <tr>
             <td><strong>{{ periodo.período|title }}</strong></td>
-            <td>{{ periodo.viagens_periodo }}</td>
             <td>{{ periodo.quilometragem_periodo|floatformat:0|default:0 }}</td>
             <td>{{ periodo.consumo_periodo|floatformat:0|default:0 }}</td>
             <td>
@@ -172,11 +166,11 @@
             </td>
             <td>
               {% if periodo.eficiencia_periodo > media_sistema %}
-                <span class="status-excellent">🟢 Excelente</span>
+                <span class="status-excellent">Excelente</span>
               {% elif periodo.eficiencia_periodo > 2.0 %}
-                <span class="status-good">🟡 Bom</span>
+                <span class="status-good">Bom</span>
               {% else %}
-                <span class="status-poor">🔴 Precisa Melhorar</span>
+                <span class="status-poor">Ruim</span>
               {% endif %}
             </td>
           </tr>
@@ -187,7 +181,7 @@
 
       <!-- Histórico de Viagens Recentes -->
       {% if viagens %}
-      <h3 class="h3">Últimas Viagens ({{ total_viagens }} no total)</h3>
+      <h3 class="h3">Viagens Recentes</h3>
       <table class="sortable-table">
         <thead>
           <tr>
@@ -195,8 +189,7 @@
             <th>Quilometragem (km)</th>
             <th>Consumo (L)</th>
             <th>Eficiência (km/L)</th>
-            <th>Horas Motor</th>
-            {% if unidade.cls == 'veiculo' %}
+            {% if unidade.cls == 'Veículo' %}
             <th>Velocidade Média</th>
             <th>RPM Médio</th>
             <th>Temperatura</th>
@@ -215,13 +208,12 @@
                 {{ viagem.Quilometragem_média|floatformat:2 }}
               </span>
             </td>
-            <td>{{ viagem.Horas_de_motor|default:"-" }}</td>
-            {% if unidade.cls == 'veiculo' %}
+            {% if unidade.cls == 'Veículo' %}
             <td>{{ viagem.Velocidade_média|floatformat:1|default:"-" }} km/h</td>
             <td>{{ viagem.RPM_médio|floatformat:0|default:"-" }}</td>
             <td>{{ viagem.Temperatura_média|floatformat:1|default:"-" }}°C</td>
             {% endif %}
-            <td>{{ viagem.Emissões_CO2|floatformat:1|default:"-" }} g</td>
+            <td>{{ viagem.Emissões_CO2|floatformat:1|default:"-" }} t</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -244,7 +236,8 @@
     </main>
     
     <footer class="footer">
-      <p>&copy; 2025 Umbrella360. Detalhes da Unidade {{ unidade.id }}</p>
+      <p>&copy; 2025 Umbrella360. Transformando o Brasil através da logística inteligente.</p>
+      <p><em>"Nós enxergamos um mundo mais justo, mais humano e mais sustentável."</em></p>
     </footer>
 
     <style>

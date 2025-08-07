@@ -6,7 +6,7 @@ from django.views import generic
 from django.utils import timezone
 from .models import (
     Motorista, Caminhao, Viagem_MOT, Viagem_CAM,
-    Empresa, Unidade, Viagem_Base
+    Empresa, Unidade, Viagem_Base, CheckPoint
 )
 from .config import Config, ConfiguracaoManager
 import pandas as pd
@@ -76,6 +76,14 @@ def aplicar_filtro_classe_unidade(queryset, classe_selecionada):
         elif classe_selecionada == 'motorista':
             return queryset.filter(unidade__cls__icontains='motorista')
     return queryset
+
+def aplicar_filtro_eficiencia_minima(queryset, eficiencia_minima=1.0):
+    """Aplica filtro de eficiência mínima para remover dados irreais/com erros"""
+    return queryset.filter(Quilometragem_média__gte=eficiencia_minima)
+
+def aplicar_filtro_eficiencia_maxima(queryset, eficiencia_maxima=4.0):
+    """Aplica filtro de eficiência máxima para remover dados irreais/com erros"""
+    return queryset.filter(Quilometragem_média__lte=eficiencia_maxima)
 
 def aplicar_filtro_mes(queryset, mes_selecionado):
     """Aplica filtro de mês no queryset (para sistema antigo)"""
@@ -169,15 +177,30 @@ def calcular_stats_marca(viagens_filtradas, marca):
 
 def calcular_stats_marca_novo(viagens_filtradas, marca):
     """Calcula estatísticas agregadas para uma marca específica usando dados unificados"""
-    return viagens_filtradas.filter(unidade__marca=marca).aggregate(
+    viagens_marca = viagens_filtradas.filter(unidade__marca=marca)
+    
+    # Estatísticas básicas
+    stats = viagens_marca.aggregate(
         total_quilometragem=Sum('quilometragem'),
         total_consumido=Sum('Consumido'),
         media_quilometragem=Avg('Quilometragem_média'),
         media_velocidade=Avg('Velocidade_média'),
         media_rpm=Avg('RPM_médio'),
         media_temperatura=Avg('Temperatura_média'),
-        total_emissoes=Sum('Emissões_CO2')
+        total_emissoes=Sum('Emissões_CO2'),
+        total_veiculos=Count('unidade', distinct=True)
     )
+    
+    # Calcular médias por veículo
+    total_veiculos = stats['total_veiculos'] or 1  # Evitar divisão por zero
+    
+    stats['quilometragem_por_veiculo'] = (stats['total_quilometragem'] or 0) / total_veiculos
+    stats['consumo_por_veiculo'] = (stats['total_consumido'] or 0) / total_veiculos
+    stats['emissoes_por_veiculo'] = (stats['total_emissoes'] or 0) / total_veiculos
+    # A eficiência média já é uma média, não precisa dividir por veículos
+    stats['eficiencia_por_veiculo'] = stats['media_quilometragem'] or 0
+    
+    return stats
 
 def calcular_stats_empresa(viagens_filtradas, empresa_nome):
     """Calcula estatísticas agregadas para uma empresa específica"""
@@ -202,8 +225,9 @@ def obter_unidades_com_stats(empresa_selecionada=None):
     unidades_list = []
     
     for unidade in unidades_query.order_by('empresa__nome', 'cls', 'id'):
-        # Buscar estatísticas da unidade
+        # Buscar estatísticas da unidade (filtrar eficiência abaixo de 4 km/L)
         viagens_unidade = Viagem_Base.objects.filter(unidade=unidade)
+
         
         stats = viagens_unidade.aggregate(
             total_viagens=Count('id'),
@@ -247,6 +271,10 @@ def report_novo(request):
         periodo_selecionado, filtro_combustivel, classe_selecionada
     )
     
+    # Filtrar viagens com eficiência abaixo de 4 km/L (dados irreais/com erros)
+    viagens_filtradas = aplicar_filtro_eficiencia_minima(viagens_filtradas)
+    viagens_filtradas = aplicar_filtro_eficiencia_maxima(viagens_filtradas)
+    
     # Separar por tipo de unidade (motoristas e veículos)
     viagens_motoristas = viagens_filtradas.filter(unidade__cls__icontains='motorista').order_by('-Quilometragem_média')[:10]
     viagens_veiculos = viagens_filtradas.filter(unidade__cls__icontains='veículo').order_by('-Quilometragem_média')[:10]
@@ -256,6 +284,7 @@ def report_novo(request):
     total_emissoes = viagens_filtradas.aggregate(total=Sum('Emissões_CO2'))['total'] or 0
     rpm_medio = viagens_filtradas.aggregate(media=Avg('RPM_médio'))['media'] or 0
     velocidade_media = viagens_filtradas.aggregate(media=Avg('Velocidade_média'))['media'] or 0
+    media_quilometragem = viagens_filtradas.aggregate(media=Avg('Quilometragem_média'))['media'] or 0
     
     # Consumo com limite configurável
     consumo_max_normal = Config.consumo_maximo_normal()
@@ -342,17 +371,35 @@ def report_novo(request):
         'custo_atual': custo_atual,
         'custo_objetivo': custo_objetivo,
         'economia_potencial': economia_potencial,
+        'media_quilometragem': media_quilometragem,
     })
     
     return render(request, 'umbrella360/report_novo.html', context)
 
 def lista_unidades(request):
-    """View simples para listar todas as unidades do sistema"""
-    todas_unidades = obter_unidades_com_stats(None)
+    """View para listar unidades do sistema - filtra por empresa se logado"""
+    # Verificar se há empresa logada
+    empresa_logada_id = request.session.get('empresa_logada')
+    empresa_logada = None
+    
+    if empresa_logada_id:
+        try:
+            empresa_logada = Empresa.objects.get(id=empresa_logada_id)
+            # Se logado, mostrar apenas unidades da empresa
+            todas_unidades = obter_unidades_com_stats(empresa_logada_id)
+            total_empresas = 1  # Sempre 1 quando filtrado por empresa
+        except Empresa.DoesNotExist:
+            # Se empresa não existe mais, limpar sessão e mostrar todas
+            request.session.flush()
+            todas_unidades = obter_unidades_com_stats(None)
+            total_empresas = Empresa.objects.count()
+    else:
+        # Se não logado, mostrar todas as unidades
+        todas_unidades = obter_unidades_com_stats(None)
+        total_empresas = Empresa.objects.count()
     
     # Contadores básicos
     total_unidades = len(todas_unidades)
-    total_empresas = Empresa.objects.count()
     motoristas_count = len([u for u in todas_unidades if u.cls == 'Motorista'])
     veiculos_count = len([u for u in todas_unidades if u.cls == 'Veículo'])
 
@@ -362,6 +409,7 @@ def lista_unidades(request):
         'total_empresas': total_empresas,
         'motoristas_count': motoristas_count,
         'veiculos_count': veiculos_count,
+        'empresa_logada': empresa_logada,  # Passar info da empresa logada para template
     }
     
     return render(request, 'umbrella360/lista_unidades.html', context)
@@ -386,8 +434,9 @@ def detalhes_unidade(request, unidade_id):
         melhor_eficiencia=Max('Quilometragem_média'),
         pior_eficiencia=Min('Quilometragem_média')
     )
-
-    # Estatísticas filtradas pelos últimos 30 dias
+    #estatisticas filtradas
+    viagens = Viagem_Base.objects.filter(unidade=unidade).order_by('-período')
+    #filtrar viagens pelo período dos "Últimos 30 dias"
     viagens_filtradas = viagens.filter(período="Últimos 30 dias")
     stats_filtrados = viagens_filtradas.aggregate(
         total_viagens=Count('id'),
@@ -402,26 +451,36 @@ def detalhes_unidade(request, unidade_id):
         pior_eficiencia=Min('Quilometragem_média')
     )
 
-    # Estatísticas por período
-    stats_por_periodo = {}
-    periodos = viagens.values_list('período', flat=True).distinct()
-    for periodo in periodos:
-        if periodo:
-            stats_periodo = viagens.filter(período=periodo).aggregate(
-                total_viagens=Count('id'),
-                media_eficiencia=Avg('Quilometragem_média'),
-                total_quilometragem=Sum('quilometragem'),
-                total_consumo=Sum('Consumido')
-            )
-            stats_por_periodo[periodo] = stats_periodo
 
+    # Estatísticas por período
+    stats_por_periodo = viagens.values('período').annotate(
+        viagens_periodo=Count('id'),
+        quilometragem_periodo=Sum('quilometragem'),
+        consumo_periodo=Sum('Consumido'),
+        eficiencia_periodo=Avg('Quilometragem_média')
+    ).order_by('-período')
+    
+    # Calcular custos
+    custo_diesel = Config.custo_diesel()
+    custo_total = (stats_gerais['total_consumo'] or 0) * custo_diesel
+    
+    # Comparar com médias do sistema
+    media_sistema = Viagem_Base.objects.filter(
+        unidade__cls=unidade.cls
+    ).aggregate(
+        media_eficiencia_sistema=Avg('Quilometragem_média')
+    )['media_eficiencia_sistema'] or 0
+    
     context = {
         'unidade': unidade,
-        'viagens': viagens[:20],  # Mostrar apenas as 20 mais recentes
+        'viagens': viagens[:20],  # Últimas 20 viagens
         'stats_gerais': stats_gerais,
         'stats_filtrados': stats_filtrados,
         'stats_por_periodo': stats_por_periodo,
-        'total_viagens_all': viagens.count(),
+        'custo_total': custo_total,
+        'custo_diesel': custo_diesel,
+        'media_sistema': media_sistema,
+        'total_viagens': viagens.count(),
     }
     
     return render(request, 'umbrella360/detalhes_unidade.html', context)
@@ -603,11 +662,305 @@ def grafico_emissoes_por_marca(request):
 def api_marcas_todas(request):
     """API que retorna todas as marcas disponíveis"""
     marcas = list(Unidade.objects.values_list('marca', flat=True).distinct())
-    marcas = [marca for marca in marcas if marca]  # Remove valores None
+    marcas = [marca for marca in marcas if marca]  # Removes None values
     return JsonResponse(marcas, safe=False)
 
 def api_marcas_por_empresa(request, empresa_id):
     """API que retorna marcas disponíveis para uma empresa específica"""
     marcas = list(Unidade.objects.filter(empresa_id=empresa_id).values_list('marca', flat=True).distinct())
-    marcas = [marca for marca in marcas if marca]  # Remove valores None
+    marcas = [marca for marca in marcas if marca]  # Removes None values
     return JsonResponse(marcas, safe=False)
+
+def login_view(request):
+    """View para página de login por empresa"""
+    if request.method == 'POST':
+        empresa_nome = request.POST.get('empresa')
+        senha = request.POST.get('senha')
+        
+        try:
+            empresa = Empresa.objects.get(nome=empresa_nome, senha=senha)
+            # Salvar a empresa na sessão
+            request.session['empresa_logada'] = empresa.id
+            request.session['empresa_nome'] = empresa.nome
+            # Redirecionar para o relatório global
+            return HttpResponseRedirect(reverse('report_empresa'))
+        except Empresa.DoesNotExist:
+            context = {
+                'error': 'Empresa ou senha incorreta.',
+                'empresas': Empresa.objects.all().order_by('nome')
+            }
+            return render(request, 'umbrella360/login.html', context)
+    
+    # GET request
+    context = {
+        'empresas': Empresa.objects.all().order_by('nome')
+    }
+    return render(request, 'umbrella360/login.html', context)
+
+def report_empresa(request):
+    """View para relatório específico da empresa logada"""
+    # Verificar se há empresa logada
+    empresa_logada_id = request.session.get('empresa_logada')
+    if not empresa_logada_id:
+        # Se não estiver logado, redirecionar para login
+        return HttpResponseRedirect(reverse('login'))
+    
+    try:
+        empresa_logada = Empresa.objects.get(id=empresa_logada_id)
+    except Empresa.DoesNotExist:
+        # Se empresa não existe mais, limpar sessão e redirecionar
+        request.session.flush()
+        return HttpResponseRedirect(reverse('login'))
+    
+    # Forçar filtros para a empresa logada
+    empresa_selecionada = str(empresa_logada_id)
+    
+    # Obter outros filtros do request
+    marca_selecionada = request.GET.get('marca', 'todas')
+    periodo_selecionado = request.GET.get('periodo', 'todos')
+    filtro_combustivel = request.GET.get('filtro_combustivel', 'todos')
+    classe_selecionada = request.GET.get('classe', 'todas')
+    remover_zero = request.GET.get('remover_zero') == 'on'
+    
+    # Contadores específicos da empresa
+    total_unidades_empresa = Unidade.objects.filter(empresa_id=empresa_logada_id).count()
+    
+    # Aplicar filtros nas viagens da tabela unificada - APENAS DA EMPRESA LOGADA
+    viagens_base = Viagem_Base.objects.select_related('unidade', 'unidade__empresa').filter(unidade__empresa_id=empresa_logada_id)
+    viagens_filtradas = aplicar_filtros_combinados_novo(
+        viagens_base, empresa_selecionada, marca_selecionada, 
+        periodo_selecionado, filtro_combustivel, classe_selecionada
+    )
+    
+    # Filtrar viagens com eficiência abaixo de 4 km/L (dados irreais/com erros)
+    viagens_filtradas = aplicar_filtro_eficiencia_minima(viagens_filtradas)
+    viagens_filtradas = aplicar_filtro_eficiencia_maxima(viagens_filtradas)
+    
+    # Separar por tipo de unidade (motoristas e veículos)
+    viagens_motoristas = viagens_filtradas.filter(unidade__cls__icontains='motorista').order_by('-Quilometragem_média')[:10]
+    viagens_veiculos = viagens_filtradas.filter(unidade__cls__icontains='veículo').order_by('-Quilometragem_média')[:10]
+    
+    # Cálculos agregados
+    total_quilometragem = viagens_filtradas.aggregate(total=Sum('quilometragem'))['total'] or 0
+    total_emissoes = viagens_filtradas.aggregate(total=Sum('Emissões_CO2'))['total'] or 0
+    rpm_medio = viagens_filtradas.aggregate(media=Avg('RPM_médio'))['media'] or 0
+    velocidade_media = viagens_filtradas.aggregate(media=Avg('Velocidade_média'))['media'] or 0
+    media_quilometragem = viagens_filtradas.aggregate(media=Avg('Quilometragem_média'))['media'] or 0
+    
+    # Consumo com limite configurável
+    consumo_max_normal = Config.consumo_maximo_normal()
+    total_consumo = viagens_filtradas.filter(Consumido__lte=consumo_max_normal).aggregate(total=Sum('Consumido'))['total'] or 0
+    
+    # Calculadora de custos
+    custo_diesel = Config.custo_diesel()
+    
+    # Calcular média real de eficiência dos dados filtrados
+    media_km_atual_calculada = viagens_filtradas.filter(
+        Consumido__gt=0, Consumido__lte=consumo_max_normal
+    ).aggregate(media=Avg('Quilometragem_média'))['media']
+    
+    media_km_atual = float(media_km_atual_calculada) if media_km_atual_calculada and media_km_atual_calculada > 0 else Config.media_km_atual()
+    media_km_objetivo = Config.media_km_objetivo()
+    
+    # Cálculos de economia
+    km_atual_litros = float(total_quilometragem) / media_km_atual if media_km_atual > 0 else 0
+    km_objetivo_litros = float(total_quilometragem) / media_km_objetivo if media_km_objetivo > 0 else 0
+    
+    custo_atual = km_atual_litros * custo_diesel
+    custo_objetivo = km_objetivo_litros * custo_diesel
+    economia_potencial = custo_atual - custo_objetivo
+    
+    # Estatísticas por marca (apenas da empresa logada)
+    marcas_stats = {}
+    marcas_disponiveis = viagens_filtradas.values_list('unidade__marca', flat=True).distinct()
+    
+    for marca in marcas_disponiveis:
+        if marca:  # Evitar valores None
+            stats = calcular_stats_marca_novo(viagens_filtradas, marca)
+            stats['marca'] = marca
+            marcas_stats[marca] = stats
+    
+    # Aplicar filtros na busca de unidades (apenas da empresa logada)
+    unidades_filtradas = Unidade.objects.select_related('empresa').filter(empresa_id=empresa_logada_id)
+    if classe_selecionada != 'todas':
+        if classe_selecionada == 'veiculo':
+            unidades_filtradas = unidades_filtradas.filter(cls__icontains='veículo')
+        elif classe_selecionada == 'motorista':
+            unidades_filtradas = unidades_filtradas.filter(cls__icontains='motorista')
+    
+    todas_unidades = []
+    for unidade in unidades_filtradas.order_by('cls', 'id'):
+        viagens_unidade_filtradas = viagens_filtradas.filter(unidade=unidade)
+        stats = viagens_unidade_filtradas.aggregate(
+            total_viagens=Count('id'),
+            eficiencia_media=Avg('Quilometragem_média'),
+            ultima_viagem_periodo=Max('período')
+        )
+        unidade.total_viagens = stats['total_viagens'] or 0
+        unidade.eficiencia_media = stats['eficiencia_media']
+        unidade.periodo_stats = stats['ultima_viagem_periodo']
+        todas_unidades.append(unidade)
+    
+    # Context específico para empresa (sem dados de outras empresas)
+    context = get_base_context_novo(empresa_selecionada, marca_selecionada, periodo_selecionado, filtro_combustivel, classe_selecionada, remover_zero)
+    context.update({
+        'empresa_logada': empresa_logada,
+        'viagens_motoristas': viagens_motoristas,
+        'viagens_veiculos': viagens_veiculos,
+        'marcas_stats': marcas_stats,
+        'todas_unidades': todas_unidades,
+        'total_unidades': total_unidades_empresa,
+        'total_quilometragem': total_quilometragem,
+        'total_consumo': total_consumo,
+        'total_emissoes': total_emissoes,
+        'rpm_medio': rpm_medio,
+        'velocidade_media': velocidade_media,
+        'custo_diesel': custo_diesel,
+        'media_km_objetivo': media_km_objetivo,
+        'media_km_atual': media_km_atual,
+        'custo_atual': custo_atual,
+        'custo_objetivo': custo_objetivo,
+        'economia_potencial': economia_potencial,
+        'media_quilometragem': media_quilometragem,
+        # Remover dados de outras empresas
+        'empresas_stats': {},  # Vazio pois só tem uma empresa
+        'total_empresas': 1,   # Sempre 1 para view da empresa
+    })
+    
+    return render(request, 'umbrella360/report_empresa.html', context)
+
+def ranking_empresa(request):
+    """View para página de ranking da empresa logada"""
+    # Verificar se há empresa logada
+    empresa_logada_id = request.session.get('empresa_logada')
+    if not empresa_logada_id:
+        # Se não estiver logado, redirecionar para login
+        return HttpResponseRedirect(reverse('login'))
+    
+    try:
+        empresa_logada = Empresa.objects.get(id=empresa_logada_id)
+    except Empresa.DoesNotExist:
+        # Se empresa não existe mais, limpar sessão e redirecionar
+        request.session.flush()
+        return HttpResponseRedirect(reverse('login'))
+    
+    # Obter filtros opcionais
+    periodo_selecionado = request.GET.get('periodo', 'todos')
+    
+    # Buscar viagens apenas da empresa logada
+    viagens_base = Viagem_Base.objects.select_related('unidade', 'unidade__empresa').filter(
+        unidade__empresa_id=empresa_logada_id
+    )
+    
+    # Aplicar filtro de período se selecionado
+    if periodo_selecionado != 'todos':
+        viagens_base = viagens_base.filter(período=periodo_selecionado)
+    
+    # Filtrar viagens com eficiência realista (entre 1 e 4 km/L)
+    viagens_filtradas = viagens_base.filter(
+        Quilometragem_média__gte=1.0,
+        Quilometragem_média__lte=4.0
+    )
+    
+    # Top 10 Motoristas por eficiência
+    top_motoristas = viagens_filtradas.filter(
+        unidade__cls__icontains='motorista'
+    ).order_by('-Quilometragem_média')[:10]
+    
+    # Top 10 Veículos por eficiência
+    top_veiculos = viagens_filtradas.filter(
+        unidade__cls__icontains='veículo'
+    ).order_by('-Quilometragem_média')[:10]
+    
+    # Estatísticas gerais da empresa
+    stats_empresa = viagens_filtradas.aggregate(
+        total_unidades=Count('unidade', distinct=True),
+        media_eficiencia=Avg('Quilometragem_média'),
+        total_quilometragem=Sum('quilometragem'),
+        total_consumo=Sum('Consumido'),
+        total_viagens=Count('id')
+    )
+    
+    # Contadores por tipo
+    total_motoristas = viagens_filtradas.filter(unidade__cls__icontains='motorista').values('unidade').distinct().count()
+    total_veiculos = viagens_filtradas.filter(unidade__cls__icontains='veículo').values('unidade').distinct().count()
+    
+    # Períodos disponíveis para filtro
+    periodos_disponiveis = Viagem_Base.objects.filter(
+        unidade__empresa_id=empresa_logada_id
+    ).values_list('período', flat=True).distinct().order_by('período')
+    
+    # DADOS DOS CHECKPOINTS
+    # Buscar checkpoints apenas da empresa logada
+    checkpoints_base = CheckPoint.objects.select_related('unidade').filter(
+        unidade__empresa_id=empresa_logada_id
+    )
+    
+    # Aplicar filtro de período se selecionado
+    if periodo_selecionado != 'todos':
+        checkpoints_base = checkpoints_base.filter(período=periodo_selecionado)
+    
+    # Obter checkpoints agrupados por unidade
+    from collections import defaultdict
+    checkpoints_por_unidade = defaultdict(list)
+    
+    for checkpoint in checkpoints_base.order_by('unidade', '-data_entrada'):
+        checkpoints_por_unidade[checkpoint.unidade].append(checkpoint)
+    
+    # Converter para lista de dicionários para o template
+    unidades_checkpoints = []
+    for unidade, checkpoints in list(checkpoints_por_unidade.items())[:20]:  # Últimas 20 unidades
+        unidades_checkpoints.append({
+            'unidade': unidade,
+            'checkpoints': checkpoints,
+            'total_passagens': len(checkpoints),
+            'ultimo_checkpoint': checkpoints[0] if checkpoints else None
+        })
+    
+    # Estatísticas dos checkpoints
+    total_checkpoints = checkpoints_base.count()
+    cercas_ativas = checkpoints_base.values('cerca').distinct().count()
+    unidades_com_checkpoint = checkpoints_base.values('unidade').distinct().count()
+    
+    # Cercas mais utilizadas
+    cercas_populares = checkpoints_base.values('cerca').annotate(
+        total_passagens=Count('id')
+    ).order_by('-total_passagens')[:10]
+    
+    # Unidades mais ativas nos checkpoints
+    unidades_ativas_checkpoint = checkpoints_base.values(
+        'unidade__id', 'unidade__nm', 'unidade__cls'
+    ).annotate(
+        total_passagens=Count('id')
+    ).order_by('-total_passagens')[:10]
+    
+    context = {
+        'empresa_logada': empresa_logada,
+        'top_motoristas': top_motoristas,
+        'top_veiculos': top_veiculos,
+        'stats_empresa': stats_empresa,
+        'total_motoristas': total_motoristas,
+        'total_veiculos': total_veiculos,
+        'periodo_selecionado': periodo_selecionado,
+        'periodos_disponiveis': periodos_disponiveis,
+        # Dados dos checkpoints
+        'unidades_checkpoints': unidades_checkpoints,
+        'total_checkpoints': total_checkpoints,
+        'cercas_ativas': cercas_ativas,
+        'unidades_com_checkpoint': unidades_com_checkpoint,
+        'cercas_populares': cercas_populares,
+        'unidades_ativas_checkpoint': unidades_ativas_checkpoint,
+    }
+    
+    return render(request, 'umbrella360/ranking_empresa.html', context)
+
+
+def lista_empresa(request):
+    """View para listar todas as unidades de uma empresa logada"""
+    empresas = Empresa.objects.filter(usuarios=request.user)
+    return render(request, 'umbrella360/lista_empresa.html', {'empresas': empresas})
+
+def logout_view(request):
+    """View para logout da empresa"""
+    request.session.flush()  # Remove todos os dados da sessão
+    return HttpResponseRedirect(reverse('index'))

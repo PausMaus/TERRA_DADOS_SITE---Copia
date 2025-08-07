@@ -7,28 +7,79 @@ import decimal
 from django.db import transaction
 
 
-
 class Command(BaseCommand):
-    help = 'Importa viagens para o modelo Viagem_Base de arquivos Excel (.xlsx)'
+    help = 'Importa viagens para o modelo Viagem_Base de arquivos Excel (.xlsx) de uma pasta, usando o nome da pasta como período'
     
     def add_arguments(self, parser):
         parser.add_argument(
+            '--folder',
+            type=str,
+            help='Caminho para a pasta contendo os arquivos Excel (o nome da pasta será usado como período)',
+            required=True
+        )
+        parser.add_argument(
             '--file',
             type=str,
-            help='Caminho para o arquivo Excel',
-            required=True
+            help='Caminho para um arquivo Excel específico (use com --periodo)',
+            required=False
         )
         parser.add_argument(
             '--periodo',
             type=str,
-            help='Período a ser usado para todas as viagens importadas',
-            required=True
+            help='Período a ser usado (obrigatório apenas quando usar --file)',
+            required=False
         )
 
     def handle(self, *args, **options):
-        file_path = options['file']
-        periodo = options['periodo']
+        folder_path = options.get('folder')
+        file_path = options.get('file')
+        periodo = options.get('periodo')
         
+        # Modo 1: Processar uma pasta inteira (novo modo)
+        if folder_path:
+            self.process_folder(folder_path)
+        # Modo 2: Processar um arquivo específico (modo antigo)
+        elif file_path and periodo:
+            self.process_single_file(file_path, periodo)
+        else:
+            self.stdout.write(self.style.ERROR('Use --folder para processar uma pasta ou --file e --periodo para um arquivo específico'))
+            return
+
+    def process_folder(self, folder_path):
+        """Processa todos os arquivos Excel de uma pasta usando o nome da pasta como período"""
+        # Verifica se a pasta existe
+        if not os.path.exists(folder_path):
+            self.stdout.write(self.style.ERROR(f'Pasta não encontrada: {folder_path}'))
+            return
+        
+        if not os.path.isdir(folder_path):
+            self.stdout.write(self.style.ERROR(f'O caminho especificado não é uma pasta: {folder_path}'))
+            return
+        
+        # Extrai o nome da pasta como período
+        periodo = os.path.basename(folder_path.rstrip(os.sep))
+        self.stdout.write(self.style.SUCCESS(f'Processando pasta: {folder_path}'))
+        self.stdout.write(self.style.SUCCESS(f'Período definido como: {periodo}'))
+        
+        # Lista todos os arquivos Excel da pasta
+        excel_files = []
+        for file_name in os.listdir(folder_path):
+            if file_name.lower().endswith(('.xlsx', '.xls')):
+                excel_files.append(os.path.join(folder_path, file_name))
+        
+        if not excel_files:
+            self.stdout.write(self.style.WARNING(f'Nenhum arquivo Excel encontrado na pasta: {folder_path}'))
+            return
+        
+        self.stdout.write(self.style.SUCCESS(f'Encontrados {len(excel_files)} arquivo(s) Excel para processar'))
+        
+        # Processa cada arquivo
+        for file_path in excel_files:
+            self.stdout.write(f'\n--- Processando arquivo: {os.path.basename(file_path)} ---')
+            self.process_single_file(file_path, periodo)
+
+    def process_single_file(self, file_path, periodo):
+        """Processa um único arquivo Excel"""
         # Verifica se o arquivo existe
         if not os.path.exists(file_path):
             self.stdout.write(self.style.ERROR(f'Arquivo não encontrado: {file_path}'))
