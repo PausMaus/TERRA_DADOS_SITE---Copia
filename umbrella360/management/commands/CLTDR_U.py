@@ -22,6 +22,8 @@ WIALON_TOKEN_BRAS = "517e0e42b9a966f628a9b8cffff3ffc3F57FA748F075501F5667A26AFA2
 
 WIALON_TOKEN_PLAC = "82fee29da11ea1312f1c8235247a0d82DC991707A4435C60FE7FFB27BD0D0F32BF59B709"
 
+WIALON_TOKEN_SF = "5a35fb756820f83c975a1bc846a35a43C16F97789A714DEC2BC5F4D3C6D26C06CC35CAAD"
+
 
 # Tokens para diferentes ambientes
 Tokens_Wialon = {
@@ -35,10 +37,12 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         start_time = datetime.now()
         self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
-        
-        self.principal(WIALON_TOKEN_BRAS, "CPBRASCELL")
-        self.principal(WIALON_TOKEN_PLAC, "PLACIDO")
-        
+
+        self.principal(Empresa.objects.get(nome="CPBRASCELL").token, "CPBRASCELL")
+        self.principal(Empresa.objects.get(nome="PLACIDO").token, "PLACIDO")
+        self.principal(Empresa.objects.get(nome="São Francisco Resgate").token, "São Francisco Resgate")
+
+
         end_time = datetime.now()
         execution_time = end_time - start_time
         self.stdout.write(self.style.SUCCESS(f'Comando concluído às {end_time.strftime("%H:%M:%S")}'))
@@ -61,33 +65,6 @@ class Command(BaseCommand):
 
         #busca os relatorios
         print(Wialon.buscadora_reports(sid))
-
-
-        #processa as unidades
-        if empresa_nome == "CPBRASCELL":
-            #pergunta se deseja processar as unidades de caminhões
-            #pergunta se deseja real
-            processar_caminhoes = input("Deseja processar as unidades de caminhões? (s/n): ").strip().lower()   
-            if processar_caminhoes == 's':
-                self.process_units_CP(sid)
-            else:
-                self.stdout.write(self.style.WARNING('Processamento de caminhões pulado.'))
-            #pergunta se deseja realizar o teste de processamento
-            realizar_teste = input("Deseja realizar o teste de processamento? (s/n): ").strip().lower()
-            if realizar_teste == 's':
-                self.teste_processamento(sid)
-            else:
-                self.stdout.write(self.style.WARNING('Teste de processamento pulado.'))
-
-
-
-        elif empresa_nome == "PLACIDO":
-            #pergunta se deseja processar as unidades de caminhões
-            processar_caminhoes = input("Deseja processar as unidades de caminhões? (s/n): ").strip().lower()
-            if processar_caminhoes == 's':
-                self.process_units_PLAC(sid)
-            else:
-                self.stdout.write(self.style.WARNING('Processamento de caminhões pulado.'))
 
 
 
@@ -134,6 +111,8 @@ class Command(BaseCommand):
                 return
             if empresa.nome == 'PLACIDO':
                 marca = 'DAF'
+            if empresa.nome == 'São Francisco Resgate':
+                marca = 'Fiat'
 
             print(f'Unidade: {placa} | ID: {unidade_id} | Restante do nome: {restante_nome} | Marca: {marca} | Classe: {cls} | Empresa: {empresa.nome}')
 
@@ -203,18 +182,25 @@ class Command(BaseCommand):
         processamento_df = pd.DataFrame()
         unidades_db = unidades_db
         # Coleta dados de relatório para 1 dia
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-
         
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
         print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        
+
 
 
 
         # Atualiza ou cria as viagens no model Viagem_Base
 
-        print(processamento_df)
+        self.update_or_create_trip(processamento_df)
+
 
 
     def process_units_PLAC(self, sid):
@@ -318,7 +304,6 @@ class Command(BaseCommand):
 
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
-
             Wialon.clean_up_result(sid)
             time.sleep(1)
         return processamento_df
@@ -332,7 +317,6 @@ class Command(BaseCommand):
             relatorio = Wialon.Colheitadeira_JSON_motorista(sid, unidade_id, id_relatorio, tempo_dias=tempo_dias, periodo=periodo)
 
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
-            self.update_or_create_trip(processamento_df)
 
             Wialon.clean_up_result(sid)
             time.sleep(1)

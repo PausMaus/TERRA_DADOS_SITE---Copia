@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Motorista, Caminhao, Viagem_CAM, Viagem_MOT, ConfiguracaoSistema, Empresa, Unidade, Viagem_Base
+from .models import Motorista, Caminhao, Viagem_CAM, Viagem_MOT, ConfiguracaoSistema, Empresa, Unidade, Viagem_Base, CheckPoint
 
 # Register your models here.
 
@@ -92,4 +92,15 @@ class ViagemBaseAdmin(admin.ModelAdmin):
                     'Temperatura_média', 'Emissões_CO2', 'período')
     list_filter = ('período','unidade__empresa', 'Quilometragem_média')
     list_editable = ('quilometragem', 'Consumido')
+
+
+@admin.register(CheckPoint)
+class CheckPointAdmin(admin.ModelAdmin):
+    list_display = ('unidade', 'cerca', 'data_entrada', 'data_saida', 'duracao')
+    list_filter = ('unidade__empresa', 'cerca')
+    search_fields = ('unidade__nm', 'cerca')
+    ordering = ('unidade', 'data_entrada')
+    readonly_fields = ('duracao',)
+
+
     

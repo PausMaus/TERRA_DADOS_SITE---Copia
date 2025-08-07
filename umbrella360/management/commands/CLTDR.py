@@ -22,6 +22,8 @@ WIALON_TOKEN_BRAS = "517e0e42b9a966f628a9b8cffff3ffc3F57FA748F075501F5667A26AFA2
 
 WIALON_TOKEN_PLAC = "82fee29da11ea1312f1c8235247a0d82DC991707A4435C60FE7FFB27BD0D0F32BF59B709"
 
+WIALON_TOKEN_SF = "5a35fb756820f83c975a1bc846a35a43C16F97789A714DEC2BC5F4D3C6D26C06CC35CAAD"
+
 
 # Tokens para diferentes ambientes
 Tokens_Wialon = {
@@ -38,6 +40,8 @@ class Command(BaseCommand):
         
         self.principal(WIALON_TOKEN_BRAS, "CPBRASCELL")
         self.principal(WIALON_TOKEN_PLAC, "PLACIDO")
+        self.principal(WIALON_TOKEN_SF, "São Francisco Resgate")
+        
         
         end_time = datetime.now()
         execution_time = end_time - start_time

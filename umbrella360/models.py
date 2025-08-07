@@ -132,6 +132,7 @@ class Viagem_CAM(models.Model):
 #empresa
 class Empresa(models.Model):
     nome = models.CharField(max_length=100, unique=True, verbose_name="Nome da Empresa")
+    token = models.CharField(max_length=100, unique=True, verbose_name="Token de Acesso Wialon", blank=True, null=True)
     senha = models.CharField(max_length=100, default='senha', verbose_name="Senha de Acesso", blank=True, null=True)
 
     def __str__(self):
@@ -146,7 +147,7 @@ class Empresa(models.Model):
 
 
 class Unidade(models.Model):
-    nm = models.CharField(max_length=100, unique=True, verbose_name="Nome da Unidade", blank=True, null=True)
+    nm = models.CharField(max_length=100, verbose_name="Nome da Unidade", blank=True, null=True)
     cls = models.CharField(max_length=50, verbose_name="Classe da Unidade", blank=True, null=True)
     id = models.CharField(max_length=50, primary_key=True, verbose_name="ID da Unidade")
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, blank=True, null=True, verbose_name="Empresa Associada")
@@ -193,3 +194,22 @@ class Viagem_Base(models.Model):
     período = models.CharField(
         max_length=20, default="Maio", verbose_name="Período de Referência", blank=True, null=True
     )
+
+
+class CheckPoint(models.Model):
+    unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE, related_name='checkpoints')
+    cerca = models.CharField(max_length=100, verbose_name="Cerca Eletrônica", blank=True, null=True)
+    data_entrada = models.DateTimeField(verbose_name="Data de Entrada", blank=True, null=True)
+    data_saida = models.DateTimeField(verbose_name="Data de Saída", blank=True, null=True)
+    duracao = models.DurationField(verbose_name="Duração", blank=True, null=True)
+    período = models.CharField(
+        max_length=20, default="Maio", verbose_name="Período de Referência", blank=True, null=True
+    )
+
+    def __str__(self):
+        return f"{self.unidade.nm} - {self.cerca} ({self.período})"
+
+    class Meta:
+        verbose_name = "CheckPoint"
+        verbose_name_plural = "CheckPoints"
+        ordering = ['-data_entrada']

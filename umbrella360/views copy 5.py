@@ -471,37 +471,6 @@ def detalhes_unidade(request, unidade_id):
         media_eficiencia_sistema=Avg('Quilometragem_média')
     )['media_eficiencia_sistema'] or 0
     
-    # Dados de CheckPoints
-    checkpoints = CheckPoint.objects.filter(unidade=unidade).order_by('-data_entrada')
-    
-    # Estatísticas de checkpoints
-    total_checkpoints_unidade = checkpoints.count()
-    cercas_utilizadas_unidade = checkpoints.values('cerca').distinct().count()
-    
-    # Duração média dos checkpoints (convertendo para minutos)
-    duracao_media_checkpoints = 0
-    if checkpoints.exists():
-        # Calcular duração média em minutos
-        checkpoints_com_duracao = checkpoints.exclude(duracao__isnull=True)
-        if checkpoints_com_duracao.exists():
-            duracao_total_segundos = sum([
-                cp.duracao.total_seconds() 
-                for cp in checkpoints_com_duracao 
-                if cp.duracao
-            ])
-            duracao_media_checkpoints = int(duracao_total_segundos / checkpoints_com_duracao.count() / 60)
-    
-    # Cercas mais utilizadas pela unidade
-    cercas_unidade = checkpoints.values('cerca').annotate(
-        total_passagens=Count('id')
-    ).order_by('-total_passagens')[:10]
-    
-    # Últimas passagens
-    checkpoints_recentes_unidade = checkpoints[:10]
-    
-    # Histórico detalhado de checkpoints
-    checkpoints_detalhados_unidade = checkpoints[:20]
-    
     context = {
         'unidade': unidade,
         'viagens': viagens[:20],  # Últimas 20 viagens
@@ -512,13 +481,6 @@ def detalhes_unidade(request, unidade_id):
         'custo_diesel': custo_diesel,
         'media_sistema': media_sistema,
         'total_viagens': viagens.count(),
-        # Dados de checkpoints
-        'total_checkpoints_unidade': total_checkpoints_unidade,
-        'cercas_utilizadas_unidade': cercas_utilizadas_unidade,
-        'duracao_media_checkpoints': duracao_media_checkpoints,
-        'cercas_unidade': cercas_unidade,
-        'checkpoints_recentes_unidade': checkpoints_recentes_unidade,
-        'checkpoints_detalhados_unidade': checkpoints_detalhados_unidade,
     }
     
     return render(request, 'umbrella360/detalhes_unidade.html', context)
@@ -938,8 +900,22 @@ def ranking_empresa(request):
     if periodo_selecionado != 'todos':
         checkpoints_base = checkpoints_base.filter(período=periodo_selecionado)
     
-    # Obter checkpoints ordenados por data de entrada mais recente
-    checkpoints_recentes = checkpoints_base.order_by('-data_entrada')[:50]  # Últimos 50 registros
+    # Obter checkpoints agrupados por unidade
+    from collections import defaultdict
+    checkpoints_por_unidade = defaultdict(list)
+    
+    for checkpoint in checkpoints_base.order_by('unidade', '-data_entrada'):
+        checkpoints_por_unidade[checkpoint.unidade].append(checkpoint)
+    
+    # Converter para lista de dicionários para o template
+    unidades_checkpoints = []
+    for unidade, checkpoints in list(checkpoints_por_unidade.items())[:20]:  # Últimas 20 unidades
+        unidades_checkpoints.append({
+            'unidade': unidade,
+            'checkpoints': checkpoints,
+            'total_passagens': len(checkpoints),
+            'ultimo_checkpoint': checkpoints[0] if checkpoints else None
+        })
     
     # Estatísticas dos checkpoints
     total_checkpoints = checkpoints_base.count()
@@ -968,7 +944,7 @@ def ranking_empresa(request):
         'periodo_selecionado': periodo_selecionado,
         'periodos_disponiveis': periodos_disponiveis,
         # Dados dos checkpoints
-        'checkpoints_recentes': checkpoints_recentes,
+        'unidades_checkpoints': unidades_checkpoints,
         'total_checkpoints': total_checkpoints,
         'cercas_ativas': cercas_ativas,
         'unidades_com_checkpoint': unidades_com_checkpoint,
