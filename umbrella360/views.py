@@ -502,6 +502,33 @@ def detalhes_unidade(request, unidade_id):
     # Histórico detalhado de checkpoints
     checkpoints_detalhados_unidade = checkpoints[:20]
     
+    # DADOS DAS INFRAÇÕES
+    # Buscar infrações da unidade
+    from .models import Infrações
+    infracoes = Infrações.objects.filter(unidade=unidade).order_by('-data')
+    
+    # Estatísticas de infrações
+    total_infracoes_unidade = infracoes.count()
+    
+    # Velocidade média das infrações desta unidade
+    stats_infracoes_unidade = infracoes.aggregate(
+        velocidade_media=Avg('velocidade'),
+        velocidade_maxima=Max('velocidade'),
+        limite_medio=Avg('limite'),
+        limite_mais_infringido=Max('limite')
+    )
+    
+    # Limites mais infringidos por esta unidade
+    limites_unidade = infracoes.values('limite').annotate(
+        total_ocorrencias=Count('id')
+    ).order_by('-total_ocorrencias')[:5]
+    
+    # Últimas infrações
+    infracoes_recentes_unidade = infracoes[:10]
+    
+    # Histórico detalhado de infrações
+    infracoes_detalhadas_unidade = infracoes[:20]
+    
     context = {
         'unidade': unidade,
         'viagens': viagens[:20],  # Últimas 20 viagens
@@ -519,6 +546,14 @@ def detalhes_unidade(request, unidade_id):
         'cercas_unidade': cercas_unidade,
         'checkpoints_recentes_unidade': checkpoints_recentes_unidade,
         'checkpoints_detalhados_unidade': checkpoints_detalhados_unidade,
+        # Dados de infrações
+        'total_infracoes_unidade': total_infracoes_unidade,
+        'velocidade_media_infracoes_unidade': stats_infracoes_unidade['velocidade_media'] or 0,
+        'velocidade_maxima_infracoes_unidade': stats_infracoes_unidade['velocidade_maxima'] or 0,
+        'limite_medio_infracoes_unidade': stats_infracoes_unidade['limite_medio'] or 0,
+        'limites_unidade': limites_unidade,
+        'infracoes_recentes_unidade': infracoes_recentes_unidade,
+        'infracoes_detalhadas_unidade': infracoes_detalhadas_unidade,
     }
     
     return render(request, 'umbrella360/detalhes_unidade.html', context)
@@ -958,6 +993,39 @@ def ranking_empresa(request):
         total_passagens=Count('id')
     ).order_by('-total_passagens')[:10]
     
+    # DADOS DAS INFRAÇÕES
+    # Buscar infrações apenas da empresa logada
+    from .models import Infrações
+    infracoes_base = Infrações.objects.select_related('unidade').filter(
+        unidade__empresa_id=empresa_logada_id
+    )
+    
+    # Obter infrações ordenadas por data mais recente
+    infracoes_recentes = infracoes_base.order_by('-data')[:50]  # Últimas 50 infrações
+    
+    # Estatísticas das infrações
+    total_infracoes = infracoes_base.count()
+    unidades_com_infracoes = infracoes_base.values('unidade').distinct().count()
+    
+    # Velocidade média das infrações
+    velocidade_media_infracoes = infracoes_base.aggregate(
+        media_velocidade=Avg('velocidade'),
+        media_limite=Avg('limite')
+    )['media_velocidade'] or 0
+    
+    # Unidades com mais infrações
+    unidades_mais_infracoes = infracoes_base.values(
+        'unidade__id', 'unidade__nm', 'unidade__cls'
+    ).annotate(
+        total_infracoes=Count('id'),
+        velocidade_maxima=Max('velocidade')
+    ).order_by('-total_infracoes')[:10]
+    
+    # Infrações por tipo de limite (mais comuns)
+    limites_mais_infringidos = infracoes_base.values('limite').annotate(
+        total_ocorrencias=Count('id')
+    ).order_by('-total_ocorrencias')[:10]
+    
     context = {
         'empresa_logada': empresa_logada,
         'top_motoristas': top_motoristas,
@@ -974,6 +1042,14 @@ def ranking_empresa(request):
         'unidades_com_checkpoint': unidades_com_checkpoint,
         'cercas_populares': cercas_populares,
         'unidades_ativas_checkpoint': unidades_ativas_checkpoint,
+        # Dados das infrações
+        'infracoes_recentes': infracoes_recentes,
+        'total_infracoes': total_infracoes,
+        'unidades_com_infracoes': unidades_com_infracoes,
+        #'velocidade_media_infracoes': velocidade_media_infracoes['media_velocidade'] or 0,
+        #'limite_medio_infracoes': velocidade_media_infracoes['media_limite'] or 0,
+        'unidades_mais_infracoes': unidades_mais_infracoes,
+        'limites_mais_infringidos': limites_mais_infringidos,
     }
     
     return render(request, 'umbrella360/ranking_empresa.html', context)

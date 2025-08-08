@@ -6,7 +6,7 @@ from django.views import generic
 from django.utils import timezone
 from .models import (
     Motorista, Caminhao, Viagem_MOT, Viagem_CAM,
-    Empresa, Unidade, Viagem_Base
+    Empresa, Unidade, Viagem_Base, CheckPoint
 )
 from .config import Config, ConfiguracaoManager
 import pandas as pd
@@ -471,6 +471,37 @@ def detalhes_unidade(request, unidade_id):
         media_eficiencia_sistema=Avg('Quilometragem_média')
     )['media_eficiencia_sistema'] or 0
     
+    # Dados de CheckPoints
+    checkpoints = CheckPoint.objects.filter(unidade=unidade).order_by('-data_entrada')
+    
+    # Estatísticas de checkpoints
+    total_checkpoints_unidade = checkpoints.count()
+    cercas_utilizadas_unidade = checkpoints.values('cerca').distinct().count()
+    
+    # Duração média dos checkpoints (convertendo para minutos)
+    duracao_media_checkpoints = 0
+    if checkpoints.exists():
+        # Calcular duração média em minutos
+        checkpoints_com_duracao = checkpoints.exclude(duracao__isnull=True)
+        if checkpoints_com_duracao.exists():
+            duracao_total_segundos = sum([
+                cp.duracao.total_seconds() 
+                for cp in checkpoints_com_duracao 
+                if cp.duracao
+            ])
+            duracao_media_checkpoints = int(duracao_total_segundos / checkpoints_com_duracao.count() / 60)
+    
+    # Cercas mais utilizadas pela unidade
+    cercas_unidade = checkpoints.values('cerca').annotate(
+        total_passagens=Count('id')
+    ).order_by('-total_passagens')[:10]
+    
+    # Últimas passagens
+    checkpoints_recentes_unidade = checkpoints[:10]
+    
+    # Histórico detalhado de checkpoints
+    checkpoints_detalhados_unidade = checkpoints[:20]
+    
     context = {
         'unidade': unidade,
         'viagens': viagens[:20],  # Últimas 20 viagens
@@ -481,6 +512,13 @@ def detalhes_unidade(request, unidade_id):
         'custo_diesel': custo_diesel,
         'media_sistema': media_sistema,
         'total_viagens': viagens.count(),
+        # Dados de checkpoints
+        'total_checkpoints_unidade': total_checkpoints_unidade,
+        'cercas_utilizadas_unidade': cercas_utilizadas_unidade,
+        'duracao_media_checkpoints': duracao_media_checkpoints,
+        'cercas_unidade': cercas_unidade,
+        'checkpoints_recentes_unidade': checkpoints_recentes_unidade,
+        'checkpoints_detalhados_unidade': checkpoints_detalhados_unidade,
     }
     
     return render(request, 'umbrella360/detalhes_unidade.html', context)
@@ -662,13 +700,13 @@ def grafico_emissoes_por_marca(request):
 def api_marcas_todas(request):
     """API que retorna todas as marcas disponíveis"""
     marcas = list(Unidade.objects.values_list('marca', flat=True).distinct())
-    marcas = [marca for marca in marcas if marca]  # Remove valores None
+    marcas = [marca for marca in marcas if marca]  # Removes None values
     return JsonResponse(marcas, safe=False)
 
 def api_marcas_por_empresa(request, empresa_id):
     """API que retorna marcas disponíveis para uma empresa específica"""
     marcas = list(Unidade.objects.filter(empresa_id=empresa_id).values_list('marca', flat=True).distinct())
-    marcas = [marca for marca in marcas if marca]  # Remove valores None
+    marcas = [marca for marca in marcas if marca]  # Removes None values
     return JsonResponse(marcas, safe=False)
 
 def login_view(request):
@@ -890,6 +928,69 @@ def ranking_empresa(request):
         unidade__empresa_id=empresa_logada_id
     ).values_list('período', flat=True).distinct().order_by('período')
     
+    # DADOS DOS CHECKPOINTS
+    # Buscar checkpoints apenas da empresa logada
+    checkpoints_base = CheckPoint.objects.select_related('unidade').filter(
+        unidade__empresa_id=empresa_logada_id
+    )
+    
+    # Aplicar filtro de período se selecionado
+    if periodo_selecionado != 'todos':
+        checkpoints_base = checkpoints_base.filter(período=periodo_selecionado)
+    
+    # Obter checkpoints ordenados por data de entrada mais recente
+    checkpoints_recentes = checkpoints_base.order_by('-data_entrada')[:50]  # Últimos 50 registros
+    
+    # Estatísticas dos checkpoints
+    total_checkpoints = checkpoints_base.count()
+    cercas_ativas = checkpoints_base.values('cerca').distinct().count()
+    unidades_com_checkpoint = checkpoints_base.values('unidade').distinct().count()
+    
+    # Cercas mais utilizadas
+    cercas_populares = checkpoints_base.values('cerca').annotate(
+        total_passagens=Count('id')
+    ).order_by('-total_passagens')[:10]
+    
+    # Unidades mais ativas nos checkpoints
+    unidades_ativas_checkpoint = checkpoints_base.values(
+        'unidade__id', 'unidade__nm', 'unidade__cls'
+    ).annotate(
+        total_passagens=Count('id')
+    ).order_by('-total_passagens')[:10]
+    
+    # DADOS DAS INFRAÇÕES
+    # Buscar infrações apenas da empresa logada
+    from .models import Infrações
+    infracoes_base = Infrações.objects.select_related('unidade').filter(
+        unidade__empresa_id=empresa_logada_id
+    )
+    
+    # Obter infrações ordenadas por data mais recente
+    infracoes_recentes = infracoes_base.order_by('-data')[:50]  # Últimas 50 infrações
+    
+    # Estatísticas das infrações
+    total_infracoes = infracoes_base.count()
+    unidades_com_infracoes = infracoes_base.values('unidade').distinct().count()
+    
+    # Velocidade média das infrações
+    velocidade_media_infracoes = infracoes_base.aggregate(
+        media_velocidade=Avg('velocidade'),
+        media_limite=Avg('limite')
+    )
+    
+    # Unidades com mais infrações
+    unidades_mais_infracoes = infracoes_base.values(
+        'unidade__id', 'unidade__nm', 'unidade__cls'
+    ).annotate(
+        total_infracoes=Count('id'),
+        velocidade_maxima=Max('velocidade')
+    ).order_by('-total_infracoes')[:10]
+    
+    # Infrações por tipo de limite (mais comuns)
+    limites_mais_infringidos = infracoes_base.values('limite').annotate(
+        total_ocorrencias=Count('id')
+    ).order_by('-total_ocorrencias')[:10]
+    
     context = {
         'empresa_logada': empresa_logada,
         'top_motoristas': top_motoristas,
@@ -899,6 +1000,21 @@ def ranking_empresa(request):
         'total_veiculos': total_veiculos,
         'periodo_selecionado': periodo_selecionado,
         'periodos_disponiveis': periodos_disponiveis,
+        # Dados dos checkpoints
+        'checkpoints_recentes': checkpoints_recentes,
+        'total_checkpoints': total_checkpoints,
+        'cercas_ativas': cercas_ativas,
+        'unidades_com_checkpoint': unidades_com_checkpoint,
+        'cercas_populares': cercas_populares,
+        'unidades_ativas_checkpoint': unidades_ativas_checkpoint,
+        # Dados das infrações
+        'infracoes_recentes': infracoes_recentes,
+        'total_infracoes': total_infracoes,
+        'unidades_com_infracoes': unidades_com_infracoes,
+        'velocidade_media_infracoes': velocidade_media_infracoes['media_velocidade'] or 0,
+        'limite_medio_infracoes': velocidade_media_infracoes['media_limite'] or 0,
+        'unidades_mais_infracoes': unidades_mais_infracoes,
+        'limites_mais_infringidos': limites_mais_infringidos,
     }
     
     return render(request, 'umbrella360/ranking_empresa.html', context)

@@ -117,6 +117,34 @@ class Command(BaseCommand):
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Erro ao ler o arquivo: {str(e)}'))
 
+    def update_or_create_checkpoint(self, checkpoint_df, periodo):
+        if not checkpoint_df.empty:
+            for index, row in checkpoint_df.iterrows():
+                try:
+                    unidade_instance = Unidade.objects.get(nm=row['Agrupamento'])
+                    
+                    # Processa os valores de data/hora
+                    hora_entrada = self.processar_datetime(row.get('Hora de entrada'))
+                    hora_saida = self.processar_datetime(row.get('Hora de saída'))
+                    duracao = self.processar_duracao(row.get('Duração em', ''))
+                    
+                    # Processa a cerca eletrônica (texto)
+                    cerca_eletronica = str(row.get('Cerca eletrônica', '')).strip()
+
+                    CheckPoint.objects.update_or_create(
+                        unidade=unidade_instance,
+                        período=periodo,
+                        cerca=cerca_eletronica,
+                    )
+                    self.stdout.write(self.style.SUCCESS(f'CheckPoint atualizado ou criado para a unidade {row["Agrupamento"]} no período {periodo}'))
+                
+                except Unidade.DoesNotExist:
+                    self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Agrupamento"]}" não encontrada no banco de dados.'))
+                    continue
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f'Erro ao processar linha {index + 1}: {str(e)}'))
+                    continue
+
     def processar_datetime(self, valor_datetime):
         """
         Processa valores de data/hora do Excel
@@ -131,12 +159,12 @@ class Command(BaseCommand):
             
             # Se é string, tenta converter
             if isinstance(valor_datetime, str):
-                # Tenta alguns formatos comuns - colocando o formato correto primeiro
+                # Tenta alguns formatos comuns
                 formatos = [
-                    '%d.%m.%Y %H:%M:%S',  # 30.07.2025 09:48:10
-                    '%d.%m.%Y %H:%M',     # 30.07.2025 09:48
+                    '%d.%m.%Y %H:%M:%S',
                     '%Y-%m-%d %H:%M:%S',
                     '%d/%m/%Y %H:%M:%S',
+                    '%d.%m.%Y %H:%M',
                     '%Y-%m-%d %H:%M',
                     '%d/%m/%Y %H:%M',
                 ]
@@ -159,98 +187,34 @@ class Command(BaseCommand):
 
     def processar_duracao(self, valor_duracao):
         """
-        Processa valores de duração (formato "1 dias 3:20:04" ou HH:MM:SS)
-        Retorna um objeto timedelta para o campo DurationField do Django
+        Processa valores de duração (formato HH:MM:SS ou similar)
         """
         try:
             if pd.isna(valor_duracao) or valor_duracao == '' or valor_duracao is None:
-                return None
+                return '00:00:00'
             
             # Converte para string
             duracao_str = str(valor_duracao).strip()
             
             # Se está vazio após strip
             if not duracao_str:
-                return None
+                return '00:00:00'
             
-            # Verifica se é o formato "X dias HH:MM:SS"
-            if 'dias' in duracao_str or 'dia' in duracao_str:
-                import re
-                from datetime import timedelta
-                
-                # Regex para capturar dias e tempo
-                match = re.match(r'(\d+)\s+dias?\s+(\d+):(\d+):(\d+)', duracao_str)
-                if match:
-                    dias = int(match.group(1))
-                    horas = int(match.group(2))
-                    minutos = int(match.group(3))
-                    segundos = int(match.group(4))
-                    
-                    return timedelta(days=dias, hours=horas, minutes=minutos, seconds=segundos)
-            
-            # Se está no formato HH:MM:SS, converte para timedelta
+            # Se já está no formato HH:MM:SS, retorna como está
             if ':' in duracao_str:
-                from datetime import timedelta
-                partes = duracao_str.split(':')
-                if len(partes) == 3:
-                    try:
-                        horas = int(partes[0])
-                        minutos = int(partes[1])
-                        segundos = int(partes[2])
-                        return timedelta(hours=horas, minutes=minutos, seconds=segundos)
-                    except ValueError:
-                        pass
-                elif len(partes) == 2:
-                    try:
-                        horas = int(partes[0])
-                        minutos = int(partes[1])
-                        return timedelta(hours=horas, minutes=minutos)
-                    except ValueError:
-                        pass
+                return duracao_str
             
-            # Se é um número (minutos), converte para timedelta
+            # Se é um número (minutos), converte para HH:MM:SS
             try:
-                from datetime import timedelta
                 minutos = float(duracao_str)
-                return timedelta(minutes=minutos)
+                horas = int(minutos // 60)
+                mins = int(minutos % 60)
+                return f'{horas:02d}:{mins:02d}:00'
             except ValueError:
                 pass
             
-            return None
+            return '00:00:00'
             
         except Exception as e:
             self.stdout.write(self.style.WARNING(f'Erro ao processar duração "{valor_duracao}": {e}'))
-            return None
-
-    def update_or_create_checkpoint(self, checkpoint_df, periodo):
-        if not checkpoint_df.empty:
-            for index, row in checkpoint_df.iterrows():
-                try:
-                    unidade_instance = Unidade.objects.get(nm=row['Agrupamento'])
-                    
-                    # Processa os valores de data/hora
-                    hora_entrada = self.processar_datetime(row.get('Hora de entrada'))
-                    hora_saida = self.processar_datetime(row.get('Hora de saída'))
-                    duracao = self.processar_duracao(row.get('Duração em', ''))
-                    
-                    # Processa a cerca eletrônica (texto)
-                    cerca_eletronica = str(row.get('Cerca eletrônica', '')).strip()
-
-                    CheckPoint.objects.update_or_create(
-                        unidade=unidade_instance,
-                        período=periodo,
-                        cerca=cerca_eletronica,
-                        defaults={
-                            'data_entrada': hora_entrada,
-                            'data_saida': hora_saida,
-                            'duracao': duracao,
-                        }
-                    )
-                    self.stdout.write(self.style.SUCCESS(f'CheckPoint atualizado ou criado para a unidade {row["Agrupamento"]} no período {periodo}'))
-                
-                except Unidade.DoesNotExist:
-                    self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Agrupamento"]}" não encontrada no banco de dados.'))
-                    continue
-                except Exception as e:
-                    self.stdout.write(self.style.ERROR(f'Erro ao processar linha {index + 1}: {str(e)}'))
-                    continue
+            return '00:00:00'
