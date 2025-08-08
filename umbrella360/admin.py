@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Motorista, Caminhao, Viagem_CAM, Viagem_MOT, ConfiguracaoSistema, Empresa, Unidade, Viagem_Base, CheckPoint
+from .models import Motorista, Caminhao, Viagem_CAM, Viagem_MOT, ConfiguracaoSistema, Empresa, Unidade, Viagem_Base, CheckPoint, Infrações
 
 # Register your models here.
 
@@ -104,3 +104,10 @@ class CheckPointAdmin(admin.ModelAdmin):
 
 
     
+@admin.register(Infrações)
+class InfracoesAdmin(admin.ModelAdmin):
+    list_display = ('unidade', 'limite', 'velocidade', 'localizacao', 'data')
+    list_filter = ('unidade__empresa', 'data')
+    search_fields = ('unidade__nm', 'localizacao')
+    ordering = ('unidade', 'data')
+

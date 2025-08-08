@@ -507,7 +507,7 @@
                 </tr>
               </thead>
               <tbody>
-                {% for checkpoint in checkpoints_recentes|slice:":20" %}
+                {% for checkpoint in checkpoints_recentes|slice:":50" %}
                   <tr style="border-bottom: 1px solid #e9ecef; {% cycle 'background: white;' 'background: #f8f9fa;' %}">
                     <td style="padding: 0.75rem;">
                       <a href="{% url 'detalhes_unidade' checkpoint.unidade.id %}" style="text-decoration: none; color: #007bff; font-weight: 500;">
@@ -551,6 +551,186 @@
           <div style="text-align: center; padding: 3rem; color: #6c757d;">
             <p><strong>Nenhum checkpoint encontrado</strong></p>
             <p>Não há registros de checkpoints para o período selecionado.</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- Seção de Infrações -->
+    <section class="infracoes-section" style="background: rgba(255, 255, 255, 0.95); margin: 2rem auto; max-width: 1200px; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+      <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
+        Infrações de Velocidade
+      </h2>
+      
+      <!-- Estatísticas das Infrações -->
+      <div class="stats-overview" style="background: linear-gradient(135deg, #ffebee, #ffcdd2); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">{{ total_infracoes }}</div>
+            <div class="stat-label">Total de Infrações</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ unidades_com_infracoes }}</div>
+            <div class="stat-label">Unidades Infratoras</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ velocidade_media_infracoes|floatformat:1 }} km/h</div>
+            <div class="stat-label">Velocidade Média das Infrações</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ limite_medio_infracoes|floatformat:1 }} km/h</div>
+            <div class="stat-label">Limite Médio Infringido</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de Infrações -->
+      <div class="ranking-grid">
+        <!-- Unidades com Mais Infrações -->
+        <div class="ranking-card">
+          <div class="ranking-header">
+            <h3>Unidades com Mais Infrações</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por número de infrações cometidas</p>
+          </div>
+          
+          {% if unidades_mais_infracoes %}
+            <ul class="ranking-list">
+              {% for unidade in unidades_mais_infracoes %}
+                <li class="ranking-item">
+                  <div class="ranking-position {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+                    {{ forloop.counter }}º
+                  </div>
+                  <div class="ranking-name">
+                    <a href="{% url 'detalhes_unidade' unidade.unidade__id %}" style="text-decoration: none; color: inherit;">
+                      {{ unidade.unidade__nm|default:unidade.unidade__id }}
+                    </a>
+                    <small style="color: #6c757d;">({{ unidade.unidade__cls }})</small>
+                    {% if unidade.velocidade_maxima %}
+                      <br><small style="color: #dc3545; font-weight: 500;">Máx: {{ unidade.velocidade_maxima|floatformat:0 }} km/h</small>
+                    {% endif %}
+                  </div>
+                  <div class="ranking-value" style="background: linear-gradient(135deg, #ffcccc, #ff9999); border-color: #dc3545; color: #dc3545;">
+                    {{ unidade.total_infracoes }}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>🎉 Nenhuma infração encontrada</strong></p>
+              <p>Parabéns! Sua frota está respeitando os limites de velocidade.</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Limites Mais Infringidos -->
+        <div class="ranking-card">
+          <div class="ranking-header">
+            <h3>Limites Mais Infringidos</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por número de ocorrências</p>
+          </div>
+          
+          {% if limites_mais_infringidos %}
+            <ul class="ranking-list">
+              {% for limite in limites_mais_infringidos %}
+                <li class="ranking-item">
+                  <div class="ranking-position {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+                    {{ forloop.counter }}º
+                  </div>
+                  <div class="ranking-name">
+                    Limite de {{ limite.limite|floatformat:0 }} km/h
+                  </div>
+                  <div class="ranking-value" style="background: linear-gradient(135deg, #fff3cd, #ffeaa7); border-color: #ffc107; color: #856404;">
+                    {{ limite.total_ocorrencias }}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>Nenhum limite infringido</strong></p>
+              <p>Não há dados de infrações para o período selecionado.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Histórico Recente de Infrações -->
+      <div class="ranking-card" style="margin-top: 2rem;">
+        <div class="ranking-header">
+          <h3>📋 Histórico Recente de Infrações</h3>
+          <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Últimas 20 infrações registradas</p>
+        </div>
+        
+        {% if infracoes_recentes %}
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+              <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Unidade</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Data/Hora</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Limite</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Velocidade</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Excesso</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Local</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for infracao in infracoes_recentes|slice:":20" %}
+                  <tr style="border-bottom: 1px solid #e9ecef; {% cycle 'background: white;' 'background: #f8f9fa;' %}">
+                    <td style="padding: 0.75rem;">
+                      <a href="{% url 'detalhes_unidade' infracao.unidade.id %}" style="text-decoration: none; color: #007bff; font-weight: 500;">
+                        {{ infracao.unidade.nm|default:infracao.unidade.id }}
+                      </a>
+                      <br>
+                      <small style="color: #6c757d;">{{ infracao.unidade.cls }}</small>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      {% if infracao.data %}
+                        {{ infracao.data|date:"d/m/Y H:i" }}
+                      {% else %}
+                        <span style="color: #6c757d;">-</span>
+                      {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      <span style="background: #e7f3ff; color: #0066cc; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; font-weight: 500;">
+                        {{ infracao.limite|floatformat:0 }} km/h
+                      </span>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      <span style="background: #ffebee; color: #c62828; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">
+                        {{ infracao.velocidade|floatformat:0 }} km/h
+                      </span>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      {% if infracao.velocidade and infracao.limite %}
+                        {% with excesso=infracao.velocidade|add:infracao.limite|add:"-"|add:infracao.limite %}
+                          <span style="color: #dc3545; font-weight: 700;">
+                            +{{ infracao.velocidade|floatformat:0|add:"-"|add:infracao.limite|floatformat:0 }} km/h
+                          </span>
+                        {% endwith %}
+                      {% else %}
+                        <span style="color: #6c757d;">-</span>
+                      {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      {% if infracao.localizacao %}
+                        <a href="{{ infracao.localizacao }}" target="_blank" style="color: #28a745; text-decoration: none; font-size: 0.875rem;">
+                          Ver no Mapa
+                        </a>
+                      {% else %}
+                        <span style="color: #6c757d;">-</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div style="text-align: center; padding: 3rem; color: #6c757d;">
+            <p><strong>🎉 Nenhuma infração encontrada</strong></p>
+            <p>Não há registros de infrações para o período selecionado.</p>
           </div>
         {% endif %}
       </div>

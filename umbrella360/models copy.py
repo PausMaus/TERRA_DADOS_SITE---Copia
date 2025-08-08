@@ -213,20 +213,3 @@ class CheckPoint(models.Model):
         verbose_name = "CheckPoint"
         verbose_name_plural = "CheckPoints"
         ordering = ['-data_entrada']
-
-
-
-class Infrações(models.Model):
-    unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE, related_name='infracoes')
-    data = models.DateTimeField(verbose_name="Data da Infração", blank=True, null=True)
-    limite = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Limite de Velocidade (km/h)", blank=True, null=True)
-    velocidade = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Velocidade (km/h)", blank=True, null=True)
-    localizacao = models.URLField(max_length=100, verbose_name="Localização", blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.unidade.nm} - {self.limite} ({self.data})"
-
-    class Meta:
-        verbose_name = "Infração"
-        verbose_name_plural = "Infrações"
-        ordering = ['-data']

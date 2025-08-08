@@ -85,8 +85,7 @@
       <h1>{% block header_title %}Dashboard Umbrella360{% endblock %}</h1>
         <div class="menu-buttons">
           <a href="{% url 'index' %}" class="btn btn-secondary">Página Inicial</a>
-          <a href="{% url 'lista_unidades' %}" class="btn btn-primary">Lista de Unidades</a>
-          <a href="{% url 'report_novo' %}" class="btn btn-secondary">Dashboard KPIs</a>
+          <a href="{% url 'report_empresa' %}" class="btn btn-primary">Relatório {% if empresa_logada %}{{ empresa_logada.nome }}{% else %}Empresa{% endif %}</a>
         </div>
     </div>
 
@@ -849,7 +848,7 @@
         
         // Inicializar gráfico de marcas se existirem dados
         if (Object.keys(marcasData).length > 0) {
-            showChart('quilometragem'); // Iniciar com quilometragem
+            showChart('eficiencia'); // Iniciar com eficiência
         }
     });
     </script>

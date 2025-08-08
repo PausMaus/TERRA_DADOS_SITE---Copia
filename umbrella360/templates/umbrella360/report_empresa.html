@@ -92,28 +92,7 @@
     <main>
       {% block content %}
       <!-- Dashboard Global da Frota -->
-      <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
-        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-width: 1200px; width: 100%;">
-          <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50; font-size: 1.8rem;">
-            Dashboard Global de KPIs
-            {% if empresa_selecionada != 'todas' %}
-              {% for empresa in empresas_disponiveis %}
-                {% if empresa.id|stringformat:"s" == empresa_selecionada %}
-                  - {{ empresa.nome }}
-                {% endif %}
-              {% endfor %}
-            {% endif %}
-            {% if marca_selecionada != 'todas' %}
-              - {{ marca_selecionada|title }}
-            {% endif %}
-            {% if periodo_selecionado != 'todos' %}
-              - {{ periodo_selecionado|title }}
-            {% endif %}
-            {% if classe_selecionada != 'todas' %}
-              - {{ classe_selecionada|title }}s
-            {% endif %}
-          </h3>
-          
+
           <!-- Filtros Ativos -->
           {% if empresa_selecionada != 'todas' or marca_selecionada != 'todas' or periodo_selecionado != 'todos' or classe_selecionada != 'todas' %}
           <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 1rem; margin-bottom: 2rem; border-radius: 0 8px 8px 0;">
@@ -842,7 +821,7 @@
         
         // Inicializar gráfico de marcas se existirem dados
         if (Object.keys(marcasData).length > 0) {
-            showChart('quilometragem'); // Iniciar com quilometragem
+            showChart('eficiencia'); // Iniciar com eficiência
         }
     });
     </script>
