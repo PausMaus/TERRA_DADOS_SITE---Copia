@@ -3,7 +3,7 @@ from umbrella360.FERRAMENTAS.umbrellab import Wialon
 from umbrella360.FERRAMENTAS.umbrellab import base
 from umbrella360.FERRAMENTAS.umbrellab.Wialon import *
 from umbrella360.FERRAMENTAS.umbrellab.base import  search_units, unidades_simples
-from umbrella360.models import Empresa, Unidade, Viagem_Base, Viagem_CAM, Caminhao
+from umbrella360.models import Empresa, Unidade, Viagem_Base
 import json
 import pandas as pd
 import time
@@ -24,12 +24,10 @@ WIALON_TOKEN_PLAC = "82fee29da11ea1312f1c8235247a0d82DC991707A4435C60FE7FFB27BD0
 
 WIALON_TOKEN_SF = "5a35fb756820f83c975a1bc846a35a43C16F97789A714DEC2BC5F4D3C6D26C06CC35CAAD"
 
+WIALON_TOKEN_UMBR = "fcc5baae18cdbea20200265b6b8a4af14FBD4F569178B01BC79D740A1055A48513AB15BA"
 
-# Tokens para diferentes ambientes
-Tokens_Wialon = {
-    "CPBRASCELL": WIALON_TOKEN_BRAS,
-    "PLACIDO": WIALON_TOKEN_PLAC
-}
+
+
 
 
 class Command(BaseCommand):
@@ -37,16 +35,39 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         start_time = datetime.now()
         self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
+    
+    
+    
+        #lista as empresas registradas
+        empresas = Empresa.objects.all()
+        for empresa in empresas:
+            print(f'Empresa: {empresa.nome}')
+            # Inicia a sessão Wialon para cada empresa
+            sid=Wialon.authenticate_with_wialon(empresa.token)
+            print(f'Sessão Wialon iniciada para {empresa.nome}.')
+            if not sid:
+                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                continue
+            # Atualiza as unidades
+            self.atualiza_unidades(sid, empresa.nome)
+            #busca relatórios
+            relatórios = Wialon.buscadora_reports(sid)
+            #salva os relatorios em .txt no deposito
+            with open(f'{deposito}/{empresa.nome}_relatorios.txt', 'w') as f:
+                f.write(json.dumps(relatórios, indent=4))
+
+
+
+            #faz logout
+            Wialon.wialon_logout(sid)
         
-        self.principal(WIALON_TOKEN_BRAS, "CPBRASCELL")
-        self.principal(WIALON_TOKEN_PLAC, "PLACIDO")
-        self.principal(WIALON_TOKEN_SF, "São Francisco Resgate")
-        
-        
+
         end_time = datetime.now()
         execution_time = end_time - start_time
         self.stdout.write(self.style.SUCCESS(f'Comando concluído às {end_time.strftime("%H:%M:%S")}'))
         self.stdout.write(self.style.SUCCESS(f'Tempo total de execução: {execution_time}'))
+
+
 
 
     def principal(self, token, empresa_nome):
@@ -118,8 +139,10 @@ class Command(BaseCommand):
                 return
             if empresa.nome == 'PLACIDO':
                 marca = 'DAF'
+            if empresa.nome == 'São Francisco Resgate':
+                marca = 'Fiat'
 
-            print(f'Unidade: {placa} | ID: {unidade_id} | Restante do nome: {restante_nome} | Marca: {marca} | Classe: {cls} | Empresa: {empresa.nome}')
+            #print(f'Unidade: {placa} | ID: {unidade_id} | Restante do nome: {restante_nome} | Marca: {marca} | Classe: {cls} | Empresa: {empresa.nome}')
 
             # Atualiza a unidade no banco de dados
             Unidade.objects.update_or_create(
@@ -140,7 +163,7 @@ class Command(BaseCommand):
         print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
         print(f'Motoristas: {df_motoristas}')
         for motorista in df_motoristas.itertuples(index=False):
-            motorista_id = motorista.driver_id
+            motorista_id = motorista.driver_code
             motorista_nome = motorista.driver_name
             cls = 'Motorista'
             empresa = Empresa.objects.filter(nome=empresa_nome).first()
@@ -148,7 +171,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR(f'Empresa {empresa_nome} não encontrada no banco de dados.'))
                 return
             
-            print(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
+            #print(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
 
             # Atualiza o motorista no banco de dados
             Unidade.objects.update_or_create(

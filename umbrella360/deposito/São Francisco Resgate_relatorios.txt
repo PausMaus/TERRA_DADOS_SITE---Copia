@@ -1,0 +1,110 @@
+[
+    {
+        "nm": "localizzare",
+        "cls": 3,
+        "id": 401755650,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "[UMBR].Cercas",
+                "ct": "avl_unit_group",
+                "c": 20270
+            }
+        },
+        "uacl": 17627904754211
+    },
+    {
+        "nm": "RESGATESF",
+        "cls": 3,
+        "id": 401872803,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "Relat\u00f3rio de Quilometragem",
+                "ct": "avl_unit_group",
+                "c": 49233
+            },
+            "2": {
+                "id": 2,
+                "n": "Relat\u00f3rio de Parada",
+                "ct": "avl_unit",
+                "c": 1013
+            },
+            "3": {
+                "id": 3,
+                "n": "Relat\u00f3rio Trajetos",
+                "ct": "avl_unit",
+                "c": 38336
+            },
+            "4": {
+                "id": 4,
+                "n": "Relat\u00f3rio de Check Point Base Operacionais",
+                "ct": "avl_geozones_group",
+                "c": 65492
+            },
+            "5": {
+                "id": 5,
+                "n": "Relat\u00f3rio de Performance de Motorista",
+                "ct": "avl_driver",
+                "c": 51820
+            },
+            "6": {
+                "id": 6,
+                "n": "Relat\u00f3rio de Cerca Por Ve\u00edculo",
+                "ct": "avl_geozone",
+                "c": 7706
+            },
+            "7": {
+                "id": 7,
+                "n": "Relat\u00f3rio Excesso de Velocidade Grupo Veiculos",
+                "ct": "avl_unit_group",
+                "c": 62724
+            },
+            "8": {
+                "id": 8,
+                "n": "Relatorio de Excessos de Velocidade por Ve\u00edculo",
+                "ct": "avl_unit",
+                "c": 50600
+            },
+            "9": {
+                "id": 9,
+                "n": "Relatorio de Ranking de Motoristas",
+                "ct": "avl_drivers_group",
+                "c": 46837
+            },
+            "10": {
+                "id": 10,
+                "n": "Relat\u00f3rio de Check Point Base Grupo Operacionais ",
+                "ct": "avl_geozones_group",
+                "c": 13245
+            },
+            "11": {
+                "id": 11,
+                "n": "[UMBR].CP ",
+                "ct": "avl_geozones_group",
+                "c": 2224
+            },
+            "12": {
+                "id": 12,
+                "n": "[UMBR].Cercas",
+                "ct": "avl_unit_group",
+                "c": 20270
+            },
+            "13": {
+                "id": 13,
+                "n": "[UMBR].C.MOT",
+                "ct": "avl_drivers_group",
+                "c": 21784
+            },
+            "14": {
+                "id": 14,
+                "n": "[UMBR].C.UNIT",
+                "ct": "avl_unit_group",
+                "c": 14876
+            }
+        },
+        "uacl": 17627904754211
+    }
+]
