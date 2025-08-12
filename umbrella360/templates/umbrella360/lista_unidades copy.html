@@ -48,7 +48,6 @@
             <th style="background: #34495e; color: white;">ID/Código</th>
             <th style="background: #34495e; color: white;">Nome/Descrição</th>
             <th style="background: #34495e; color: white;">Tipo</th>
-            <th style="background: #34495e; color: white;">Empresa</th>
             <th style="background: #34495e; color: white;">Marca</th>
             <th style="background: #34495e; color: white;">Placa</th>
             <th style="background: #34495e; color: white;">Eficiência</th>
@@ -82,7 +81,6 @@
                 </span>
               {% endif %}
             </td>
-            <td style="font-weight: 500;">{{ unidade.empresa.nome }}</td>
             <td>{{ unidade.marca|default:"<span style='color: #6c757d;'>-</span>"|safe }}</td>
             <td>{{ unidade.placa|default:"<span style='color: #6c757d;'>-</span>"|safe }}</td>
             <td style="text-align: center;">

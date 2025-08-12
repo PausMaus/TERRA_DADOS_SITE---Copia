@@ -38,7 +38,7 @@ class Command(BaseCommand):
         start_time = datetime.now()
         self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
 
-        self.principal(Empresa.objects.get(nome="CPBRASCELL").token, "CPBRASCELL")
+        self.principal(Empresa.objects.get(nome="CPBRACELL").token, "CPBRACELL")
         self.principal(Empresa.objects.get(nome="PLACIDO").token, "PLACIDO")
         self.principal(Empresa.objects.get(nome="São Francisco Resgate").token, "São Francisco Resgate")
 
@@ -66,7 +66,15 @@ class Command(BaseCommand):
         #busca os relatorios
         print(Wialon.buscadora_reports(sid))
 
+        if empresa_nome == 'CPBRACELL':
+            self.process_units_CP(sid)
+            #self.process_motoristas_CP_2(sid)
 
+        if empresa_nome == 'PLACIDO':
+            self.process_units_PLAC(sid)
+
+        elif empresa_nome == 'São Francisco Resgate':
+            self.process_units_SF(sid)
 
         # Encerra a sessão Wialon
         Wialon.wialon_logout(sid)
@@ -223,12 +231,44 @@ class Command(BaseCommand):
         self.update_or_create_trip(processamento_df)
         print(processamento_df)
 
+    def process_units_SF(self, sid):
+        # CAMINHOES SÃO FRANCISCO#######################
+        unidades_db = Unidade.objects.all()
+        unidades_db_ids = [unidade.id for unidade in unidades_db]
+        if unidades_db_ids:
+            unidades_db = unidades_db.filter(empresa__nome='São Francisco Resgate')
+            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
+
+        processamento_df = pd.DataFrame()
+        unidades_db = unidades_db
+        # Coleta dados de relatório para 1 dia
+        
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        
+
+
+
+
+        # Atualiza ou cria as viagens no model Viagem_Base
+
+        self.update_or_create_trip(processamento_df)
+
+
+
     def process_motoristas_CP(self, sid):
         #MOTORISTAS BRASCELL####################################################################################
         unidades_db = Unidade.objects.all()
         unidades_db_ids = [unidade.id for unidade in unidades_db]
         if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='CPBRASCELL')
+            unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')
             unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
 
         processamento_df = pd.DataFrame()
@@ -239,6 +279,38 @@ class Command(BaseCommand):
         processamento_df = self.retrieve_unit_data_motorista(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=7, periodo='Ultimos 7 dias')
         print(f'Relatórios coletados para {len(processamento_df)} motoristas.')
         print(processamento_df)
+
+
+
+    def process_motoristas_CP_2(self, sid):
+        # motoristas BRASCELL#######################
+        unidades_db = Unidade.objects.all()
+        unidades_db_ids = [unidade.id for unidade in unidades_db]
+        if unidades_db_ids:
+            unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')
+            unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
+
+        processamento_df = pd.DataFrame()
+        unidades_db = unidades_db
+        # Coleta dados de relatório para 1 dia
+        
+        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=1, periodo='Ontem')
+        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        print(processamento_df)
+        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+        #print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        #print(processamento_df)
+        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+        #print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+        #print(processamento_df)
+        
+
+
+
+
+        # Atualiza ou cria as viagens no model Viagem_Base
+
+        self.update_or_create_trip(processamento_df)
 
 
  
@@ -305,12 +377,11 @@ class Command(BaseCommand):
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
             Wialon.clean_up_result(sid)
-            time.sleep(1)
         return processamento_df
 
 
     def retrieve_unit_data_motorista(self, sid, unidades_db, id_relatorio, processamento_df, tempo_dias, periodo):
-        for unidade in unidades_db:
+        for unidade in tqdm(unidades_db, desc="Processando unidades", unit="unidade"):
             unidade_id = unidade.id
 
             # Coleta dados de relatório para 1 dia
@@ -319,7 +390,6 @@ class Command(BaseCommand):
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
             Wialon.clean_up_result(sid)
-            time.sleep(1)
         return processamento_df
 
 

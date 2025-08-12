@@ -526,7 +526,7 @@ def buscadora_reports(session_id):
     Returns:
         list: Uma lista de dicionários representando os relatórios encontrados, ou None em caso de erro.
     """
-    nome = "Buscadora de Relatorios 02"
+    nome = "Buscadora de Relatorios"
     def comm(msg):
         print(colored("="*30, "yellow"))
         print(colored(f"{nome}:","green"))
@@ -561,6 +561,7 @@ def buscadora_reports(session_id):
         if "items" in result:
             users = result["items"]
             comm(f"Encontrados {len(users)} usuários.")
+            comm(f"Usuários encontrados: {users}")
             return users
         else:
             comm(f"Resposta inesperada ao buscar usuários: {result}")
@@ -815,7 +816,7 @@ def exec_report_motorista(sid, resource_id, template_id, unit_id, interval_from,
         "params": json.dumps({
             "reportResourceId": resource_id,
             "reportTemplateId": template_id,
-            "reportObjectId": 0,
+            "reportObjectId": 401756219,
             "reportObjectSecId": unit_id,
             "interval": {
                 "from": interval_from,
@@ -872,6 +873,88 @@ def exec_report_motorista(sid, resource_id, template_id, unit_id, interval_from,
         comm(f"Erro inesperado: {e}")
         return None
 
+
+
+
+def exec_report_teste(sid, resource_id, template_id, unit_id, interval_from, interval_to):
+    """
+    Executa um relatório específico para uma unidade no Wialon.
+    
+    :param sid: Session ID obtido após o login.
+    :param resource_id: ID do recurso onde o relatório está localizado.
+    :param template_id: ID do modelo de relatório a ser executado.
+    :param unit_id: ID da unidade para a qual o relatório será gerado.
+    :return: Resultado do relatório ou None em caso de erro.
+    """
+    nome = "exec_report"
+    def comm(msg):
+        print(colored("="*30, "yellow"))
+        print(colored(f"{nome}:","green"))
+        print(f"{msg}")
+        print(colored("="*30, "yellow"))
+    
+
+    payload = {
+        "svc": "report/exec_report",
+        "params": json.dumps({
+            "reportResourceId": 401756219,
+            "reportTemplateId": 58,
+            "reportObjectId": 401756219,
+            "reportObjectSecId": 1,
+            "interval": {
+                "from": interval_from,
+                "to": interval_to,
+                "flags": 0  # CORREÇÃO: 0 para timestamps absolutos Unix
+            }
+        }),
+        "sid": sid
+    }
+    
+    try:
+        
+        response = requests.post(API_URL, data=payload)
+        response.raise_for_status()
+        data = response.json()
+        
+        
+        if "error" in data:
+            error_code = data["error"]
+            comm(f"Erro {error_code} ao executar relatório")
+            
+            # Códigos de erro comuns
+            error_messages = {
+                1: "Token inválido ou expirado",
+                4: "Acesso negado - verificar permissões do usuário",
+                5: "Erro na requisição - parâmetros inválidos (IDs ou interval)",
+                6: "Não autorizado - usuário sem permissão para este relatório",
+                7: "Limite de tempo excedido",
+                14: "Relatório não encontrado",
+                1001: "Parâmetros inválidos",
+                1002: "Recurso não encontrado",
+                1003: "Template não encontrado"
+            }
+            
+            if error_code in error_messages:
+                comm(f"Descrição: {error_messages[error_code]}")
+            
+            return None
+            
+        # Verifica se o relatório foi executado com sucesso
+        if isinstance(data, dict) and data.get("error") is None:
+            #comm(f"Relatório executado com sucesso")
+            return data
+            
+        return data
+        
+    except requests.exceptions.RequestException as e:
+        comm(f"Erro de conexão HTTP: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        comm(f"Erro ao decodificar JSON: {e}")
+        return None
+    except Exception as e:
+        comm(f"Erro inesperado: {e}")
+        return None
 
 
 
@@ -1597,3 +1680,201 @@ def extract_report_data_simple(data):
         return []
 
 
+#######################################################
+
+def report_exec_report(sid, resource_id, template_id, unit_id, interval_from, interval_to):
+    """
+    Executa um relatório específico para uma unidade no Wialon.
+    
+    :param sid: Session ID obtido após o login.
+    :param resource_id: ID do recurso onde o relatório está localizado.
+    :param template_id: ID do modelo de relatório a ser executado.
+    :param unit_id: ID da unidade para a qual o relatório será gerado.
+    :return: Resultado do relatório ou None em caso de erro.
+    """
+    nome = "exec_report"
+    def comm(msg):
+        print(colored("="*30, "yellow"))
+        print(colored(f"{nome}:","green"))
+        print(f"{msg}")
+        print(colored("="*30, "yellow"))
+    
+
+    payload = {
+        "svc": "report/exec_report",
+        "params": json.dumps({
+            "reportResourceId": resource_id,
+            "reportTemplateId": template_id,
+            "reportObjectId": unit_id,
+            "reportObjectSecId": 0,
+            "interval": {
+                "from": interval_from,
+                "to": interval_to,
+                "flags": 0  # CORREÇÃO: 0 para timestamps absolutos Unix
+            }
+        }),
+        "sid": sid
+    }
+    
+    try:
+        
+        response = requests.post(API_URL, data=payload)
+        response.raise_for_status()
+        data = response.json()
+        
+        
+        if "error" in data:
+            error_code = data["error"]
+            comm(f"Erro {error_code} ao executar relatório")
+            
+            # Códigos de erro comuns
+            error_messages = {
+                1: "Token inválido ou expirado",
+                4: "Acesso negado - verificar permissões do usuário",
+                5: "Erro na requisição - parâmetros inválidos (IDs ou interval)",
+                6: "Não autorizado - usuário sem permissão para este relatório",
+                7: "Failed to fetch the report object and report resource with the desired ACL",
+                14: "Relatório não encontrado",
+                1001: "Parâmetros inválidos",
+                1002: "Recurso não encontrado",
+                1003: "Template não encontrado"
+            }
+            
+            if error_code in error_messages:
+                comm(f"Descrição: {error_messages[error_code]}")
+            
+            return None
+            
+        # Verifica se o relatório foi executado com sucesso
+        if isinstance(data, dict) and data.get("error") is None:
+            comm(f"Relatório executado com sucesso")
+            return data
+            
+        return data
+        
+    except requests.exceptions.RequestException as e:
+        comm(f"Erro de conexão HTTP: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        comm(f"Erro ao decodificar JSON: {e}")
+        return None
+    except Exception as e:
+        comm(f"Erro inesperado: {e}")
+        return None
+    
+
+
+
+
+###### TESTE ##################################
+
+
+def CLTDR_JSON(sid, resource_id, unit_id, id_relatorio, tempo_dias, periodo):
+    """
+    Função para coletar dados de relatório de uma unidade específica para um período.
+    
+    :param sid: Session ID da API Wialon
+    :param unit_id: ID da unidade
+    :param id_relatorio: ID do template de relatório
+    :param tempo_dias: Número de dias para buscar (7 ou 30)
+    :param periodo: String descritiva do período
+    :return: DataFrame com os dados ou None se não houver dados
+    """
+    nome = "CLTDR_JSON"
+    def comm(msg):
+        print(colored("="*30, "blue"))
+        print(colored(f"{nome}:", "green"))
+        print(f"{msg}")
+        print(colored("="*30, "blue"))
+
+    # CORREÇÃO: Calcula timestamps UNIX corretos
+    current_time = int(time.time())
+    interval_from = current_time - (tempo_dias * 24 * 3600)  # X dias atrás
+    interval_to = current_time  # Agora
+    
+    try:
+        # Executa o relatório
+        relatorio = report_exec_report(
+            sid=sid, 
+            resource_id=resource_id, 
+            template_id=id_relatorio, 
+            unit_id=unit_id, 
+            interval_from=interval_from, 
+            interval_to=interval_to
+        )
+
+
+        
+        if not relatorio:
+            comm(f"❌ Falha ao executar relatório para unidade {unit_id}")
+            return None
+
+        #print(f"Relatório executado: {relatorio}")
+
+        # Verifica se há tabelas no resultado
+        tables = relatorio.get('reportResult', {}).get('tables', [])
+        if not tables:
+            comm(f"⚠️ Nenhuma tabela encontrada no relatório para unidade {unit_id}")
+            return None
+        
+        # Extrai headers
+        headers = extract_report_headers(relatorio)
+        if not headers:
+            comm(f"⚠️ Nenhum header encontrado no relatório para unidade {unit_id}")
+            return None
+        
+        #print(f"Headers do relatório: {headers}")
+        
+        # Obtém as linhas de dados
+        rows = get_result_rows(sid)
+        if not rows:
+            comm(f"⚠️ Nenhuma linha de dados encontrada para unidade {unit_id}")
+            return None
+        
+        #print(f"Linhas obtidas: {len(rows)}")
+        
+        # Verifica se há dados na primeira linha
+        if len(rows) == 0:
+            comm(f"⚠️ Array de linhas vazio para unidade {unit_id}")
+            return None
+        
+        first_row = rows[0]
+        if not isinstance(first_row, dict) or 'c' not in first_row:
+            comm(f"⚠️ Estrutura de dados inválida para unidade {unit_id}: {first_row}")
+            return None
+        
+        report_data = first_row['c']
+        if not report_data:
+            comm(f"⚠️ Dados de relatório vazios para unidade {unit_id}")
+            return None
+        
+        #print(f"Dados do relatório: {report_data}")
+        
+        # Verifica compatibilidade entre headers e dados
+        if len(headers) != len(report_data):
+            comm(f"⚠️ Incompatibilidade: {len(headers)} headers vs {len(report_data)} dados para unidade {unit_id}")
+            # Tenta ajustar usando o menor tamanho
+            min_length = min(len(headers), len(report_data))
+            headers = headers[:min_length]
+            report_data = report_data[:min_length]
+            comm(f"🔧 Ajustado para {min_length} colunas")
+        
+        # Cria o DataFrame
+        relatorio_df = pd.DataFrame([report_data], columns=headers)
+        
+        # Adiciona metadados
+        relatorio_df['id'] = f"{interval_from}_{interval_to}_{unit_id}"
+        relatorio_df['unit_id'] = unit_id
+        relatorio_df['periodo'] = periodo
+        relatorio_df['timestamp_from'] = interval_from
+        relatorio_df['timestamp_to'] = interval_to
+        
+        #print(f"✅ DataFrame criado com sucesso:")
+        #print(relatorio_df)
+        #print(f"Headers do DataFrame: {relatorio_df.columns.tolist()}")
+        
+        return relatorio_df
+        
+    except Exception as e:
+        comm(f"❌ Erro inesperado ao processar unidade {unit_id}: {str(e)}")
+        return None
