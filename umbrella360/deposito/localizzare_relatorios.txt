@@ -1,0 +1,1177 @@
+[
+    {
+        "nm": "AGROPolegatto",
+        "cls": 3,
+        "id": 401886546,
+        "mu": 0,
+        "rep": {},
+        "repmax": 0,
+        "uacl": 52913983520767
+    },
+    {
+        "nm": "CPBrascell",
+        "cls": 3,
+        "id": 401756219,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "Relatorio de Quilometragem Total Por Grupo",
+                "ct": "avl_unit_group",
+                "c": 1125
+            },
+            "2": {
+                "id": 2,
+                "n": "Relatorio Consumo Diesel Pro5",
+                "ct": "avl_unit_group",
+                "c": 62129
+            },
+            "3": {
+                "id": 3,
+                "n": "Relat\u00f3rio Cadastral  de Unidade",
+                "ct": "avl_unit_group",
+                "c": 17412
+            },
+            "4": {
+                "id": 4,
+                "n": "Relatorio de Controle de Abastecimento",
+                "ct": "avl_unit_group",
+                "c": 64029
+            },
+            "5": {
+                "id": 5,
+                "n": "teste",
+                "ct": "avl_driver",
+                "c": 60449
+            },
+            "6": {
+                "id": 6,
+                "n": "Relatorio de Dreno de Combustivel",
+                "ct": "avl_unit_group",
+                "c": 48471
+            },
+            "8": {
+                "id": 8,
+                "n": "Relat\u00f3rio de Analise Hodometro Frota",
+                "ct": "avl_unit_group",
+                "c": 50038
+            },
+            "15": {
+                "id": 15,
+                "n": "Felipe-Relatorio de combustivel  Bracell Grupo Motoristas",
+                "ct": "avl_drivers_group",
+                "c": 11812
+            },
+            "18": {
+                "id": 18,
+                "n": "Felipe-Relatorio de combustivel  Bracell Grupo Veiculos",
+                "ct": "avl_unit_group",
+                "c": 7702
+            },
+            "19": {
+                "id": 19,
+                "n": "Felipe-Relatorio de combustivel  Bracell Grupo Trajetos",
+                "ct": "avl_unit_group",
+                "c": 56498
+            },
+            "36": {
+                "id": 36,
+                "n": "Felipe-Relatorio de combustivel Bracell Grupo Simples FLS",
+                "ct": "avl_unit_group",
+                "c": 55553
+            },
+            "38": {
+                "id": 38,
+                "n": "Felipe-Relatorio Operacional Bracell Detalhado de Motoristas",
+                "ct": "avl_drivers_group",
+                "c": 5053
+            },
+            "39": {
+                "id": 39,
+                "n": "Felipe -Gr\u00e1fico por veiculo de Velocidade X Consumo",
+                "ct": "avl_unit",
+                "c": 28307
+            },
+            "40": {
+                "id": 40,
+                "n": "Felipe -Gr\u00e1fico por ve\u00edculo de RPM  x Velocidade x  X Consumo",
+                "ct": "avl_unit",
+                "c": 2976
+            },
+            "41": {
+                "id": 41,
+                "n": "Felipe -Gr\u00e1fico por ve\u00edculo de RPM  x Motor LIgado x  X Consumo",
+                "ct": "avl_unit",
+                "c": 30145
+            },
+            "44": {
+                "id": 44,
+                "n": "Felipe-Relatorio de combustivel Bracell Grupo Simples Totalizado",
+                "ct": "avl_unit_group",
+                "c": 23161
+            },
+            "45": {
+                "id": 45,
+                "n": "Felipe-Relatorio de combustivel Bracell Grupo Simples Abs",
+                "ct": "avl_unit_group",
+                "c": 56558
+            },
+            "58": {
+                "id": 58,
+                "n": "[UMBR].C.MOT",
+                "ct": "avl_drivers_group",
+                "c": 61427
+            },
+            "59": {
+                "id": 59,
+                "n": "[UMBR].C.UNIT",
+                "ct": "avl_unit_group",
+                "c": 58449
+            },
+            "60": {
+                "id": 60,
+                "n": "Felipe-Inspe\u00e7\u00e3o Quilometragem Bracell",
+                "ct": "avl_unit",
+                "c": 45393
+            },
+            "65": {
+                "id": 65,
+                "n": "Felipe-Relatorio de combustivel  Bracell Grupo Motoristas Simplificado",
+                "ct": "avl_drivers_group",
+                "c": 42583
+            },
+            "70": {
+                "id": 70,
+                "n": "Felipe-Avalia\u00e7\u00e3o de Performance Frota",
+                "ct": "avl_unit_group",
+                "c": 17997
+            },
+            "74": {
+                "id": 74,
+                "n": "Relat\u00f3rio de Analise Pro5- Dados Gerais",
+                "ct": "avl_unit_group",
+                "c": 39318
+            },
+            "77": {
+                "id": 77,
+                "n": "[UMBR]C.ECODRIVE",
+                "ct": "avl_unit_group",
+                "c": 37006
+            }
+        },
+        "repmax": 0,
+        "uacl": 52913983520767
+    },
+    {
+        "nm": "DISTHoreca",
+        "cls": 3,
+        "id": 401858934,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "Relatorio Cadastral de Veiculos",
+                "ct": "avl_unit_group",
+                "c": 29279
+            },
+            "2": {
+                "id": 2,
+                "n": "Relatorio de Estacionamentos e Paradas",
+                "ct": "avl_unit_group",
+                "c": 61415
+            },
+            "3": {
+                "id": 3,
+                "n": "Relatorio de Eventos",
+                "ct": "avl_unit_group",
+                "c": 64960
+            },
+            "4": {
+                "id": 4,
+                "n": "Relatorio de Excessos de Velocidade",
+                "ct": "avl_unit_group",
+                "c": 32968
+            },
+            "5": {
+                "id": 5,
+                "n": "Relatorio de Jornada de Trabalho",
+                "ct": "avl_drivers_group",
+                "c": 58325
+            },
+            "6": {
+                "id": 6,
+                "n": "Relatorio de Resumo",
+                "ct": "avl_unit_group",
+                "c": 18058
+            },
+            "7": {
+                "id": 7,
+                "n": "Relatorio detalhado de Ociosidade",
+                "ct": "avl_unit_group",
+                "c": 10716
+            },
+            "8": {
+                "id": 8,
+                "n": "Relatorio Heat Map: Estacionamentos",
+                "ct": "avl_unit_group",
+                "c": 49238
+            },
+            "9": {
+                "id": 9,
+                "n": "Relatorio Veiculos em Oficina",
+                "ct": "avl_geozone",
+                "c": 55536
+            },
+            "10": {
+                "id": 10,
+                "n": "Relat\u00f3rio de Alertas",
+                "ct": "avl_unit_group",
+                "c": 57486
+            },
+            "11": {
+                "id": 11,
+                "n": "Relat\u00f3rio de Condu\u00e7\u00e3o Ecol\u00f3gica",
+                "ct": "avl_unit_group",
+                "c": 39875
+            },
+            "12": {
+                "id": 12,
+                "n": "Horeca-Relatorio de Temperatura Frota",
+                "ct": "avl_unit_group",
+                "c": 25648
+            },
+            "13": {
+                "id": 13,
+                "n": "Horeca-Relatorio de Temperatura por Veiculo",
+                "ct": "avl_unit",
+                "c": 24426
+            },
+            "14": {
+                "id": 14,
+                "n": "CCO-Inspe\u00e7\u00e3o, Velocidade e Temperatura Quilometragem Horeca",
+                "ct": "avl_unit",
+                "c": 4133
+            }
+        },
+        "repmax": 0,
+        "uacl": 52913983520767
+    },
+    {
+        "nm": "INDUSCertofoods",
+        "cls": 3,
+        "id": 401844216,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "CertoFoods-Relatorio de Temperatura Frota",
+                "ct": "avl_unit_group",
+                "c": 22853
+            },
+            "2": {
+                "id": 2,
+                "n": "CertoFoods-Relatorio de Temperatura por Veiculo",
+                "ct": "avl_unit",
+                "c": 62529
+            },
+            "3": {
+                "id": 3,
+                "n": "Relatorio Cadastral de Veiculos",
+                "ct": "avl_unit_group",
+                "c": 29279
+            },
+            "4": {
+                "id": 4,
+                "n": "Relatorio de Estacionamentos e Paradas",
+                "ct": "avl_unit_group",
+                "c": 61415
+            },
+            "5": {
+                "id": 5,
+                "n": "Relatorio de Eventos",
+                "ct": "avl_unit_group",
+                "c": 64960
+            },
+            "6": {
+                "id": 6,
+                "n": "Relatorio de Excessos de Velocidade",
+                "ct": "avl_unit_group",
+                "c": 32968
+            },
+            "7": {
+                "id": 7,
+                "n": "Relatorio de Jornada de Trabalho",
+                "ct": "avl_drivers_group",
+                "c": 58325
+            },
+            "8": {
+                "id": 8,
+                "n": "Relatorio de Resumo",
+                "ct": "avl_unit_group",
+                "c": 18058
+            },
+            "9": {
+                "id": 9,
+                "n": "Relatorio detalhado de Ociosidade",
+                "ct": "avl_unit_group",
+                "c": 10716
+            },
+            "10": {
+                "id": 10,
+                "n": "Relatorio Heat Map: Estacionamentos",
+                "ct": "avl_unit_group",
+                "c": 49238
+            },
+            "11": {
+                "id": 11,
+                "n": "Relatorio Veiculos em Oficina",
+                "ct": "avl_geozone",
+                "c": 55536
+            },
+            "12": {
+                "id": 12,
+                "n": "Relat\u00f3rio de Alertas",
+                "ct": "avl_unit_group",
+                "c": 57486
+            },
+            "13": {
+                "id": 13,
+                "n": "Relat\u00f3rio de Condu\u00e7\u00e3o Ecol\u00f3gica",
+                "ct": "avl_unit_group",
+                "c": 39875
+            },
+            "14": {
+                "id": 14,
+                "n": "Relat\u00f3rio de Performance de Viagem",
+                "ct": "avl_unit_group",
+                "c": 43129
+            },
+            "15": {
+                "id": 15,
+                "n": "CCO-Inspe\u00e7\u00e3o Quilometragem Bracell",
+                "ct": "avl_unit",
+                "c": 26062
+            },
+            "16": {
+                "id": 16,
+                "n": "Relatorio de Ruas Visitadas",
+                "ct": "avl_unit_group",
+                "c": 6121
+            },
+            "17": {
+                "id": 17,
+                "n": "Relat\u00f3rio de Condu\u00e7\u00e3o Ecologica",
+                "ct": "avl_unit_group",
+                "c": 12968
+            },
+            "18": {
+                "id": 18,
+                "n": "Relatorio de hodometro de Portaria CertoFoods",
+                "ct": "avl_unit_group",
+                "c": 218
+            },
+            "19": {
+                "id": 19,
+                "n": "teste treinamento Certo Foods",
+                "ct": "avl_unit",
+                "c": 11829
+            }
+        },
+        "repmax": 0,
+        "uacl": 52913983520767
+    },
+    {
+        "nm": "INDUSMassimax",
+        "cls": 3,
+        "id": 401879580,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "Relat\u00f3rio de Horas de Motor",
+                "ct": "avl_unit",
+                "c": 4812
+            },
+            "2": {
+                "id": 2,
+                "n": "Relat\u00f3rio de Paradas",
+                "ct": "avl_unit",
+                "c": 10789
+            },
+            "3": {
+                "id": 3,
+                "n": "Relat\u00f3rio de Viagens horeca",
+                "ct": "avl_unit",
+                "c": 40367
+            }
+        },
+        "repmax": 0,
+        "uacl": 52913983520767
+    },
+    {
+        "nm": "INDUSPrea",
+        "cls": 3,
+        "id": 401815574,
+        "mu": 0,
+        "rep": {},
+        "repmax": 0,
+        "uacl": 52913983520767
+    },
+    {
+        "nm": "localizzare",
+        "cls": 3,
+        "id": 401755650,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "[UMBR].Cercas",
+                "ct": "avl_unit_group",
+                "c": 20270
+            },
+            "2": {
+                "id": 2,
+                "n": "[UMBR].U.MOT",
+                "ct": "avl_driver",
+                "c": 28302
+            },
+            "3": {
+                "id": 3,
+                "n": "Novo relat\u00f3rio",
+                "ct": "avl_driver",
+                "c": 35086
+            }
+        },
+        "repmax": 0,
+        "uacl": 52909688553447
+    },
+    {
+        "nm": "Localizzare_mgr",
+        "cls": 3,
+        "id": 401756207,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "Relatorio Comparativo de Sensores",
+                "ct": "avl_unit",
+                "c": 19835
+            },
+            "2": {
+                "id": 2,
+                "n": "Relatorio de combustivel  Brascell Simples",
+                "ct": "avl_unit_group",
+                "c": 14736
+            },
+            "3": {
+                "id": 3,
+                "n": "Relatorio de Paradas Longas",
+                "ct": "avl_unit",
+                "c": 49970
+            },
+            "4": {
+                "id": 4,
+                "n": "Relatorio de Auditoria Usu\u00e1rio",
+                "ct": "storage_user",
+                "c": 48933
+            },
+            "5": {
+                "id": 5,
+                "n": "Relatorio de An\u00e1lise de Dados CAN",
+                "ct": "avl_unit_group",
+                "c": 13177
+            },
+            "6": {
+                "id": 6,
+                "n": "Relatorio de Faixa Verde de Motor",
+                "ct": "avl_unit_group",
+                "c": 28212
+            },
+            "7": {
+                "id": 7,
+                "n": "Relat\u00f3rio Analitico de desvio de Rotas",
+                "ct": "avl_unit_group",
+                "c": 2459
+            },
+            "8": {
+                "id": 8,
+                "n": "Relat\u00f3rio An\u00e1lise Equipamento",
+                "ct": "avl_unit_group",
+                "c": 10164
+            },
+            "9": {
+                "id": 9,
+                "n": "Relat\u00f3rio Cadastro Motoristas Completo",
+                "ct": "avl_drivers_group",
+                "c": 55289
+            },
+            "10": {
+                "id": 10,
+                "n": "Relatorio de hodometro de Portaria",
+                "ct": "avl_unit_group",
+                "c": 47127
+            },
+            "11": {
+                "id": 11,
+                "n": "Relatorio analitico sobre Reboques",
+                "ct": "avl_trailers_group",
+                "c": 9423
+            },
+            "12": {
+                "id": 12,
+                "n": "Relatorio Veiculos em Oficina",
+                "ct": "avl_geozone",
+                "c": 20357
+            },
+            "13": {
+                "id": 13,
+                "n": "Relatorio Cadastral de Veiculos",
+                "ct": "avl_unit_group",
+                "c": 29279
+            },
+            "14": {
+                "id": 14,
+                "n": "Relat\u00f3rio de Acessos",
+                "ct": "avl_resource",
+                "c": 36344
+            },
+            "15": {
+                "id": 15,
+                "n": "Relat\u00f3rio de Alertas de perda de conex\u00e3o",
+                "ct": "avl_unit_group",
+                "c": 16212
+            },
+            "16": {
+                "id": 16,
+                "n": "Relatorio de Vincula\u00e7\u00e3o Motoristas",
+                "ct": "avl_driver",
+                "c": 58189
+            },
+            "17": {
+                "id": 17,
+                "n": "Relat\u00f3rio de Analise CAN",
+                "ct": "avl_unit_group",
+                "c": 42619
+            },
+            "18": {
+                "id": 18,
+                "n": "TESTE LEITURA COMB",
+                "ct": "avl_unit_group",
+                "c": 29462
+            },
+            "19": {
+                "id": 19,
+                "n": "Endrigo- Relatorio de viagem teste",
+                "ct": "avl_unit",
+                "c": 38690
+            },
+            "20": {
+                "id": 20,
+                "n": "Umbrella1 sem motorista-Relatorio de combustivel Bracell Grupo Simples Abs",
+                "ct": "avl_unit_group",
+                "c": 19653
+            },
+            "21": {
+                "id": 21,
+                "n": "Mariana- Relatorio de Equipamentos Plataforma",
+                "ct": "avl_unit_group",
+                "c": 22153
+            },
+            "22": {
+                "id": 22,
+                "n": "Relatorio Teste Treinamento",
+                "ct": "avl_unit",
+                "c": 35974
+            },
+            "23": {
+                "id": 23,
+                "n": "[UMBR].unidades",
+                "ct": "avl_unit_group",
+                "c": 290
+            },
+            "24": {
+                "id": 24,
+                "n": "[UMBR].motoristas",
+                "ct": "avl_drivers_group",
+                "c": 58005
+            }
+        },
+        "repmax": 0,
+        "uacl": 52913983520767
+    },
+    {
+        "nm": "LZ_Treinamento",
+        "cls": 3,
+        "id": 401925047,
+        "mu": 0,
+        "rep": {},
+        "repmax": 0,
+        "uacl": 52913983520767
+    },
+    {
+        "nm": "PLACBracell",
+        "cls": 3,
+        "id": 401768999,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "Relat\u00f3rio de Abastecimentos e Drenos",
+                "ct": "avl_unit_group",
+                "c": 21163
+            },
+            "2": {
+                "id": 2,
+                "n": "Relat\u00f3rio de An\u00e1lise das Velocidades",
+                "ct": "avl_unit",
+                "c": 46093
+            },
+            "3": {
+                "id": 3,
+                "n": "Relat\u00f3rio de An\u00e1lise dos Percursos por Veiculos",
+                "ct": "avl_unit",
+                "c": 19108
+            },
+            "4": {
+                "id": 4,
+                "n": "Relat\u00f3rio de Condu\u00e7\u00e3o Ecol\u00f3gica",
+                "ct": "avl_unit_group",
+                "c": 39875
+            },
+            "5": {
+                "id": 5,
+                "n": "Relat\u00f3rio de Dados CAN",
+                "ct": "avl_unit_group",
+                "c": 31660
+            },
+            "6": {
+                "id": 6,
+                "n": "Relat\u00f3rio de Dados de Sensores",
+                "ct": "avl_unit",
+                "c": 33475
+            },
+            "7": {
+                "id": 7,
+                "n": "Relat\u00f3rio de Entradas nas Cercas Eletr\u00f4nicas",
+                "ct": "avl_unit_group",
+                "c": 20494
+            },
+            "8": {
+                "id": 8,
+                "n": "Relatorio de Estacionamentos e Paradas",
+                "ct": "avl_unit_group",
+                "c": 61415
+            },
+            "9": {
+                "id": 9,
+                "n": "Relat\u00f3rio de Alertas",
+                "ct": "avl_unit_group",
+                "c": 31176
+            },
+            "10": {
+                "id": 10,
+                "n": "Relatorio de Estat\u00edsticas do Combust\u00edvel",
+                "ct": "avl_unit_group",
+                "c": 63539
+            },
+            "11": {
+                "id": 11,
+                "n": "Relatorio de Eventos",
+                "ct": "avl_unit_group",
+                "c": 64960
+            },
+            "12": {
+                "id": 12,
+                "n": "Relatorio de Excessos de Velocidade",
+                "ct": "avl_unit_group",
+                "c": 32968
+            },
+            "13": {
+                "id": 13,
+                "n": "Relatorio Heat Map: Estacionamentos",
+                "ct": "avl_unit_group",
+                "c": 49238
+            },
+            "14": {
+                "id": 14,
+                "n": "Relatorio de Heat Map: Percurso",
+                "ct": "avl_unit_group",
+                "c": 59364
+            },
+            "15": {
+                "id": 15,
+                "n": "Relatorio de Jornada de Trabalho",
+                "ct": "avl_drivers_group",
+                "c": 58325
+            },
+            "16": {
+                "id": 16,
+                "n": "Relatorios de Manuten\u00e7\u00f5es",
+                "ct": "avl_unit_group",
+                "c": 32017
+            },
+            "17": {
+                "id": 17,
+                "n": "Relatorio Performance Motoristas",
+                "ct": "avl_drivers_group",
+                "c": 49929
+            },
+            "18": {
+                "id": 18,
+                "n": "Gr\u00e1fico Velocidade X RPM",
+                "ct": "avl_unit",
+                "c": 11319
+            },
+            "19": {
+                "id": 19,
+                "n": "Gr\u00e1fico de Velocidade X Consumo",
+                "ct": "avl_unit",
+                "c": 23245
+            },
+            "20": {
+                "id": 20,
+                "n": "Relatorio detalhado de Ociosidade",
+                "ct": "avl_unit_group",
+                "c": 10716
+            },
+            "21": {
+                "id": 21,
+                "n": "Relat\u00f3rio de Posi\u00e7\u00f5es por veiculos",
+                "ct": "avl_unit",
+                "c": 21154
+            },
+            "22": {
+                "id": 22,
+                "n": "Relatorio de Resumo",
+                "ct": "avl_unit_group",
+                "c": 18058
+            },
+            "23": {
+                "id": 23,
+                "n": "Relat\u00f3rio Analitico de desvio de Rotas",
+                "ct": "avl_unit_group",
+                "c": 40563
+            },
+            "24": {
+                "id": 24,
+                "n": "Relatorio de combustivel  Brascell Simples",
+                "ct": "avl_unit_group",
+                "c": 8587
+            },
+            "25": {
+                "id": 25,
+                "n": "Relat\u00f3rio Cadastro Motoristas",
+                "ct": "avl_drivers_group",
+                "c": 60839
+            },
+            "26": {
+                "id": 26,
+                "n": "Relatorio Veiculos em Oficina",
+                "ct": "avl_geozone",
+                "c": 55536
+            },
+            "27": {
+                "id": 27,
+                "n": "Relatorio de Faixa Verde de Motor",
+                "ct": "avl_unit_group",
+                "c": 47869
+            },
+            "28": {
+                "id": 28,
+                "n": "Relatoriode Viagens entre locais por Ve\u00edculo",
+                "ct": "avl_unit",
+                "c": 23195
+            },
+            "29": {
+                "id": 29,
+                "n": "Relat\u00f3rio de Grupo de Reboques",
+                "ct": "avl_trailers_group",
+                "c": 31651
+            },
+            "30": {
+                "id": 30,
+                "n": "Relat\u00f3rio Cadastro Motoristas Completo",
+                "ct": "avl_drivers_group",
+                "c": 58984
+            },
+            "31": {
+                "id": 31,
+                "n": "Relatorio Cadastral de Veiculos",
+                "ct": "avl_unit_group",
+                "c": 29279
+            },
+            "33": {
+                "id": 33,
+                "n": "Relatorio de Consumo Combustivel B\u00e1sico",
+                "ct": "avl_unit_group",
+                "c": 30223
+            },
+            "34": {
+                "id": 34,
+                "n": "Relatorio Operacional Detalhado de Motoristas",
+                "ct": "avl_drivers_group",
+                "c": 37194
+            },
+            "35": {
+                "id": 35,
+                "n": "Relat\u00f3rio de Performance de Viagem",
+                "ct": "avl_unit_group",
+                "c": 51197
+            },
+            "36": {
+                "id": 36,
+                "n": "Relatorio Trajeto Fazendas PLABRAcell",
+                "ct": "avl_unit_group",
+                "c": 9341
+            },
+            "37": {
+                "id": 37,
+                "n": "Relatorio de combustivel  Brascell detalhado",
+                "ct": "avl_unit_group",
+                "c": 4249
+            },
+            "38": {
+                "id": 38,
+                "n": "Relatorio Operacional Grupo de Motoristas ",
+                "ct": "avl_drivers_group",
+                "c": 60389
+            },
+            "39": {
+                "id": 39,
+                "n": "Relatorio Operacional Individual de Motoristas",
+                "ct": "avl_driver",
+                "c": 9610
+            },
+            "40": {
+                "id": 40,
+                "n": "Relat\u00f3rio Sensor RFid Equipamento",
+                "ct": "avl_unit_group",
+                "c": 28908
+            },
+            "41": {
+                "id": 41,
+                "n": "Daniel-Relatorio de combustivel  Bracell Grupo Motoristas",
+                "ct": "avl_drivers_group",
+                "c": 14692
+            },
+            "42": {
+                "id": 42,
+                "n": "Daniel-Relatorio de combustivel  Bracell Grupo Trajetos",
+                "ct": "avl_unit_group",
+                "c": 33101
+            },
+            "43": {
+                "id": 43,
+                "n": "Daniel-Relatorio de combustivel  Bracell Grupo Veiculos",
+                "ct": "avl_unit_group",
+                "c": 31696
+            },
+            "44": {
+                "id": 44,
+                "n": "Relat\u00f3rio de Performance PLACbracell",
+                "ct": "avl_unit_group",
+                "c": 54031
+            },
+            "47": {
+                "id": 47,
+                "n": "[UMBR]C.ECODRIVE",
+                "ct": "avl_unit_group",
+                "c": 46982
+            },
+            "48": {
+                "id": 48,
+                "n": "[UMBR].C.MOT",
+                "ct": "avl_drivers_group",
+                "c": 44742
+            },
+            "49": {
+                "id": 49,
+                "n": "[UMBR].C.UNIT",
+                "ct": "avl_unit_group",
+                "c": 14876
+            }
+        },
+        "repmax": 0,
+        "uacl": 52913983520767
+    },
+    {
+        "nm": "RESGATESF",
+        "cls": 3,
+        "id": 401872803,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "Relat\u00f3rio de Quilometragem",
+                "ct": "avl_unit_group",
+                "c": 49233
+            },
+            "2": {
+                "id": 2,
+                "n": "Relat\u00f3rio de Parada",
+                "ct": "avl_unit",
+                "c": 1013
+            },
+            "3": {
+                "id": 3,
+                "n": "Relat\u00f3rio Trajetos",
+                "ct": "avl_unit",
+                "c": 38336
+            },
+            "4": {
+                "id": 4,
+                "n": "Relat\u00f3rio de Check Point Base Operacionais",
+                "ct": "avl_geozones_group",
+                "c": 65492
+            },
+            "5": {
+                "id": 5,
+                "n": "Relat\u00f3rio de Performance de Motorista",
+                "ct": "avl_driver",
+                "c": 51820
+            },
+            "6": {
+                "id": 6,
+                "n": "Relat\u00f3rio de Cerca Por Ve\u00edculo",
+                "ct": "avl_geozone",
+                "c": 7706
+            },
+            "7": {
+                "id": 7,
+                "n": "Relat\u00f3rio Excesso de Velocidade Grupo Veiculos",
+                "ct": "avl_unit_group",
+                "c": 62724
+            },
+            "8": {
+                "id": 8,
+                "n": "Relatorio de Excessos de Velocidade por Ve\u00edculo",
+                "ct": "avl_unit",
+                "c": 50600
+            },
+            "9": {
+                "id": 9,
+                "n": "Relatorio de Ranking de Motoristas",
+                "ct": "avl_drivers_group",
+                "c": 46837
+            },
+            "10": {
+                "id": 10,
+                "n": "Relat\u00f3rio de Check Point Base Grupo Operacionais ",
+                "ct": "avl_geozones_group",
+                "c": 13245
+            },
+            "11": {
+                "id": 11,
+                "n": "[UMBR].CP ",
+                "ct": "avl_geozones_group",
+                "c": 2224
+            },
+            "12": {
+                "id": 12,
+                "n": "[UMBR].Cercas",
+                "ct": "avl_unit_group",
+                "c": 20270
+            },
+            "13": {
+                "id": 13,
+                "n": "[UMBR].C.MOT",
+                "ct": "avl_drivers_group",
+                "c": 21784
+            },
+            "14": {
+                "id": 14,
+                "n": "[UMBR].C.UNIT",
+                "ct": "avl_unit_group",
+                "c": 14876
+            }
+        },
+        "repmax": 0,
+        "uacl": 52913983520767
+    },
+    {
+        "nm": "TRTPetitto",
+        "cls": 3,
+        "id": 401824175,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "Petitto-Relatorio de combustivel Grupo Simples",
+                "ct": "avl_unit_group",
+                "c": 16468
+            },
+            "2": {
+                "id": 2,
+                "n": "Petitto-Relatorio de combustivel  Grupo Veiculos",
+                "ct": "avl_unit_group",
+                "c": 31506
+            },
+            "3": {
+                "id": 3,
+                "n": "Marcelo-Relatorio de Performance Petitto",
+                "ct": "avl_unit_group",
+                "c": 14931
+            },
+            "4": {
+                "id": 4,
+                "n": "Marcelo-Relat\u00f3rio de Avalia\u00e7\u00e3o de Performance Frota",
+                "ct": "avl_unit_group",
+                "c": 34654
+            },
+            "5": {
+                "id": 5,
+                "n": "Gr\u00e1fico Velocidade X RPM",
+                "ct": "avl_unit",
+                "c": 11319
+            },
+            "6": {
+                "id": 6,
+                "n": "Relatorio Cadastral de Veiculos",
+                "ct": "avl_unit_group",
+                "c": 45364
+            },
+            "7": {
+                "id": 7,
+                "n": "Relatorio de Excessos de Velocidade",
+                "ct": "avl_unit_group",
+                "c": 32968
+            },
+            "8": {
+                "id": 8,
+                "n": "Relatorio de hodometro de Portaria",
+                "ct": "avl_unit_group",
+                "c": 5134
+            },
+            "9": {
+                "id": 9,
+                "n": "Relatorio de Ruas Visitadas",
+                "ct": "avl_unit_group",
+                "c": 6121
+            },
+            "10": {
+                "id": 10,
+                "n": "Gr\u00e1fico por ve\u00edculo de RPM  x Motor LIgado x  X Consumo",
+                "ct": "avl_unit",
+                "c": 21941
+            },
+            "11": {
+                "id": 11,
+                "n": "Relatorio Operacional Bracell Detalhado de Motoristas",
+                "ct": "avl_drivers_group",
+                "c": 35624
+            }
+        },
+        "repmax": 0,
+        "uacl": 52913983520767
+    },
+    {
+        "nm": "TRTZanon",
+        "cls": 3,
+        "id": 401789978,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "Relatorio Cadastral de Veiculos",
+                "ct": "avl_unit_group",
+                "c": 29279
+            }
+        },
+        "repmax": 0,
+        "uacl": 52913983520767
+    },
+    {
+        "nm": "USINMaity",
+        "cls": 3,
+        "id": 401856930,
+        "mu": 0,
+        "rep": {
+            "1": {
+                "id": 1,
+                "n": "Relatorio Cadastral de Veiculos",
+                "ct": "avl_unit_group",
+                "c": 29279
+            },
+            "2": {
+                "id": 2,
+                "n": "Relatorio de Estacionamentos e Paradas",
+                "ct": "avl_unit_group",
+                "c": 61415
+            },
+            "3": {
+                "id": 3,
+                "n": "Relatorio de Eventos",
+                "ct": "avl_unit_group",
+                "c": 64960
+            },
+            "4": {
+                "id": 4,
+                "n": "Relatorio de Excessos de Velocidade",
+                "ct": "avl_unit_group",
+                "c": 32968
+            },
+            "5": {
+                "id": 5,
+                "n": "Relatorio de Jornada de Trabalho",
+                "ct": "avl_drivers_group",
+                "c": 58325
+            },
+            "6": {
+                "id": 6,
+                "n": "Relatorio de Resumo",
+                "ct": "avl_unit_group",
+                "c": 18058
+            },
+            "7": {
+                "id": 7,
+                "n": "Relatorio detalhado de Ociosidade",
+                "ct": "avl_unit_group",
+                "c": 60082
+            },
+            "8": {
+                "id": 8,
+                "n": "Relatorio Heat Map: Estacionamentos",
+                "ct": "avl_unit_group",
+                "c": 49238
+            },
+            "9": {
+                "id": 9,
+                "n": "Relatorio Veiculos em Oficina",
+                "ct": "avl_geozone",
+                "c": 55536
+            },
+            "10": {
+                "id": 10,
+                "n": "Relat\u00f3rio de Alertas",
+                "ct": "avl_unit_group",
+                "c": 31176
+            },
+            "11": {
+                "id": 11,
+                "n": "Relat\u00f3rio de Condu\u00e7\u00e3o Ecol\u00f3gica",
+                "ct": "avl_unit_group",
+                "c": 39875
+            },
+            "12": {
+                "id": 12,
+                "n": "Relat\u00f3rio de Motorista",
+                "ct": "avl_drivers_group",
+                "c": 36341
+            },
+            "13": {
+                "id": 13,
+                "n": "Relat\u00f3rio de KM ",
+                "ct": "avl_unit",
+                "c": 35325
+            },
+            "14": {
+                "id": 14,
+                "n": "relatorio teste Maity",
+                "ct": "avl_unit",
+                "c": 56976
+            }
+        },
+        "repmax": 0,
+        "uacl": 52913983520767
+    }
+]

@@ -270,6 +270,9 @@ def report_novo(request):
         viagens_base, empresa_selecionada, marca_selecionada, 
         periodo_selecionado, filtro_combustivel, classe_selecionada
     )
+
+    #filtra as viagens pelos ultimos 30 dias
+    #viagens_filtradas = viagens_filtradas.filter(período="Últimos 30 dias")
     
     # Filtrar viagens com eficiência abaixo de 4 km/L (dados irreais/com erros)
     viagens_filtradas = aplicar_filtro_eficiencia_minima(viagens_filtradas)

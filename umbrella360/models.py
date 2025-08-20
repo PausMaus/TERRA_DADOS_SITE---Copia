@@ -134,6 +134,7 @@ class Empresa(models.Model):
     nome = models.CharField(max_length=100, unique=True, verbose_name="Nome da Empresa")
     token = models.CharField(max_length=100, unique=True, verbose_name="Token de Acesso Wialon", blank=True, null=True)
     senha = models.CharField(max_length=100, default='senha', verbose_name="Senha de Acesso", blank=True, null=True)
+    id_recurso = models.CharField(max_length=50, unique=True, verbose_name="ID do Recurso Wialon", blank=True, null=True)
 
     def __str__(self):
         return self.nome

@@ -234,7 +234,7 @@
       {% endif %}
 
     </main>
-    
+
     <!-- Seção de CheckPoints -->
     <section class="checkpoints-section" style="background: rgba(255, 255, 255, 0.95); margin: 2rem auto; max-width: 1200px; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
       <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
@@ -360,6 +360,171 @@
         <div style="text-align: center; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
           <p style="margin: 0; color: #6c757d;">
             <em>Mostrando apenas os 20 checkpoints mais recentes. Total de checkpoints: {{ total_checkpoints_unidade }}</em>
+          </p>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </section>
+    
+    <!-- Seção de Infrações -->
+    <section class="infracoes-section" style="background: rgba(255, 255, 255, 0.95); margin: 2rem auto; max-width: 1200px; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+      <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
+         Infrações de Velocidade da Unidade
+      </h2>
+      
+      <!-- Estatísticas das Infrações -->
+      <div class="stats-overview" style="background: linear-gradient(135deg, #ffebee, #ffcdd2); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+          <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">{{ total_infracoes_unidade|default:0 }}</div>
+            <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Total de Infrações</div>
+          </div>
+          <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">{{ velocidade_media_infracoes_unidade|floatformat:1 }} km/h</div>
+            <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Velocidade Média</div>
+          </div>
+          <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">{{ velocidade_maxima_infracoes_unidade|floatformat:0 }} km/h</div>
+            <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Velocidade Máxima</div>
+          </div>
+          <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">{{ limite_medio_infracoes_unidade|floatformat:1 }} km/h</div>
+            <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Limite Médio Infringido</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de Infrações -->
+      <div class="ranking-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+        <!-- Limites Mais Infringidos por esta Unidade -->
+        <div class="ranking-card" style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+          <div class="ranking-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+            <h3 style="color: #2c3e50; font-size: 1.5rem; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">⚠️ Limites Mais Infringidos</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por número de ocorrências desta unidade</p>
+          </div>
+          
+          {% if limites_unidade %}
+            <ul class="ranking-list" style="list-style: none; padding: 0; margin: 0;">
+              {% for limite in limites_unidade %}
+              <li class="ranking-item" style="display: flex; align-items: center; padding: 1rem; margin-bottom: 0.75rem; border-radius: 8px; transition: all 0.3s ease; border: 1px solid #e9ecef;">
+                <div class="ranking-position" style="font-size: 1.2rem; font-weight: 700; min-width: 40px; text-align: center; margin-right: 1rem; color: #dc3545;">
+                  {{ forloop.counter }}º
+                </div>
+                <div class="ranking-name" style="flex: 1; font-weight: 600; color: #495057; font-size: 1rem;">
+                  Limite de {{ limite.limite|floatformat:0 }} km/h
+                </div>
+                <div class="ranking-value" style="font-weight: 700; color: #dc3545; font-size: 1.1rem; padding: 0.25rem 0.75rem; background: linear-gradient(135deg, #ffcccc, #ff9999); border-radius: 20px; border: 1px solid #dc3545;">
+                  {{ limite.total_ocorrencias }}
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>🎉 Nenhuma infração encontrada</strong></p>
+              <p>Esta unidade não possui registros de infrações de velocidade.</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Últimas Infrações -->
+        <div class="ranking-card" style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+          <div class="ranking-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+            <h3 style="color: #2c3e50; font-size: 1.5rem; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">🚨 Últimas Infrações</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Registros mais recentes</p>
+          </div>
+          
+          {% if infracoes_recentes_unidade %}
+            <ul class="ranking-list" style="list-style: none; padding: 0; margin: 0;">
+              {% for infracao in infracoes_recentes_unidade %}
+              <li class="ranking-item" style="display: flex; flex-direction: column; padding: 1rem; margin-bottom: 0.75rem; border-radius: 8px; transition: all 0.3s ease; border: 1px solid #e9ecef;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <strong style="color: #dc3545;">{{ infracao.velocidade|floatformat:0 }} km/h</strong>
+                  <span style="color: #6c757d; font-size: 0.9rem;">Limite: {{ infracao.limite|floatformat:0 }} km/h</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #6c757d;">
+                  <span>{{ infracao.data|date:"d/m/Y H:i"|default:"-" }}</span>
+                  {% if infracao.velocidade and infracao.limite %}
+                    <span style="color: #dc3545; font-weight: 600;">
+                      Excesso: +{{ infracao.velocidade|floatformat:0|add:"-"|add:infracao.limite|floatformat:0 }} km/h
+                    </span>
+                  {% endif %}
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>🎉 Nenhuma infração encontrada</strong></p>
+              <p>Esta unidade não possui registros recentes de infrações.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Histórico Detalhado de Infrações -->
+      {% if infracoes_detalhadas_unidade %}
+      <div class="ranking-card" style="margin-top: 2rem; background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+        <div class="ranking-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+          <h3 style="color: #2c3e50; font-size: 1.5rem; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">📋 Histórico Detalhado de Infrações</h3>
+          <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Todas as infrações registradas</p>
+        </div>
+        
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+            <thead>
+              <tr style="background: #f8f9fa;">
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Data/Hora</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Limite</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Velocidade</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Excesso</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Localização</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for infracao in infracoes_detalhadas_unidade %}
+              <tr style="border-bottom: 1px solid #e9ecef;">
+                <td style="padding: 0.75rem; color: #495057;">{{ infracao.data|date:"d/m/Y H:i"|default:"-" }}</td>
+                <td style="padding: 0.75rem;">
+                  <span style="background: #e7f3ff; color: #0066cc; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; font-weight: 500;">
+                    {{ infracao.limite|floatformat:0 }} km/h
+                  </span>
+                </td>
+                <td style="padding: 0.75rem;">
+                  <span style="background: #ffebee; color: #c62828; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">
+                    {{ infracao.velocidade|floatformat:0 }} km/h
+                  </span>
+                </td>
+                <td style="padding: 0.75rem;">
+                  {% if infracao.velocidade and infracao.limite %}
+                    <span style="color: #dc3545; font-weight: 700;">
+                      +{{ infracao.velocidade|floatformat:0|add:"-"|add:infracao.limite|floatformat:0 }} km/h
+                    </span>
+                  {% else %}
+                    <span style="color: #6c757d;">-</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 0.75rem;">
+                  {% if infracao.localizacao %}
+                    <a href="{{ infracao.localizacao }}" target="_blank" style="color: #28a745; text-decoration: none; font-size: 0.875rem;">
+                      📍 Ver no Mapa
+                    </a>
+                  {% else %}
+                    <span style="color: #6c757d;">-</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        
+        {% if total_infracoes_unidade > 20 %}
+        <div style="text-align: center; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+          <p style="margin: 0; color: #6c757d;">
+            <em>Mostrando apenas as 20 infrações mais recentes. Total de infrações: {{ total_infracoes_unidade }}</em>
           </p>
         </div>
         {% endif %}
@@ -511,7 +676,7 @@
             padding: 0.5rem !important;
         }
         
-        .checkpoints-section {
+        .checkpoints-section, .infracoes-section {
             margin: 1rem !important;
             padding: 1rem !important;
         }

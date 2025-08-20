@@ -24,10 +24,7 @@ WIALON_TOKEN_PLAC = "82fee29da11ea1312f1c8235247a0d82DC991707A4435C60FE7FFB27BD0
 
 WIALON_TOKEN_SF = "5a35fb756820f83c975a1bc846a35a43C16F97789A714DEC2BC5F4D3C6D26C06CC35CAAD"
 
-WIALON_TOKEN_UMBR = "fcc5baae18cdbea20200265b6b8a4af14FBD4F569178B01BC79D740A1055A48513AB15BA"
-
-
-
+WIALON_TOKEN_UMBR = "fcc5baae18cdbea20200265b6b8a4af142DD8BF34CF94701039765308B2527031174B00A"
 
 
 class Command(BaseCommand):
@@ -48,13 +45,17 @@ class Command(BaseCommand):
             if not sid:
                 self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
                 continue
-            # Atualiza as unidades
-            self.atualiza_unidades(sid, empresa.nome)
+
             #busca relatórios
             relatórios = Wialon.buscadora_reports(sid)
             #salva os relatorios em .txt no deposito
             with open(f'{deposito}/{empresa.nome}_relatorios.txt', 'w') as f:
                 f.write(json.dumps(relatórios, indent=4))
+
+            # Atualiza as unidades
+            self.atualiza_unidades(sid, empresa.nome)
+
+            
 
 
 
@@ -66,8 +67,6 @@ class Command(BaseCommand):
         execution_time = end_time - start_time
         self.stdout.write(self.style.SUCCESS(f'Comando concluído às {end_time.strftime("%H:%M:%S")}'))
         self.stdout.write(self.style.SUCCESS(f'Tempo total de execução: {execution_time}'))
-
-
 
 
     def principal(self, token, empresa_nome):
@@ -111,8 +110,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
             return
         
-
-
         #coloca os dados em um dataframe
         df_unidades = pd.DataFrame(unidades)
         print(f'Unidades encontradas:' , colored(f'{len(df_unidades)}', 'green'))
@@ -163,7 +160,7 @@ class Command(BaseCommand):
         print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
         print(f'Motoristas: {df_motoristas}')
         for motorista in df_motoristas.itertuples(index=False):
-            motorista_id = motorista.driver_code
+            motorista_id = motorista.driver_id
             motorista_nome = motorista.driver_name
             cls = 'Motorista'
             empresa = Empresa.objects.filter(nome=empresa_nome).first()

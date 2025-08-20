@@ -3,7 +3,10 @@ from django.core.management.base import BaseCommand
 from umbrella360.models import Viagem_Base, Unidade, Empresa
 import os
 from decimal import Decimal
+import decimal
 from django.db import transaction
+
+
 
 class Command(BaseCommand):
     help = 'Importa viagens para o modelo Viagem_Base de arquivos Excel (.xlsx)'

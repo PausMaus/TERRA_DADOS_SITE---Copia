@@ -152,15 +152,15 @@ def set_locale():
     payload = {
         "svc": "render/set_locale",
         "params": {
-            "tzOffset": "",  
-            "language": "en",
+            "tzOffset": 0,
+            "language": "EN",
             "flags": 0,
-            "formatDate": "#%25H%25M%25S%20%25d%25m%25Y",
+            "formatDate": "%H:%M:%S %d-%m-%Y",
             "density": 1
         }
     }
     response = requests.post(API_URL, json=payload)
-    log_colored(f"Wialon: set_locale: Resposta da API: {response.json()}", "green")
+    print(f"Wialon: set_locale: Resposta da API: {response.json()}")
 
 def clean_up_result(sid):
     """
@@ -1556,7 +1556,7 @@ def Colheitadeira_JSON_03(sid, flag, unit_id, tempo_dias, periodo, reportResourc
         return None
 
 
-def Colheitadeira_JSON_CP_01(sid, flag, unit_id, tempo_dias,  reportResourceId, reportTemplateId, reportObjectId, reportObjectSecId):
+def Colheitadeira_JSON_CP_01(sid, flag, unit_id, tempo_dias, periodo, reportResourceId, reportTemplateId, reportObjectId, reportObjectSecId):
     """
     Função para coletar dados de relatório de uma unidade específica para um período.
     
@@ -1651,226 +1651,7 @@ def Colheitadeira_JSON_CP_01(sid, flag, unit_id, tempo_dias,  reportResourceId, 
         
         # Adiciona apenas os metadados essenciais do período (opcional)
         relatorio_df['unit_id'] = unit_id
-        
-        comm(f"Colunas do DataFrame: {relatorio_df.columns.tolist()}")
-        
-        return relatorio_df
-        
-    except Exception as e:
-        comm(f"❌ Erro inesperado ao processar unidade {unit_id}: {str(e)}")
-        return None
-    
-
-
-def Colheitadeira_JSON_INFRA_01(sid, flag, unit_id, tempo_dias, periodo, reportResourceId, reportTemplateId, reportObjectId, reportObjectSecId):
-    """
-    Função para coletar dados de relatório de uma unidade específica para um período.
-    
-    :param sid: Session ID da API Wialon
-    :param unit_id: ID da unidade
-    :param tempo_dias: Número de dias para buscar (7 ou 30)
-    :param periodo: String descritiva do período
-    :return: DataFrame com os dados ou None se não houver dados
-    """
-    nome = "Colheitadeira_JSON_INFRA_01"
-    def comm(msg):
-        print(colored("="*30, "blue"))
-        print(colored(f"{nome}:", "green"))
-        print(f"{msg}")
-        print(colored("="*30, "blue"))
-
-    # CORREÇÃO: Calcula timestamps UNIX corretos
-    current_time = int(time.time())
-    interval_from = current_time - (tempo_dias * 24 * 3600)  # X dias atrás
-    interval_to = current_time  # Agora
-    
-    try:
-        # Executa o relatório
-        relatorio = exec_report_03(sid=sid, flag=flag, dias=tempo_dias, reportResourceId=reportResourceId, reportTemplateId=reportTemplateId, reportObjectId=reportObjectId, reportObjectSecId=reportObjectSecId)
-
-        comm(f"Relatório executado: {relatorio}")
-
-        if not relatorio:
-            comm(f"❌ Falha ao executar relatório para unidade {unit_id}")
-            return None
-
-        # Verifica se há tabelas no resultado
-        tables = relatorio.get('reportResult', {}).get('tables', [])
-        if not tables:
-            comm(f"⚠️ Nenhuma tabela encontrada no relatório para unidade {unit_id}")
-            return None
-        n_rows = relatorio.get('reportResult', {}).get('tables', [])
-        n_rows = tables[0].get('rows', [])
-
-        # Extrai headers
-        headers = extract_report_headers(relatorio)
-        if not headers:
-            comm(f"⚠️ Nenhum header encontrado no relatório para unidade {unit_id}")
-            return None
-        
-        comm(f"Headers do relatório: {headers}")
-        
-        # Obtém as linhas de dados
-        rows = select_result_rows(sid, table_index=0, index_from=0, index_to=n_rows, level=1)
-        if not rows:
-            comm(f"⚠️ Nenhuma linha de dados encontrada para unidade {unit_id}")
-            return None
-
-        comm(f"Linhas obtidas: {len(rows)}")
-
-        comm(f"Linhas obtidas: {rows}")
-
-        # Verifica se há dados
-        if len(rows) == 0:
-            comm(f"⚠️ Array de linhas vazio para unidade {unit_id}")
-            return None
-        
-        # Processa todas as linhas de dados - apenas os dados dos headers
-        data_rows = []
-        for row in rows:
-            if isinstance(row, dict) and 'c' in row:
-                row_data = row['c']
-
-                if row_data:  # Verifica se há dados na linha
-                    # Cria dicionário apenas com os dados das colunas do relatório
-                    row_dict = {}
-                    for i, value in enumerate(row_data):
-                        if i < len(headers):
-                            header_name = headers[i]
-                            
-                            # CORREÇÃO: Parse específico para campos de data/hora
-                            if header_name == 'Início' and isinstance(value, dict) and 't' in value:
-                                row_dict[header_name] = value['t']  # Extrai apenas o timestamp
-                            elif header_name == 'Localização' and isinstance(value, dict) and 't' in value:
-                                row_dict[header_name] = value['t']  # Extrai apenas o timestamp
-                            else:
-                                row_dict[header_name] = value
-                        else:
-                            row_dict[f'coluna_{i}'] = value  # Para colunas extras
-                    
-                    data_rows.append(row_dict)
-        
-        if not data_rows:
-            comm(f"⚠️ Nenhum dado válido encontrado para unidade {unit_id}")
-            return None
-        
-        # Cria o DataFrame apenas com os dados dos headers
-        relatorio_df = pd.DataFrame(data_rows)
-        
-        # Adiciona apenas os metadados essenciais do período (opcional)
-        relatorio_df['unit_id'] = unit_id
         relatorio_df['periodo'] = periodo
-        
-        comm(f"Colunas do DataFrame: {relatorio_df.columns.tolist()}")
-        
-        return relatorio_df
-        
-    except Exception as e:
-        comm(f"❌ Erro inesperado ao processar unidade {unit_id}: {str(e)}")
-        return None
-
-
-
-def Colheitadeira_JSON_INFRA_02(sid, flag, unit_id, tempo_dias,  reportResourceId, reportTemplateId, reportObjectId, reportObjectSecId):
-    """
-    Função para coletar dados de relatório de uma unidade específica para um período.
-    
-    :param sid: Session ID da API Wialon
-    :param unit_id: ID da unidade
-    :param tempo_dias: Número de dias para buscar (7 ou 30)
-    :param periodo: String descritiva do período
-    :return: DataFrame com os dados ou None se não houver dados
-    """
-    nome = "Colheitadeira_JSON_INFRA_01"
-    def comm(msg):
-        print(colored("="*30, "blue"))
-        print(colored(f"{nome}:", "green"))
-        print(f"{msg}")
-        print(colored("="*30, "blue"))
-
-    # CORREÇÃO: Calcula timestamps UNIX corretos
-    current_time = int(time.time())
-    interval_from = current_time - (tempo_dias * 24 * 3600)  # X dias atrás
-    interval_to = current_time  # Agora
-    
-    try:
-        # Executa o relatório
-        relatorio = exec_report_03(sid=sid, flag=flag, dias=tempo_dias, reportResourceId=reportResourceId, reportTemplateId=reportTemplateId, reportObjectId=reportObjectId, reportObjectSecId=reportObjectSecId)
-
-        comm(f"Relatório executado: {relatorio}")
-
-        if not relatorio:
-            comm(f"❌ Falha ao executar relatório para unidade {unit_id}")
-            return None
-
-        # Verifica se há tabelas no resultado
-        tables = relatorio.get('reportResult', {}).get('tables', [])
-        if not tables:
-            comm(f"⚠️ Nenhuma tabela encontrada no relatório para unidade {unit_id}")
-            return None
-        n_rows = relatorio.get('reportResult', {}).get('tables', [])
-        n_rows = tables[0].get('rows', [])
-
-        # Extrai headers
-        headers = extract_report_headers(relatorio)
-        if not headers:
-            comm(f"⚠️ Nenhum header encontrado no relatório para unidade {unit_id}")
-            return None
-        
-        comm(f"Headers do relatório: {headers}")
-        
-        # Obtém as linhas de dados
-        rows = select_result_rows(sid, table_index=0, index_from=0, index_to=n_rows, level=1)
-        if not rows:
-            comm(f"⚠️ Nenhuma linha de dados encontrada para unidade {unit_id}")
-            return None
-
-        comm(f"Linhas obtidas: {len(rows)}")
-
-        comm(f"Linhas obtidas: {rows}")
-
-        # Verifica se há dados
-        if len(rows) == 0:
-            comm(f"⚠️ Array de linhas vazio para unidade {unit_id}")
-            return None
-        
-        # Processa todas as linhas de dados - apenas os dados dos headers
-        data_rows = []
-        for row in rows:
-            if isinstance(row, dict) and 'c' in row:
-                row_data = row['c']
-
-                if row_data:  # Verifica se há dados na linha
-                    # Cria dicionário apenas com os dados das colunas do relatório
-                    row_dict = {}
-                    for i, value in enumerate(row_data):
-                        if i < len(headers):
-                            header_name = headers[i]
-                            
-                            # CORREÇÃO: Parse específico para campos de data/hora
-                            if header_name == 'Início' and isinstance(value, dict) and 't' in value:
-                                row_dict[header_name] = value['t']  # Extrai apenas o timestamp
-                            elif header_name == 'Localização' and isinstance(value, dict):
-                                # Extrai o endereço (campo 't'), latitude (campo 'y') e longitude (campo 'x')
-                                row_dict[header_name] = value.get('t', '')  # Endereço textual
-                                row_dict['Latitude'] = value.get('y', None)  # Latitude
-                                row_dict['Longitude'] = value.get('x', None)  # Longitude
-                            else:
-                                row_dict[header_name] = value
-                        else:
-                            row_dict[f'coluna_{i}'] = value  # Para colunas extras
-                    
-                    data_rows.append(row_dict)
-        
-        if not data_rows:
-            comm(f"⚠️ Nenhum dado válido encontrado para unidade {unit_id}")
-            return None
-        
-        # Cria o DataFrame apenas com os dados dos headers
-        relatorio_df = pd.DataFrame(data_rows)
-        
-        # Adiciona apenas os metadados essenciais do período (opcional)
-        relatorio_df['unit_id'] = unit_id
         
         comm(f"Colunas do DataFrame: {relatorio_df.columns.tolist()}")
         
