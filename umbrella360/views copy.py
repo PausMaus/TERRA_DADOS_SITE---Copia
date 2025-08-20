@@ -502,6 +502,33 @@ def detalhes_unidade(request, unidade_id):
     # Histórico detalhado de checkpoints
     checkpoints_detalhados_unidade = checkpoints[:20]
     
+    # DADOS DAS INFRAÇÕES
+    # Buscar infrações da unidade
+    from .models import Infrações
+    infracoes = Infrações.objects.filter(unidade=unidade).order_by('-data')
+    
+    # Estatísticas de infrações
+    total_infracoes_unidade = infracoes.count()
+    
+    # Velocidade média das infrações desta unidade
+    stats_infracoes_unidade = infracoes.aggregate(
+        velocidade_media=Avg('velocidade'),
+        velocidade_maxima=Max('velocidade'),
+        limite_medio=Avg('limite'),
+        limite_mais_infringido=Max('limite')
+    )
+    
+    # Limites mais infringidos por esta unidade
+    limites_unidade = infracoes.values('limite').annotate(
+        total_ocorrencias=Count('id')
+    ).order_by('-total_ocorrencias')[:5]
+    
+    # Últimas infrações
+    infracoes_recentes_unidade = infracoes[:10]
+    
+    # Histórico detalhado de infrações
+    infracoes_detalhadas_unidade = infracoes[:20]
+    
     context = {
         'unidade': unidade,
         'viagens': viagens[:20],  # Últimas 20 viagens
@@ -519,6 +546,14 @@ def detalhes_unidade(request, unidade_id):
         'cercas_unidade': cercas_unidade,
         'checkpoints_recentes_unidade': checkpoints_recentes_unidade,
         'checkpoints_detalhados_unidade': checkpoints_detalhados_unidade,
+        # Dados de infrações
+        'total_infracoes_unidade': total_infracoes_unidade,
+        'velocidade_media_infracoes_unidade': stats_infracoes_unidade['velocidade_media'] or 0,
+        'velocidade_maxima_infracoes_unidade': stats_infracoes_unidade['velocidade_maxima'] or 0,
+        'limite_medio_infracoes_unidade': stats_infracoes_unidade['limite_medio'] or 0,
+        'limites_unidade': limites_unidade,
+        'infracoes_recentes_unidade': infracoes_recentes_unidade,
+        'infracoes_detalhadas_unidade': infracoes_detalhadas_unidade,
     }
     
     return render(request, 'umbrella360/detalhes_unidade.html', context)
@@ -976,7 +1011,7 @@ def ranking_empresa(request):
     velocidade_media_infracoes = infracoes_base.aggregate(
         media_velocidade=Avg('velocidade'),
         media_limite=Avg('limite')
-    )
+    )['media_velocidade'] or 0
     
     # Unidades com mais infrações
     unidades_mais_infracoes = infracoes_base.values(
@@ -1011,8 +1046,8 @@ def ranking_empresa(request):
         'infracoes_recentes': infracoes_recentes,
         'total_infracoes': total_infracoes,
         'unidades_com_infracoes': unidades_com_infracoes,
-        'velocidade_media_infracoes': velocidade_media_infracoes['media_velocidade'] or 0,
-        'limite_medio_infracoes': velocidade_media_infracoes['media_limite'] or 0,
+        #'velocidade_media_infracoes': velocidade_media_infracoes['media_velocidade'] or 0,
+        #'limite_medio_infracoes': velocidade_media_infracoes['media_limite'] or 0,
         'unidades_mais_infracoes': unidades_mais_infracoes,
         'limites_mais_infringidos': limites_mais_infringidos,
     }

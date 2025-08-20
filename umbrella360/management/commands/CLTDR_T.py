@@ -148,16 +148,26 @@ class Command(BaseCommand):
         df_motoristas = pd.DataFrame(motoristas)
         print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
         print(f'Motoristas: {df_motoristas}')
+        
+        # DEBUG: Analisar estrutura dos motoristas
+        self.debug_driver_issues(sid, df_motoristas)
+        
+        # NOVA INVESTIGAÇÃO: Verificar se estamos interpretando os dados corretamente
+        self.investigate_driver_data_structure(sid)
+        
         #seleciona os 10 primeiros motoristas do dataframe
-        df_motoristas = df_motoristas.head(10)
+        df_motoristas = df_motoristas.head(3)  # Reduzido para 3 para debug
         for motorista in df_motoristas.itertuples(index=False):
             motorista_id = motorista.driver_id
+            resource_id = motorista.resource_id  # ID do recurso que contém o motorista
 
-            relatorio = Wialon.Colheitadeira_JSON_02(sid, 401756219, motorista_id, 5, tempo_dias=1, periodo="teste")
-            print(relatorio)
-            Wialon.clean_up_result(sid)
-            relatorio = Wialon.Colheitadeira_JSON_02(sid, 401756219, motorista_id, 58, tempo_dias=1, periodo="teste")
-            print(relatorio)
+            print(colored(f"\n🔍 DEBUGGING Motorista ID: {motorista_id}, Resource ID: {resource_id}", "cyan"))
+            
+            # Testar diferentes abordagens para resolver o erro 7
+            success = self.test_driver_report_approaches(sid, 401756219, 5, motorista_id, resource_id)
+            if not success:
+                print(colored(f"❌ Todas as abordagens falharam para motorista {motorista_id}", "red"))
+            
             Wialon.clean_up_result(sid)
 
 
@@ -166,7 +176,389 @@ class Command(BaseCommand):
 
         Wialon.wialon_logout(sid)
 
+    def exec_report_driver_fixed(self, sid, resource_id, template_id, driver_id, driver_resource_id, interval_from=None, interval_to=None, tempo_dias=1, periodo="teste"):
+        """
+        Executa um relatório específico para um motorista no Wialon (VERSÃO CORRIGIDA).
+        
+        :param sid: Session ID obtido após o login.
+        :param resource_id: ID do recurso onde o relatório está localizado.
+        :param template_id: ID do modelo de relatório a ser executado.
+        :param driver_id: ID do motorista para o qual o relatório será gerado.
+        :param driver_resource_id: ID do recurso que contém o motorista.
+        :param tempo_dias: Número de dias para buscar (se interval_from/to não fornecidos).
+        :return: Resultado do relatório ou None em caso de erro.
+        """
+        import requests
+        
+        # Calcula timestamps se não fornecidos
+        if interval_from is None or interval_to is None:
+            current_time = int(time.time())
+            interval_from = current_time - (tempo_dias * 24 * 3600)
+            interval_to = current_time
+        
+        payload = {
+            "svc": "report/exec_report",
+            "params": json.dumps({
+                "reportResourceId": resource_id,
+                "reportTemplateId": template_id,
+                "reportObjectId": driver_id,          # ID do motorista
+                "reportObjectSecId": driver_resource_id,  # CORREÇÃO: ID do recurso que contém o motorista
+                "interval": {
+                    "from": interval_from,
+                    "to": interval_to,
+                    "flags": 0
+                }
+            }),
+            "sid": sid
+        }
+        
+        try:
+            print(colored(f"Executando relatório para motorista {driver_id} do recurso {driver_resource_id}", "yellow"))
+            
+            response = requests.post("https://hst-api.wialon.com/wialon/ajax.html", data=payload)
+            response.raise_for_status()
+            data = response.json()
+            
+            if "error" in data:
+                error_code = data["error"]
+                print(colored(f"Erro {error_code} ao executar relatório para motorista", "red"))
+                
+                error_messages = {
+                    1: "Token inválido ou expirado",
+                    4: "Acesso negado - verificar permissões do usuário",
+                    5: "Erro na requisição - parâmetros inválidos",
+                    6: "Não autorizado - usuário sem permissão para este relatório",
+                    7: "Failed to fetch the report object and report resource with the desired ACL",
+                    14: "Relatório não encontrado"
+                }
+                
+                if error_code in error_messages:
+                    print(colored(f"Descrição: {error_messages[error_code]}", "red"))
+                
+                return None
+                
+            print(colored(f"Relatório executado com sucesso para motorista {driver_id}", "green"))
+            return data
+            
+        except Exception as e:
+            print(colored(f"Erro inesperado: {e}", "red"))
+            return None
 
+    def debug_driver_issues(self, sid, df_motoristas):
+        """Debug para investigar problemas com motoristas."""
+        print(colored("="*50, "magenta"))
+        print(colored("🔍 DEBUG: Investigando estrutura dos motoristas", "magenta"))
+        print(colored("="*50, "magenta"))
+        
+        # Verificar templates de relatório disponíveis
+        self.check_report_templates(sid, 401756219)
+        
+        if len(df_motoristas) > 0:
+            first_driver = df_motoristas.iloc[0]
+            print(f"Primeiro motorista:")
+            print(f"  - driver_id: {first_driver.get('driver_id', 'N/A')}")
+            print(f"  - resource_id: {first_driver.get('resource_id', 'N/A')}")
+            print(f"  - driver_name: {first_driver.get('driver_name', 'N/A')}")
+            print(f"  - resource_name: {first_driver.get('resource_name', 'N/A')}")
+            
+            # Verificar se o recurso realmente existe
+            resource_id = first_driver.get('resource_id')
+            if resource_id:
+                #self.verify_resource_exists(sid, resource_id)
+                pass
+
+    def check_report_templates(self, sid, resource_id):
+        """Verifica quais templates de relatório estão disponíveis."""
+        print(colored(f"\n🔍 Verificando templates no recurso {resource_id}...", "yellow"))
+        
+        payload = {
+            "svc": "core/search_item",
+            "params": json.dumps({
+                "id": resource_id,
+                "flags": 8193  # flags para obter templates de relatório
+            }),
+            "sid": sid
+        }
+        
+        try:
+            response = requests.post("https://hst-api.wialon.com/wialon/ajax.html", data=payload)
+            response.raise_for_status()
+            result = response.json()
+            
+            if "error" in result:
+                print(colored(f"❌ Erro ao buscar templates: {result['error']}", "red"))
+                return
+            
+            item = result.get("item", {})
+            reports = item.get("rep", {})
+            
+            print(f"Templates encontrados: {len(reports)}")
+            for template_id, template_data in reports.items():
+                template_name = template_data.get("n", "Sem nome")
+                print(f"  - ID: {template_id}, Nome: {template_name}")
+                
+                # Verificar se o template é específico para motoristas
+                if any(keyword in template_name.lower() for keyword in ['motorista', 'driver', 'condutor']):
+                    print(colored(f"    ✅ Template parece ser para motoristas", "green"))
+                else:
+                    print(colored(f"    ⚠️  Template pode não ser específico para motoristas", "yellow"))
+                    
+        except Exception as e:
+            print(colored(f"❌ Erro na verificação de templates: {e}", "red"))
+
+    def investigate_driver_data_structure(self, sid):
+        """Investigação profunda da estrutura de dados dos motoristas."""
+        print(colored("="*50, "blue"))
+        print(colored("🔬 INVESTIGAÇÃO: Estrutura real dos dados de motoristas", "blue"))
+        print(colored("="*50, "blue"))
+        
+        # Buscar recursos com motoristas diretamente
+        params = {
+            "svc": "core/search_items",
+            "params": json.dumps({
+                "spec": {
+                    "itemsType": "avl_resource",
+                    "propName": "sys_name",
+                    "propValueMask": "*",
+                    "sortType": "sys_name"
+                },
+                "force": 1,
+                "flags": 257,  # 1 (basic info) + 256 (drivers info)
+                "from": 0,
+                "to": 3  # Apenas 3 recursos para análise
+            }),
+            "sid": sid
+        }
+        
+        try:
+            response = requests.post("https://hst-api.wialon.com/wialon/ajax.html", data=params)
+            response.raise_for_status()
+            result = response.json()
+            
+            if "error" in result:
+                print(colored(f"❌ Erro na busca: {result['error']}", "red"))
+                return
+            
+            resources = result.get("items", [])
+            
+            for resource in resources:
+                resource_id = resource.get("id", 0)
+                resource_name = resource.get("nm", "Sem nome")
+                drivers_dict = resource.get("drvrs", {})
+                
+                print(colored(f"\n📁 Recurso: {resource_name} (ID: {resource_id})", "cyan"))
+                print(f"   Estrutura do campo 'drvrs': {type(drivers_dict)}")
+                
+                if drivers_dict:
+                    print(f"   Número de motoristas: {len(drivers_dict)}")
+                    print(f"   Chaves dos motoristas: {list(drivers_dict.keys())}")
+                    
+                    # Analisar o primeiro motorista
+                    first_key = list(drivers_dict.keys())[0]
+                    first_driver = drivers_dict[first_key]
+                    
+                    print(f"\n   📋 Primeiro motorista (chave: {first_key}):")
+                    print(f"      Estrutura: {type(first_driver)}")
+                    print(f"      Campos disponíveis: {list(first_driver.keys()) if isinstance(first_driver, dict) else 'N/A'}")
+                    
+                    if isinstance(first_driver, dict):
+                        driver_id = first_driver.get("id", "N/A")
+                        driver_name = first_driver.get("n", "N/A")
+                        print(f"      ID do motorista: {driver_id}")
+                        print(f"      Nome do motorista: {driver_name}")
+                        
+                        # TESTE CRUCIAL: Verificar se este ID de motorista é válido
+                        print(colored(f"\n   🧪 TESTE: Verificando se motorista ID {driver_id} é acessível...", "yellow"))
+                        self.test_driver_accessibility(sid, driver_id, resource_id)
+                        
+                else:
+                    print("   ⚠️  Nenhum motorista encontrado")
+                    
+        except Exception as e:
+            print(colored(f"❌ Erro na investigação: {e}", "red"))
+
+    def test_driver_accessibility(self, sid, driver_id, resource_id):
+        """Testa se um motorista específico é acessível via API."""
+        # Tentar buscar o motorista como item individual
+        payload = {
+            "svc": "core/search_item",
+            "params": json.dumps({
+                "id": driver_id,
+                "flags": 1  # basic info
+            }),
+            "sid": sid
+        }
+        
+        try:
+            response = requests.post("https://hst-api.wialon.com/wialon/ajax.html", data=payload)
+            response.raise_for_status()
+            result = response.json()
+            
+            if "error" not in result and result.get("item"):
+                item = result["item"]
+                print(colored(f"      ✅ Motorista encontrado como item independente!", "green"))
+                print(f"         Classe: {item.get('cls', 'N/A')}")
+                print(f"         Nome: {item.get('nm', 'N/A')}")
+                print(f"         Tipo: {self.get_item_type_name(item.get('cls', 0))}")
+                
+                # Se encontrou como item, pode ser que precise de abordagem diferente
+                if item.get('cls') == 2:  # avl_unit
+                    print(colored(f"      💡 DESCOBERTA: Este 'motorista' é na verdade uma UNIDADE!", "yellow"))
+                    print(f"      💡 Tente usar reportObjectSecId = 0 para este item")
+                    
+            else:
+                error_code = result.get("error", "desconhecido")
+                print(colored(f"      ❌ Motorista não acessível como item individual (erro: {error_code})", "red"))
+                print(f"      💡 Confirma que deve ser acessado via recurso {resource_id}")
+                
+        except Exception as e:
+            print(colored(f"      ❌ Erro ao testar acessibilidade: {e}", "red"))
+
+    def get_item_type_name(self, cls):
+        """Retorna o nome do tipo de item baseado na classe."""
+        types = {
+            1: "avl_user",
+            2: "avl_unit", 
+            3: "avl_unit_group",
+            4: "avl_retranslator",
+            5: "avl_route",
+            6: "avl_resource"
+        }
+        return types.get(cls, f"unknown_type_{cls}")
+
+    def verify_resource_exists(self, sid, resource_id):
+        """Verifica se um recurso específico existe e tem permissão."""
+        print(colored(f"\n🔍 Verificando recurso {resource_id}...", "yellow"))
+        
+        payload = {
+            "svc": "core/search_item",
+            "params": json.dumps({
+                "id": resource_id,
+                "flags": 257  # 1 (basic info) + 256 (drivers info)
+            }),
+            "sid": sid
+        }
+        
+        try:
+            response = requests.post("https://hst-api.wialon.com/wialon/ajax.html", data=payload)
+            response.raise_for_status()
+            result = response.json()
+            
+            if "error" in result:
+                print(colored(f"❌ Erro ao acessar recurso {resource_id}: {result['error']}", "red"))
+                return False
+            
+            item = result.get("item", {})
+            if item:
+                print(colored(f"✅ Recurso encontrado: {item.get('nm', 'Sem nome')}", "green"))
+                drivers = item.get('drvrs', {})
+                print(f"   Motoristas no recurso: {len(drivers)}")
+                return True
+            else:
+                print(colored(f"❌ Recurso {resource_id} não encontrado", "red"))
+                return False
+                
+        except Exception as e:
+            print(colored(f"❌ Erro na verificação: {e}", "red"))
+            return False
+
+    def test_driver_report_approaches(self, sid, resource_id, template_id, driver_id, driver_resource_id):
+        """Testa diferentes abordagens para executar relatório de motorista."""
+        print(colored(f"\n🧪 Testando diferentes abordagens...", "cyan"))
+        
+        current_time = int(time.time())
+        interval_from = current_time - (24 * 3600)
+        interval_to = current_time
+        
+        # Abordagem 1: reportObjectSecId = driver_resource_id (nossa correção)
+        print(colored("1️⃣ Testando com reportObjectSecId = driver_resource_id", "yellow"))
+        if self.test_single_approach(sid, resource_id, template_id, driver_id, driver_resource_id, interval_from, interval_to):
+            return True
+            
+        # Abordagem 2: reportObjectSecId = 0 (como unidades)
+        print(colored("2️⃣ Testando com reportObjectSecId = 0", "yellow"))
+        if self.test_single_approach(sid, resource_id, template_id, driver_id, 0, interval_from, interval_to):
+            return True
+            
+        # Abordagem 3: reportObjectSecId = resource_id do template
+        print(colored("3️⃣ Testando com reportObjectSecId = resource_id do template", "yellow"))
+        if self.test_single_approach(sid, resource_id, template_id, driver_id, resource_id, interval_from, interval_to):
+            return True
+            
+        # Abordagem 4: Tentar como se fosse unidade (pode ser que o motorista esteja registrado como unidade)
+        print(colored("4️⃣ Testando como se fosse unidade...", "yellow"))
+        if self.test_as_unit(sid, resource_id, template_id, driver_id, interval_from, interval_to):
+            return True
+            
+        return False
+
+    def test_single_approach(self, sid, resource_id, template_id, driver_id, sec_id, interval_from, interval_to):
+        """Testa uma abordagem específica."""
+        payload = {
+            "svc": "report/exec_report",
+            "params": json.dumps({
+                "reportResourceId": resource_id,
+                "reportTemplateId": template_id,
+                "reportObjectId": driver_id,
+                "reportObjectSecId": sec_id,
+                "interval": {
+                    "from": interval_from,
+                    "to": interval_to,
+                    "flags": 0
+                }
+            }),
+            "sid": sid
+        }
+        
+        try:
+            response = requests.post("https://hst-api.wialon.com/wialon/ajax.html", data=payload)
+            response.raise_for_status()
+            data = response.json()
+            
+            if "error" not in data:
+                print(colored(f"   ✅ SUCESSO com reportObjectSecId = {sec_id}!", "green"))
+                return True
+            else:
+                error_code = data["error"]
+                print(colored(f"   ❌ Erro {error_code} com reportObjectSecId = {sec_id}", "red"))
+                return False
+                
+        except Exception as e:
+            print(colored(f"   ❌ Exceção: {e}", "red"))
+            return False
+
+    def test_as_unit(self, sid, resource_id, template_id, driver_id, interval_from, interval_to):
+        """Testa executar relatório como se o motorista fosse uma unidade."""
+        # Primeiro verifica se existe uma unidade com esse ID
+        payload = {
+            "svc": "core/search_item",
+            "params": json.dumps({
+                "id": driver_id,
+                "flags": 1  # basic info
+            }),
+            "sid": sid
+        }
+        
+        try:
+            response = requests.post("https://hst-api.wialon.com/wialon/ajax.html", data=payload)
+            response.raise_for_status()
+            result = response.json()
+            
+            if "error" not in result and result.get("item"):
+                item = result["item"]
+                item_type = item.get("cls", 0)
+                print(f"   Item encontrado - Tipo: {item_type}, Nome: {item.get('nm', 'Sem nome')}")
+                
+                # Se for uma unidade (cls = 2), tenta executar como unidade
+                if item_type == 2:  # avl_unit
+                    print(colored("   Tentando como unidade...", "cyan"))
+                    return self.test_single_approach(sid, resource_id, template_id, driver_id, 0, interval_from, interval_to)
+            
+            return False
+            
+        except Exception as e:
+            print(colored(f"   ❌ Erro ao verificar como unidade: {e}", "red"))
+            return False
 
         #######################################################################################
 

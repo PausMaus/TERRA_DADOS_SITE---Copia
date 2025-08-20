@@ -55,7 +55,7 @@
         </thead>
         <tbody>
           {% for unidade in todas_unidades %}
-          <tr data-busca="{{ unidade.id|lower }} {{ unidade.nm|lower }} {{ unidade.placa|lower|default:'' }} {{ unidade.empresa.nome|lower }}" style="transition: all 0.3s ease;">
+          <tr data-busca="{{ unidade.id|lower|default:'' }} {{ unidade.nm|lower|default:'' }} {{ unidade.placa|lower|default:'' }} {{ unidade.empresa.nome|lower|default:'' }}" style="transition: all 0.3s ease;">
             <td>
               <a href="{% url 'detalhes_unidade' unidade.id %}" class="link-unidade" title="Clique para ver detalhes completos">
                 <strong style="color: #007bff;">{{ unidade.id }}</strong>
