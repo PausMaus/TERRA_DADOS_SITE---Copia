@@ -18,15 +18,13 @@
     </button>
     
     <div class="header">
-      <h1>{% if empresa_logada %}{{ empresa_logada.nome }} - {% endif %}Umbrella360</h1>
         <div class="menu-buttons">
           <a href="{% url 'index' %}" class="btn btn-secondary">Página Inicial</a>
           {% if empresa_logada %}
-            <a href="{% url 'report_empresa' %}" class="btn btn-secondary">Dashboard {{ empresa_logada.nome }}</a>
+            <a href="{% url 'report_empresa' %}" class="btn btn-primary">Dashboard {{ empresa_logada.nome }}</a>
             <a href="{% url 'ranking_empresa' %}" class="btn btn-secondary">Ranking</a>
             <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
           {% else %}
-            <a href="{% url 'report_novo' %}" class="btn btn-secondary">Relatório Global</a>
           {% endif %}
         </div>
     </div>
@@ -45,8 +43,7 @@
       <table border="1" cellpadding="8" cellspacing="0" class="sortable-table" id="tabela-unidades" style="width: 100%; margin-bottom: 2rem;">
         <thead>
           <tr>
-            <th style="background: #34495e; color: white;">ID/Código</th>
-            <th style="background: #34495e; color: white;">Nome/Descrição</th>
+            <th style="background: #34495e; color: white;">Nome</th>
             <th style="background: #34495e; color: white;">Tipo</th>
             <th style="background: #34495e; color: white;">Marca</th>
             <th style="background: #34495e; color: white;">Placa</th>
@@ -57,14 +54,13 @@
           {% for unidade in todas_unidades %}
           <tr data-busca="{{ unidade.id|lower|default:'' }} {{ unidade.nm|lower|default:'' }} {{ unidade.placa|lower|default:'' }} {{ unidade.empresa.nome|lower|default:'' }}" style="transition: all 0.3s ease;">
             <td>
-              <a href="{% url 'detalhes_unidade' unidade.id %}" class="link-unidade" title="Clique para ver detalhes completos">
-                <strong style="color: #007bff;">{{ unidade.id }}</strong>
-              </a>
-            </td>
-            <td>
-              <a href="{% url 'detalhes_unidade' unidade.id %}" class="link-unidade" style="color: #007bff; text-decoration: none; font-weight: 500;">
-                {{ unidade.nm|default:unidade.id }}
-              </a>
+              {% if unidade.id and unidade.id != '' %}
+                <a href="{% url 'detalhes_unidade' unidade.id %}" class="link-unidade" style="color: #007bff; text-decoration: none; font-weight: 500;">
+                  {{ unidade.nm|default:unidade.id }}
+                </a>
+              {% else %}
+                <span style="color: #495057;">{{ unidade.nm|default:"Nome não disponível" }}</span>
+              {% endif %}
             </td>
             <td style="text-align: center;">
               {% if unidade.cls == 'Motorista' %}
@@ -77,7 +73,7 @@
                 </span>
               {% else %}
                 <span style="background: linear-gradient(135deg, #6c757d, #495057); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
-                  {{ unidade.cls|title }}
+                  {{ unidade.cls|title|default:"N/A" }}
                 </span>
               {% endif %}
             </td>
@@ -105,7 +101,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="10" style="text-align: center; padding: 3rem; color: #6c757d; font-style: italic;">
+            <td colspan="6" style="text-align: center; padding: 3rem; color: #6c757d; font-style: italic;">
               <strong>Nenhuma unidade cadastrada no sistema.</strong>
             </td>
           </tr>
@@ -158,12 +154,17 @@
             }
         });
         
-        // Atualizar contador
-        document.getElementById('total-visivel').textContent = contadorVisivel;
+        // Atualizar contador se existir
+        const contadorElement = document.getElementById('total-visivel');
+        if (contadorElement) {
+            contadorElement.textContent = contadorVisivel;
+        }
         
         const contador = document.getElementById('contador-resultados');
-        const empresaInfo = '{% if empresa_logada %}da {{ empresa_logada.nome }}{% endif %}';
-        contador.innerHTML = `📊 Mostrando <strong>${contadorVisivel}</strong> de <strong>${linhas.length}</strong> unidades ${empresaInfo}${filtro ? ` (filtradas por: "${filtro}")` : ''}`;
+        if (contador) {
+            const empresaInfo = '{% if empresa_logada %}da {{ empresa_logada.nome }}{% endif %}';
+            contador.innerHTML = `📊 Mostrando <strong>${contadorVisivel}</strong> de <strong>${linhas.length}</strong> unidades ${empresaInfo}${filtro ? ` (filtradas por: "${filtro}")` : ''}`;
+        }
     }
     
     // Debug inicial

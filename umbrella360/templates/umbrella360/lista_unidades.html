@@ -21,11 +21,10 @@
         <div class="menu-buttons">
           <a href="{% url 'index' %}" class="btn btn-secondary">Página Inicial</a>
           {% if empresa_logada %}
-            <a href="{% url 'report_empresa' %}" class="btn btn-secondary">Dashboard {{ empresa_logada.nome }}</a>
+            <a href="{% url 'report_empresa' %}" class="btn btn-primary">Dashboard {{ empresa_logada.nome }}</a>
             <a href="{% url 'ranking_empresa' %}" class="btn btn-secondary">Ranking</a>
             <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
           {% else %}
-            <a href="{% url 'report_novo' %}" class="btn btn-secondary">Relatório Global</a>
           {% endif %}
         </div>
     </div>

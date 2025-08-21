@@ -12,10 +12,13 @@
 
     
     <div class="header">
+      {% if request.session.empresa_nome %}
+      {% else %}
       <h1>Umbrella360</h1>
       <p class="tagline">Transformando a Logística com Dados Inteligentes</p>
+      {% endif %}
         <div class="menu-buttons">
-          <a href="{% url 'report_novo' %}" class="btn btn-primary">Relatório Global</a>
+          <a href="{% url 'report_novo' %}" class="btn btn-secondary">Relatório Global</a>
           {% if request.session.empresa_nome %}
             <a href="{% url 'report_empresa' %}" class="btn btn-primary">Dashboard {{ request.session.empresa_nome }}</a>
             <a href="{% url 'ranking_empresa' %}" class="btn btn-secondary">Ranking</a>
@@ -40,6 +43,23 @@
       </section>
 
       <section class="features-grid">
+
+        
+        {% if request.session.empresa_nome %}
+        <div class="feature-card" style="border: 2px solid #ffd700; background: linear-gradient(135deg, #fff9c4, #ffeaa7);">
+          <h3>Ranking</h3>
+          <p>Veja os melhores desempenhos da {{ request.session.empresa_nome }}.</p>
+          <a href="{% url 'ranking_empresa' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Rankings</a>
+        </div>
+
+        <div class="feature-card" style="border: 2px solid #ffd700; background: linear-gradient(135deg, #ffc4ff, #ffeaa7);">
+          <h3>Relatórios</h3>
+          <p>Veja os Relatórios {{ request.session.empresa_nome }}.</p>
+          <a href="{% url 'report_empresa' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Relatórios</a>
+        </div>
+
+        {% else %}
+
         <div class="feature-card">
           <h3>Gestão</h3>
           <p>Seus dados, sua vantagem competitiva.</p>
@@ -54,24 +74,25 @@
           <h3>Motoristas</h3>
           <p>Gerenciamento eficiente de pessoal.</p>
         </div>
-        
-        {% if request.session.empresa_nome %}
-        <div class="feature-card" style="border: 2px solid #ffd700; background: linear-gradient(135deg, #fff9c4, #ffeaa7);">
-          <h3>Ranking</h3>
-          <p>Veja os melhores desempenhos da {{ request.session.empresa_nome }}.</p>
-          <a href="{% url 'ranking_empresa' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Rankings</a>
-        </div>
 
-        <div class="feature-card" style="border: 2px solid #ffd700; background: linear-gradient(135deg, #ffc4ff, #ffeaa7);">
-          <h3>Relatórios</h3>
-          <p>Veja os Relatórios {{ request.session.empresa_nome }}.</p>
-          <a href="{% url 'report_empresa' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Relatórios</a>
-        </div>
+
+
         {% endif %}
       </section>
 
       <section class="data-importance">
+
         <h2>Umbrella360</h2>
+
+        {% if request.session.empresa_nome %}
+        <div class="feature-card" style="border:5px solid #ffffff; background: linear-gradient(135deg, #98d6d7, #183bb0);">
+            <h3 style="color: #fff;">Relatório Global</h3>
+          <p style="color: #fff;">Informações de Mercado Avançadas  </p>
+          <a href="{% url 'report_novo' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Relatórios</a>
+        </div>
+
+
+        {% else %}
         <div class="importance-grid">
           <div class="importance-item">
             <strong>Combustível:</strong>
@@ -87,7 +108,7 @@
           </div>
  
 
-
+        {% endif %}
         </div>
       </section>
 
