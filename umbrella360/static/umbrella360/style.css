@@ -929,13 +929,13 @@ body.tema-empresarial .cta-section h2 {
 /* Buttons tema empresarial */
 body.tema-empresarial .btn {
     border: 2px solid #34495e;
-    color: #ecf0f1;
+    color: #ffffff;
     background: rgba(52, 73, 94, 0.8);
 }
 
 body.tema-empresarial .btn-primary {
     background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
-    border-color: #2c3e50;
+    border-color: #ffffff;
 }
 
 body.tema-empresarial .btn-primary:hover {
@@ -1109,6 +1109,8 @@ body.tema-empresarial .theme-toggle:hover {
     color: #ffffff;
     box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
 }
+
+
 
 /* ========================================
    SISTEMA DE FILTRO DE MESES

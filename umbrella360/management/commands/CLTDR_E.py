@@ -14,7 +14,7 @@ import decimal
 
 
 
-deposito = rf"C:\TERRA DADOS\laboratorium\Site\terra_dados_site\TERRA_DADOS_SITE\umbrella360\deposito"
+deposito = rf"umbrella360\deposito"
 
 #empresas
 
@@ -276,14 +276,16 @@ class Command(BaseCommand):
         ###
         processamento_df = pd.DataFrame()
 
-        #motoristas CPBRASCELL
+        #Cargo Polo
+        #motoristas 
         self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
         self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
         self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
 
         processamento_df = pd.DataFrame()
 
-        #Motoristas PLACIDOs
+        #PLACIDO
+        #Motoristas 
         self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
         self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
         self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
