@@ -236,9 +236,14 @@
 
     <!-- Seção de CheckPoints -->
     <section class="checkpoints-section" style="background: rgba(255, 255, 255, 0.95); margin: 2rem auto; max-width: 1200px; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
-      <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
-      CheckPoints da Unidade
-      </h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="text-align: center; color: #2c3e50; margin: 0; flex: 1;">
+          CheckPoints da Unidade
+        </h2>
+        <a href="{% url 'cercas_unidade' unidade.id %}" class="btn btn-primary" style="margin-left: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; transition: transform 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+          📋 Ver Todos os CheckPoints
+        </a>
+      </div>
       
       <!-- Estatísticas dos CheckPoints -->
       <div class="stats-overview" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
@@ -478,7 +483,6 @@
                 <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Data/Hora</th>
                 <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Limite</th>
                 <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Velocidade</th>
-                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Excesso</th>
                 <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Localização</th>
               </tr>
             </thead>
@@ -497,15 +501,6 @@
                   </span>
                 </td>
                 <td style="padding: 0.75rem;">
-                  {% if infracao.velocidade and infracao.limite %}
-                    <span style="color: #dc3545; font-weight: 700;">
-                      +{{ infracao.velocidade|floatformat:0|add:"-"|add:infracao.limite|floatformat:0 }} km/h
-                    </span>
-                  {% else %}
-                    <span style="color: #6c757d;">-</span>
-                  {% endif %}
-                </td>
-                <td style="padding: 0.75rem;">
                   {% if infracao.localizacao %}
                     <a href="{{ infracao.localizacao }}" target="_blank" style="color: #28a745; text-decoration: none; font-size: 0.875rem;">
                       📍 Ver no Mapa
@@ -514,7 +509,7 @@
                     <span style="color: #6c757d;">-</span>
                   {% endif %}
                 </td>
-              </tr>
+              </tr>ss
               {% endfor %}
             </tbody>
           </table>

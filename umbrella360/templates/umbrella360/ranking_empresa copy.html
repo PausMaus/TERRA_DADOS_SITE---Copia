@@ -276,11 +276,11 @@
       <div class="menu-buttons">
         <a href="{% url 'index' %}" class="btn btn-secondary">Início</a>
         <a href="{% url 'report_empresa' %}" class="btn btn-secondary">Dashboard</a>
-        <a href="{% url 'lista_unidades' %}" class="btn btn-secondary">Unidades</a>
-        <a href="{% url 'report_novo' %}" class="btn btn-secondary">Relatório Global</a>
-        <a href="{% url 'logout' %}" class="btn btn-primary">Logout</a>
+        <a href="{% url 'lista_unidades' %}" class="btn btn-primary">Unidades</a>
+        <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
       </div>
     </div>
+    
 
     <main class="ranking-container">
       <!-- Filtro por Período -->
@@ -491,7 +491,7 @@
       <div class="ranking-card" style="margin-top: 2rem;">
         <div class="ranking-header">
           <h3>📋 Histórico Recente de Passagens</h3>
-          <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Últimas 20 passagens registradas</p>
+          <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Últimas 50 passagens registradas</p>
         </div>
         
         {% if checkpoints_recentes %}
@@ -671,7 +671,6 @@
                   <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Data/Hora</th>
                   <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Limite</th>
                   <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Velocidade</th>
-                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Excesso</th>
                   <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Local</th>
                 </tr>
               </thead>
@@ -701,17 +700,6 @@
                       <span style="background: #ffebee; color: #c62828; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">
                         {{ infracao.velocidade|floatformat:0 }} km/h
                       </span>
-                    </td>
-                    <td style="padding: 0.75rem;">
-                      {% if infracao.velocidade and infracao.limite %}
-                        {% with excesso=infracao.velocidade|add:infracao.limite|add:"-"|add:infracao.limite %}
-                          <span style="color: #dc3545; font-weight: 700;">
-                            +{{ infracao.velocidade|floatformat:0|add:"-"|add:infracao.limite|floatformat:0 }} km/h
-                          </span>
-                        {% endwith %}
-                      {% else %}
-                        <span style="color: #6c757d;">-</span>
-                      {% endif %}
                     </td>
                     <td style="padding: 0.75rem;">
                       {% if infracao.localizacao %}

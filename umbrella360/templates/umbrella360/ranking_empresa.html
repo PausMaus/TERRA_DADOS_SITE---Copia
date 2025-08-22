@@ -264,6 +264,7 @@
     </style>
   </head>
   <body>
+    {% block content %}
 
     <!-- Botão de alternância de tema -->
     <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
@@ -280,6 +281,7 @@
         <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
       </div>
     </div>
+    
 
     <main class="ranking-container">
       <!-- Filtro por Período -->
@@ -728,4 +730,5 @@
       <p><em>"Reconhecendo a excelência operacional em cada quilômetro"</em></p>
     </footer>
   </body>
+  {% endblock %}
 </html>

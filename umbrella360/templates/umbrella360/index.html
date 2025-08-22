@@ -18,10 +18,10 @@
       <p class="tagline">Transformando a Logística com Dados Inteligentes</p>
       {% endif %}
         <div class="menu-buttons">
-          <a href="{% url 'report_novo' %}" class="btn btn-secondary">Relatório Global</a>
           {% if request.session.empresa_nome %}
             <a href="{% url 'report_empresa' %}" class="btn btn-primary">Dashboard {{ request.session.empresa_nome }}</a>
             <a href="{% url 'ranking_empresa' %}" class="btn btn-secondary">Ranking</a>
+            <a href="{% url 'lista_unidades' %}" class="btn btn-secondary">Unidades</a>
             <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
           {% else %}
             <a href="{% url 'login' %}" class="btn btn-secondary">Login</a>
