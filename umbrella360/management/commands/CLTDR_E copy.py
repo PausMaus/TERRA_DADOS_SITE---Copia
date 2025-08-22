@@ -14,7 +14,7 @@ import decimal
 
 
 
-deposito = rf"umbrella360\deposito"
+deposito = rf"C:\TERRA DADOS\laboratorium\Site\terra_dados_site\TERRA_DADOS_SITE\umbrella360\deposito"
 
 #empresas
 
@@ -37,14 +37,12 @@ class Command(BaseCommand):
 
 
         ##################################################
-        self.Limpeza()
+
         ##################################################
 
-        self.atualizar_01()
+        self.TESTE()
 
-        #self.TESTE()
-
-        self.processamento_global()
+        #self.processamento_global()
 
 
 
@@ -59,13 +57,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Comando concluído às {end_time.strftime("%H:%M:%S")}'))
         self.stdout.write(self.style.SUCCESS(f'Tempo total de execução: {execution_time}'))
 
-
-    def Limpeza(self):
-        # Limpa os dados antigos
-        Infrações.objects.all().delete()
-        CheckPoint.objects.all().delete()
-        Unidade.objects.all().delete()
-        Viagem_Base.objects.all().delete()
 
     def atualizar_01(self):
         #lista as empresas registradas
@@ -155,11 +146,11 @@ class Command(BaseCommand):
             self.update_or_create_trip(processamento_df)
             Wialon.clean_up_result(sid)
 
-    def CLTDR_CP_01(self, sid, processamento_df, recurso, template, flag, Objeto, dias):
+    def CLTDR_CP_01(self, sid, processamento_df, recurso, template, flag, Objeto, dias, periodo):
         #Adicionado resource, template
-        print(f'Coletando dados de relatório [Cercas]')
+        print(f'Coletando dados de relatório [Cercas] para ({periodo})')
 
-        relatorio = Wialon.Colheitadeira_JSON_CP_01(sid, flag=flag, reportResourceId=recurso, reportTemplateId=template, reportObjectId=Objeto, reportObjectSecId=0, unit_id="teste",  tempo_dias=dias)
+        relatorio = Wialon.Colheitadeira_JSON_CP_01(sid, flag=flag, reportResourceId=recurso, reportTemplateId=template, reportObjectId=Objeto, reportObjectSecId=0, unit_id="teste",  tempo_dias=dias, periodo=periodo)
 
         if relatorio is not None:
             #----
@@ -168,8 +159,8 @@ class Command(BaseCommand):
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
             print(processamento_df)
-            processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]CERCAS.xlsx', index=False)
-            self.update_or_create_checkpoint(processamento_df)
+            processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]CERCAS_{periodo}.xlsx', index=False)
+            self.update_or_create_checkpoint(processamento_df, periodo)
             Wialon.clean_up_result(sid)
 
     def CLTDR_MOT_01(self, sid, processamento_df, Objeto, flag, dias, periodo):
@@ -202,12 +193,11 @@ class Command(BaseCommand):
             self.update_or_create_trip(processamento_df)
             Wialon.clean_up_result(sid)
 
-    def CLTDR_INFRA_01(self, sid, processamento_df, recurso, template, flag, Objeto, dias):
+    def CLTDR_INFRA_01(self, sid, processamento_df, recurso, template, flag, Objeto, dias, periodo):
         #Adicionado resource, template
-        #removido período
-        print(f'Coletando dados de relatório [INFRAÇÕES]')
+        print(f'Coletando dados de relatório [INFRAÇÕES] para ({periodo})')
 
-        relatorio = Wialon.Colheitadeira_JSON_INFRA_02(sid, flag=flag, reportResourceId=recurso, reportTemplateId=template, reportObjectId=Objeto, reportObjectSecId=0, unit_id="teste",  tempo_dias=dias)
+        relatorio = Wialon.Colheitadeira_JSON_INFRA_02(sid, flag=flag, reportResourceId=recurso, reportTemplateId=template, reportObjectId=Objeto, reportObjectSecId=0, unit_id="teste",  tempo_dias=dias, periodo=periodo)
 
         if relatorio is not None:
             #----
@@ -216,7 +206,7 @@ class Command(BaseCommand):
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
             print(processamento_df)
-            processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]INFRA.xlsx', index=False)
+            processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]INFRA_{periodo}.xlsx', index=False)
             self.update_or_create_infração(processamento_df)
             Wialon.clean_up_result(sid)
 
@@ -226,22 +216,15 @@ class Command(BaseCommand):
         if not sid:
             self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
             return
-        
-        
+
         Wialon.set_locale()
         processamento_df = pd.DataFrame()
 
-        print(Infrações.objects.all())
-        print(f'Número de infrações antes da limpeza: {Infrações.objects.count()}')
-        print(CheckPoint.objects.all())
-        print(f'Número de checkpoints antes da limpeza: {CheckPoint.objects.count()}')
-
-
         
-        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=1)
+        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=1, periodo="Ontem")
         processamento_df = pd.DataFrame()   
 
-        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=1)
+        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=1, periodo="Ontem")
         processamento_df = pd.DataFrame()
 
 
@@ -258,10 +241,7 @@ class Command(BaseCommand):
         Wialon.set_locale()
         processamento_df = pd.DataFrame()
 
-
-
         ###__UNIDADES__TODAS__###
-        processamento_df = pd.DataFrame()
 
         self.CLTDR_01(sid, processamento_df, flag=16777218, dias=1, periodo="Ontem")
         self.CLTDR_01(sid, processamento_df, flag=16777220, dias=1, periodo="Últimos 7 dias")
