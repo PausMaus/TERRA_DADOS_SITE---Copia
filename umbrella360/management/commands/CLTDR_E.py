@@ -204,6 +204,7 @@ class Command(BaseCommand):
 
     def CLTDR_INFRA_01(self, sid, processamento_df, recurso, template, flag, Objeto, dias):
         #Adicionado resource, template
+        #removido período
         print(f'Coletando dados de relatório [INFRAÇÕES]')
 
         relatorio = Wialon.Colheitadeira_JSON_INFRA_02(sid, flag=flag, reportResourceId=recurso, reportTemplateId=template, reportObjectId=Objeto, reportObjectSecId=0, unit_id="teste",  tempo_dias=dias)
@@ -260,6 +261,7 @@ class Command(BaseCommand):
 
 
         ###__UNIDADES__TODAS__###
+        processamento_df = pd.DataFrame()
 
         self.CLTDR_01(sid, processamento_df, flag=16777218, dias=1, periodo="Ontem")
         self.CLTDR_01(sid, processamento_df, flag=16777220, dias=1, periodo="Últimos 7 dias")
