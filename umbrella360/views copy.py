@@ -4,6 +4,20 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views import generic
 from django.utils import timezone
+from django.core.paginator import Paginator
+from datetime import datetime
+import io
+import os
+import json
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.pdfgen import canvas
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
 from .models import (
     Motorista, Caminhao, Viagem_MOT, Viagem_CAM,
     Empresa, Unidade, Viagem_Base, CheckPoint
@@ -270,6 +284,9 @@ def report_novo(request):
         viagens_base, empresa_selecionada, marca_selecionada, 
         periodo_selecionado, filtro_combustivel, classe_selecionada
     )
+
+    #filtra as viagens pelos ultimos 30 dias
+    #viagens_filtradas = viagens_filtradas.filter(período="Últimos 30 dias")
     
     # Filtrar viagens com eficiência abaixo de 4 km/L (dados irreais/com erros)
     viagens_filtradas = aplicar_filtro_eficiencia_minima(viagens_filtradas)
@@ -1064,3 +1081,612 @@ def logout_view(request):
     """View para logout da empresa"""
     request.session.flush()  # Remove todos os dados da sessão
     return HttpResponseRedirect(reverse('index'))
+
+def generate_checkpoint_charts_data(checkpoints_queryset):
+    """Gera dados para os gráficos de checkpoints"""
+    from django.db.models import Sum, Count
+    
+    # 1. Tempo de permanência por cerca (versão simplificada)
+    tempo_por_cerca = []
+    try:
+        # Buscar todas as cercas com checkpoints
+        cercas = checkpoints_queryset.values_list('cerca', flat=True).distinct()[:10]
+        
+        for cerca in cercas:
+            checkpoints_cerca = checkpoints_queryset.filter(cerca=cerca).exclude(duracao__isnull=True)
+            
+            if checkpoints_cerca.exists():
+                tempo_total_segundos = 0
+                count = 0
+                
+                for cp in checkpoints_cerca:
+                    if cp.duracao:
+                        tempo_total_segundos += cp.duracao.total_seconds()
+                        count += 1
+                
+                if count > 0:
+                    tempo_total_minutos = int(tempo_total_segundos / 60)
+                    if tempo_total_minutos > 0:
+                        tempo_por_cerca.append({
+                            'cerca': cerca[:15] + '...' if len(cerca) > 15 else cerca,
+                            'tempo_total_minutos': tempo_total_minutos
+                        })
+        
+        # Ordenar por tempo total
+        tempo_por_cerca = sorted(tempo_por_cerca, key=lambda x: x['tempo_total_minutos'], reverse=True)[:8]
+    except Exception as e:
+        print(f"Erro em tempo_por_cerca: {e}")
+        tempo_por_cerca = []
+    
+    # 2. Número de passagens por cerca
+    passagens_por_cerca = []
+    try:
+        cercas_count = {}
+        for checkpoint in checkpoints_queryset:
+            cerca = checkpoint.cerca
+            if cerca:
+                cerca_short = cerca[:15] + '...' if len(cerca) > 15 else cerca
+                if cerca_short not in cercas_count:
+                    cercas_count[cerca_short] = 0
+                cercas_count[cerca_short] += 1
+        
+        # Converter para lista e pegar os top 8
+        for cerca, count in sorted(cercas_count.items(), key=lambda x: x[1], reverse=True)[:8]:
+            passagens_por_cerca.append({
+                'cerca': cerca,
+                'total_passagens': count
+            })
+    except Exception as e:
+        print(f"Erro em passagens_por_cerca: {e}")
+        passagens_por_cerca = []
+    
+    # 3. Atividade por hora do dia
+    atividade_por_hora = []
+    try:
+        horas_count = {i: 0 for i in range(24)}
+        
+        for checkpoint in checkpoints_queryset:
+            if checkpoint.data_entrada:
+                hora = checkpoint.data_entrada.hour
+                horas_count[hora] += 1
+        
+        atividade_por_hora = [
+            {'hora': hora, 'total_atividade': total}
+            for hora, total in horas_count.items()
+        ]
+    except Exception as e:
+        print(f"Erro em atividade_por_hora: {e}")
+        atividade_por_hora = []
+    
+    # 4. Atividade por dia da semana
+    atividade_por_dia = []
+    try:
+        dias_count = {i: 0 for i in range(7)}  # 0=Segunda, 6=Domingo
+        
+        for checkpoint in checkpoints_queryset:
+            if checkpoint.data_entrada:
+                # Python: Monday=0, Sunday=6
+                # Queremos: Monday=0, Sunday=6
+                dia = checkpoint.data_entrada.weekday()
+                dias_count[dia] += 1
+        
+        atividade_por_dia = [
+            {'dia_semana': dia, 'total_atividade': total}
+            for dia, total in dias_count.items()
+        ]
+    except Exception as e:
+        print(f"Erro em atividade_por_dia: {e}")
+        atividade_por_dia = []
+    
+    # 5. Timeline dos últimos 30 dias
+    timeline = []
+    try:
+        from datetime import timedelta
+        data_limite = datetime.now() - timedelta(days=30)
+        
+        datas_count = {}
+        for checkpoint in checkpoints_queryset:
+            if checkpoint.data_entrada and checkpoint.data_entrada >= data_limite:
+                data_str = checkpoint.data_entrada.strftime('%Y-%m-%d')
+                if data_str not in datas_count:
+                    datas_count[data_str] = 0
+                datas_count[data_str] += 1
+        
+        # Ordenar por data
+        for data_str, count in sorted(datas_count.items()):
+            timeline.append({
+                'data': data_str,
+                'total_checkpoints': count
+            })
+    except Exception as e:
+        print(f"Erro em timeline: {e}")
+        timeline = []
+    
+    # Debug: imprimir dados
+    print(f"=== DADOS DOS GRÁFICOS ===")
+    print(f"Tempo por cerca: {len(tempo_por_cerca)} items")
+    print(f"Passagens por cerca: {len(passagens_por_cerca)} items") 
+    print(f"Atividade por hora: {len(atividade_por_hora)} items")
+    print(f"Atividade por dia: {len(atividade_por_dia)} items")
+    print(f"Timeline: {len(timeline)} items")
+    
+    return {
+        'tempoPerCerca': tempo_por_cerca,
+        'passagensPerCerca': passagens_por_cerca,
+        'atividadePerHora': atividade_por_hora,
+        'atividadePerDia': atividade_por_dia,
+        'timeline': timeline,
+    }
+
+def cercas_unidade(request, unidade_id):
+    """View para exibir todos os checkpoints de uma unidade específica"""
+    unidade = get_object_or_404(Unidade, id=unidade_id)
+    
+    # Verificar se usuário tem acesso à empresa da unidade
+    empresa_logada_id = request.session.get('empresa_id')
+    if empresa_logada_id and str(unidade.empresa_id) != str(empresa_logada_id):
+        return HttpResponseRedirect(reverse('index'))
+    
+    # Query base de checkpoints
+    checkpoints_queryset = CheckPoint.objects.filter(unidade=unidade).order_by('-data_entrada')
+    
+    # Aplicar filtros
+    cerca_selecionada = request.GET.get('cerca', '')
+    data_inicio = request.GET.get('data_inicio', '')
+    data_fim = request.GET.get('data_fim', '')
+    tipo_evento = request.GET.get('tipo_evento', '')
+    
+    # Filtro por cerca
+    if cerca_selecionada:
+        checkpoints_queryset = checkpoints_queryset.filter(cerca__icontains=cerca_selecionada)
+    
+    # Filtro por data de início
+    if data_inicio:
+        try:
+            data_inicio_dt = datetime.strptime(data_inicio, '%Y-%m-%d')
+            checkpoints_queryset = checkpoints_queryset.filter(data_entrada__gte=data_inicio_dt)
+        except ValueError:
+            pass
+    
+    # Filtro por data de fim
+    if data_fim:
+        try:
+            data_fim_dt = datetime.strptime(data_fim, '%Y-%m-%d')
+            checkpoints_queryset = checkpoints_queryset.filter(data_entrada__lte=data_fim_dt)
+        except ValueError:
+            pass
+    
+    # Filtro por tipo de evento
+    if tipo_evento == 'entrada':
+        checkpoints_queryset = checkpoints_queryset.filter(data_entrada__isnull=False)
+    elif tipo_evento == 'saida':
+        checkpoints_queryset = checkpoints_queryset.filter(data_saida__isnull=False)
+    elif tipo_evento == 'permanencia':
+        checkpoints_queryset = checkpoints_queryset.filter(
+            data_entrada__isnull=False, 
+            data_saida__isnull=False,
+            duracao__isnull=False
+        )
+    
+    # Obter todos os checkpoints (sem limite)
+    checkpoints = checkpoints_queryset
+    
+    # Estatísticas gerais
+    total_checkpoints = checkpoints.count()
+    cercas_distintas = checkpoints.values('cerca').distinct().count()
+    
+    # Calcular tempo total parado e média de permanência
+    tempo_total_parado = "0 min"
+    media_permanencia = "0 min"
+    
+    checkpoints_com_duracao = checkpoints.exclude(duracao__isnull=True)
+    if checkpoints_com_duracao.exists():
+        try:
+            duracao_total_segundos = sum([
+                cp.duracao.total_seconds() 
+                for cp in checkpoints_com_duracao 
+                if cp.duracao
+            ])
+            tempo_total_horas = int(duracao_total_segundos // 3600)
+            tempo_total_minutos = int((duracao_total_segundos % 3600) // 60)
+            
+            if tempo_total_horas > 0:
+                tempo_total_parado = f"{tempo_total_horas}h {tempo_total_minutos}min"
+            else:
+                tempo_total_parado = f"{tempo_total_minutos} min"
+                
+            # Média de permanência
+            media_segundos = duracao_total_segundos / checkpoints_com_duracao.count()
+            media_horas = int(media_segundos // 3600)
+            media_minutos = int((media_segundos % 3600) // 60)
+            
+            if media_horas > 0:
+                media_permanencia = f"{media_horas}h {media_minutos}min"
+            else:
+                media_permanencia = f"{media_minutos} min"
+                
+        except Exception:
+            tempo_total_parado = "Erro no cálculo"
+            media_permanencia = "Erro no cálculo"
+    
+    # Lista de cercas disponíveis para o filtro
+    cercas_disponiveis = CheckPoint.objects.filter(unidade=unidade).values_list(
+        'cerca', flat=True
+    ).distinct().order_by('cerca')
+    
+    # Dados para gráficos
+    chart_data = generate_checkpoint_charts_data(checkpoints_queryset)
+    
+    # Converter dados dos gráficos para JSON
+    import json
+    chart_data_json = json.dumps(chart_data, default=str)
+    
+    # Implementar paginação
+    paginator = Paginator(checkpoints, 100)  # 100 registros por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'unidade': unidade,
+        'checkpoints': page_obj,
+        'total_checkpoints': total_checkpoints,
+        'cercas_distintas': cercas_distintas,
+        'tempo_total_parado': tempo_total_parado,
+        'media_permanencia': media_permanencia,
+        'cercas_disponiveis': cercas_disponiveis,
+        'cerca_selecionada': cerca_selecionada,
+        'data_inicio': data_inicio,
+        'data_fim': data_fim,
+        'tipo_evento': tipo_evento,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        # Dados para gráficos em JSON
+        'chart_data_json': chart_data_json,
+    }
+    
+    return render(request, 'umbrella360/unidades/cercas.html', context)
+
+def export_cercas_excel(request, unidade_id):
+    """Exporta checkpoints de uma unidade para Excel"""
+    unidade = get_object_or_404(Unidade, id=unidade_id)
+    
+    # Verificar se usuário tem acesso à empresa da unidade
+    empresa_logada_id = request.session.get('empresa_id')
+    if empresa_logada_id and str(unidade.empresa_id) != str(empresa_logada_id):
+        return HttpResponseRedirect(reverse('index'))
+    
+    # Aplicar os mesmos filtros da view principal
+    checkpoints_queryset = CheckPoint.objects.filter(unidade=unidade).order_by('-data_entrada')
+    
+    # Aplicar filtros
+    cerca_selecionada = request.GET.get('cerca', '')
+    data_inicio = request.GET.get('data_inicio', '')
+    data_fim = request.GET.get('data_fim', '')
+    tipo_evento = request.GET.get('tipo_evento', '')
+    
+    if cerca_selecionada:
+        checkpoints_queryset = checkpoints_queryset.filter(cerca__icontains=cerca_selecionada)
+    
+    if data_inicio:
+        try:
+            data_inicio_dt = datetime.strptime(data_inicio, '%Y-%m-%d')
+            checkpoints_queryset = checkpoints_queryset.filter(data_entrada__gte=data_inicio_dt)
+        except ValueError:
+            pass
+    
+    if data_fim:
+        try:
+            data_fim_dt = datetime.strptime(data_fim, '%Y-%m-%d')
+            checkpoints_queryset = checkpoints_queryset.filter(data_entrada__lte=data_fim_dt)
+        except ValueError:
+            pass
+    
+    if tipo_evento == 'entrada':
+        checkpoints_queryset = checkpoints_queryset.filter(data_entrada__isnull=False)
+    elif tipo_evento == 'saida':
+        checkpoints_queryset = checkpoints_queryset.filter(data_saida__isnull=False)
+    elif tipo_evento == 'permanencia':
+        checkpoints_queryset = checkpoints_queryset.filter(
+            data_entrada__isnull=False, 
+            data_saida__isnull=False,
+            duracao__isnull=False
+        )
+    
+    # Criar workbook Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "CheckPoints"
+    
+    # Estilos
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="667eea", end_color="667eea", fill_type="solid")
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Cabeçalho do relatório
+    ws.merge_cells('A1:H1')
+    ws['A1'] = f"CheckPoints - {unidade.nm or unidade.id}"
+    ws['A1'].font = Font(bold=True, size=16)
+    ws['A1'].alignment = Alignment(horizontal='center')
+    
+    # Informações de filtro
+    row = 2
+    if cerca_selecionada:
+        ws[f'A{row}'] = f"Filtro por Cerca: {cerca_selecionada}"
+        row += 1
+    if data_inicio:
+        ws[f'A{row}'] = f"Data Início: {data_inicio}"
+        row += 1
+    if data_fim:
+        ws[f'A{row}'] = f"Data Fim: {data_fim}"
+        row += 1
+    if tipo_evento:
+        ws[f'A{row}'] = f"Tipo de Evento: {tipo_evento}"
+        row += 1
+    
+    # Espaçamento
+    row += 1
+    
+    # Cabeçalhos das colunas
+    headers = ['Cerca', 'Data Entrada', 'Hora Entrada', 'Data Saída', 'Hora Saída', 'Duração', 'Status', 'Dia da Semana']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=row, column=col)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = border
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Dados
+    for checkpoint in checkpoints_queryset:
+        row += 1
+        
+        # Cerca
+        ws.cell(row=row, column=1).value = checkpoint.cerca
+        
+        # Data e hora de entrada
+        if checkpoint.data_entrada:
+            ws.cell(row=row, column=2).value = checkpoint.data_entrada.strftime('%d/%m/%Y')
+            ws.cell(row=row, column=3).value = checkpoint.data_entrada.strftime('%H:%M:%S')
+        else:
+            ws.cell(row=row, column=2).value = '-'
+            ws.cell(row=row, column=3).value = '-'
+        
+        # Data e hora de saída
+        if checkpoint.data_saida:
+            ws.cell(row=row, column=4).value = checkpoint.data_saida.strftime('%d/%m/%Y')
+            ws.cell(row=row, column=5).value = checkpoint.data_saida.strftime('%H:%M:%S')
+        else:
+            ws.cell(row=row, column=4).value = '-'
+            ws.cell(row=row, column=5).value = '-'
+        
+        # Duração
+        ws.cell(row=row, column=6).value = str(checkpoint.duracao) if checkpoint.duracao else '-'
+        
+        # Status
+        if checkpoint.data_saida:
+            status = 'Finalizada'
+        elif checkpoint.data_entrada:
+            status = 'Ativa'
+        else:
+            status = 'Iniciada'
+        ws.cell(row=row, column=7).value = status
+        
+        # Dia da semana
+        if checkpoint.data_entrada:
+            dias_semana = {
+                0: 'Segunda-feira', 1: 'Terça-feira', 2: 'Quarta-feira', 
+                3: 'Quinta-feira', 4: 'Sexta-feira', 5: 'Sábado', 6: 'Domingo'
+            }
+            ws.cell(row=row, column=8).value = dias_semana.get(checkpoint.data_entrada.weekday(), '-')
+        else:
+            ws.cell(row=row, column=8).value = '-'
+        
+        # Aplicar bordas
+        for col in range(1, 9):
+            ws.cell(row=row, column=col).border = border
+    
+    # Ajustar largura das colunas
+    for col in range(1, 9):
+        ws.column_dimensions[get_column_letter(col)].width = 15
+    
+    # Preparar resposta HTTP
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    
+    filename = f"checkpoints_{unidade.nm or unidade.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    # Salvar workbook na resposta
+    wb.save(response)
+    
+    return response
+
+def export_cercas_pdf(request, unidade_id):
+    """Exporta checkpoints de uma unidade para PDF"""
+    unidade = get_object_or_404(Unidade, id=unidade_id)
+    
+    # Verificar se usuário tem acesso à empresa da unidade
+    empresa_logada_id = request.session.get('empresa_id')
+    if empresa_logada_id and str(unidade.empresa_id) != str(empresa_logada_id):
+        return HttpResponseRedirect(reverse('index'))
+    
+    # Aplicar os mesmos filtros da view principal
+    checkpoints_queryset = CheckPoint.objects.filter(unidade=unidade).order_by('-data_entrada')
+    
+    # Aplicar filtros
+    cerca_selecionada = request.GET.get('cerca', '')
+    data_inicio = request.GET.get('data_inicio', '')
+    data_fim = request.GET.get('data_fim', '')
+    tipo_evento = request.GET.get('tipo_evento', '')
+    
+    if cerca_selecionada:
+        checkpoints_queryset = checkpoints_queryset.filter(cerca__icontains=cerca_selecionada)
+    
+    if data_inicio:
+        try:
+            data_inicio_dt = datetime.strptime(data_inicio, '%Y-%m-%d')
+            checkpoints_queryset = checkpoints_queryset.filter(data_entrada__gte=data_inicio_dt)
+        except ValueError:
+            pass
+    
+    if data_fim:
+        try:
+            data_fim_dt = datetime.strptime(data_fim, '%Y-%m-%d')
+            checkpoints_queryset = checkpoints_queryset.filter(data_entrada__lte=data_fim_dt)
+        except ValueError:
+            pass
+    
+    if tipo_evento == 'entrada':
+        checkpoints_queryset = checkpoints_queryset.filter(data_entrada__isnull=False)
+    elif tipo_evento == 'saida':
+        checkpoints_queryset = checkpoints_queryset.filter(data_saida__isnull=False)
+    elif tipo_evento == 'permanencia':
+        checkpoints_queryset = checkpoints_queryset.filter(
+            data_entrada__isnull=False, 
+            data_saida__isnull=False,
+            duracao__isnull=False
+        )
+    
+    # Criar buffer para o PDF
+    buffer = io.BytesIO()
+    
+    # Criar documento PDF
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    
+    # Estilos
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Title'],
+        fontSize=18,
+        spaceAfter=30,
+        textColor=colors.darkblue,
+        alignment=1  # Center alignment
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'CustomSubtitle',
+        parent=styles['Normal'],
+        fontSize=12,
+        spaceAfter=10,
+        textColor=colors.grey,
+        alignment=1
+    )
+    
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontSize=10,
+        spaceAfter=6
+    )
+    
+    # Elementos do documento
+    elements = []
+    
+    # Título
+    title = Paragraph(f"CheckPoints - {unidade.nm or unidade.id}", title_style)
+    elements.append(title)
+    
+    # Subtitle com data de geração
+    subtitle = Paragraph(f"Relatório gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M')}", subtitle_style)
+    elements.append(subtitle)
+    
+    # Informações de filtro
+    filter_info = []
+    if cerca_selecionada:
+        filter_info.append(f"<b>Filtro por Cerca:</b> {cerca_selecionada}")
+    if data_inicio:
+        filter_info.append(f"<b>Data Início:</b> {data_inicio}")
+    if data_fim:
+        filter_info.append(f"<b>Data Fim:</b> {data_fim}")
+    if tipo_evento:
+        filter_info.append(f"<b>Tipo de Evento:</b> {tipo_evento}")
+    
+    if filter_info:
+        elements.append(Spacer(1, 12))
+        elements.append(Paragraph("<b>Filtros Aplicados:</b>", normal_style))
+        for info in filter_info:
+            elements.append(Paragraph(info, normal_style))
+        elements.append(Spacer(1, 12))
+    
+    # Estatísticas
+    total_checkpoints = checkpoints_queryset.count()
+    elements.append(Paragraph(f"<b>Total de CheckPoints:</b> {total_checkpoints}", normal_style))
+    elements.append(Spacer(1, 20))
+    
+    # Tabela de dados
+    if checkpoints_queryset.exists():
+        # Cabeçalhos da tabela
+        table_data = [
+            ['Cerca', 'Data Entrada', 'Data Saída', 'Duração', 'Status']
+        ]
+        
+        # Dados
+        for checkpoint in checkpoints_queryset:
+            cerca = checkpoint.cerca[:25] + '...' if len(checkpoint.cerca) > 25 else checkpoint.cerca
+            
+            data_entrada = checkpoint.data_entrada.strftime('%d/%m/%Y %H:%M') if checkpoint.data_entrada else '-'
+            data_saida = checkpoint.data_saida.strftime('%d/%m/%Y %H:%M') if checkpoint.data_saida else '-'
+            duracao = str(checkpoint.duracao) if checkpoint.duracao else '-'
+            
+            if checkpoint.data_saida:
+                status = 'Finalizada'
+            elif checkpoint.data_entrada:
+                status = 'Ativa'
+            else:
+                status = 'Iniciada'
+            
+            table_data.append([cerca, data_entrada, data_saida, duracao, status])
+        
+        # Criar tabela
+        table = Table(table_data, colWidths=[2*inch, 1.5*inch, 1.5*inch, 1*inch, 1*inch])
+        
+        # Estilo da tabela
+        table.setStyle(TableStyle([
+            # Cabeçalho
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            
+            # Corpo da tabela
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            
+            # Bordas
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            
+            # Alternância de cores nas linhas
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+        ]))
+        
+        elements.append(table)
+    else:
+        elements.append(Paragraph("Nenhum checkpoint encontrado para os filtros aplicados.", normal_style))
+    
+    # Rodapé
+    elements.append(Spacer(1, 30))
+    footer = Paragraph("Relatório gerado pelo Sistema Umbrella360", subtitle_style)
+    elements.append(footer)
+    
+    # Gerar PDF
+    doc.build(elements)
+    
+    # Preparar resposta HTTP
+    buffer.seek(0)
+    filename = f"checkpoints_{unidade.nm or unidade.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response

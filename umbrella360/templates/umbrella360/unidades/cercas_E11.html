@@ -1094,10 +1094,7 @@
         }
 
         function formatarDataTimeline(dataString) {
-          // Criar data corretamente a partir da string YYYY-MM-DD
-          const partes = dataString.split('-');
-          const data = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
-          
+          const data = new Date(dataString);
           const opcoes = { 
             weekday: 'long', 
             year: 'numeric', 

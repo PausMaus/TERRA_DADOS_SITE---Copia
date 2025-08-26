@@ -1271,6 +1271,89 @@ def cercas_unidade(request, unidade_id):
     # Obter todos os checkpoints (sem limite)
     checkpoints = checkpoints_queryset
     
+    # NOVA FUNÇÃO: Dados para timeline
+    def gerar_dados_timeline(checkpoints_query, limite_dias=30):
+        """Gera dados otimizados para o timeline de passagens por cercas"""
+        from datetime import timedelta
+        import json
+        
+        # Limitar aos últimos X dias para performance
+        data_limite = datetime.now() - timedelta(days=limite_dias)
+        checkpoints_timeline = checkpoints_query.filter(
+            data_entrada__gte=data_limite
+        ).order_by('data_entrada')
+        
+        timeline_data = []
+        
+        for checkpoint in checkpoints_timeline:
+            if checkpoint.data_entrada:
+                # Determinar tipo do evento
+                tipo_evento = 'entrada'
+                data_evento = checkpoint.data_entrada
+                
+                if checkpoint.data_saida:
+                    # Se tem saída, criar dois eventos: entrada e saída
+                    timeline_data.append({
+                        'id': f"{checkpoint.id}_entrada",
+                        'cerca': checkpoint.cerca,
+                        'data': data_evento.strftime('%Y-%m-%d'),
+                        'hora': data_evento.strftime('%H:%M:%S'),
+                        'timestamp': int(data_evento.timestamp() * 1000),  # Para Chart.js
+                        'tipo': 'entrada',
+                        'duracao': str(checkpoint.duracao) if checkpoint.duracao else None,
+                        'periodo': get_periodo_do_dia(data_evento.hour),
+                        'dia_semana': get_dia_semana(data_evento.weekday())
+                    })
+                    
+                    timeline_data.append({
+                        'id': f"{checkpoint.id}_saida",
+                        'cerca': checkpoint.cerca,
+                        'data': checkpoint.data_saida.strftime('%Y-%m-%d'),
+                        'hora': checkpoint.data_saida.strftime('%H:%M:%S'),
+                        'timestamp': int(checkpoint.data_saida.timestamp() * 1000),
+                        'tipo': 'saida',
+                        'duracao': str(checkpoint.duracao) if checkpoint.duracao else None,
+                        'periodo': get_periodo_do_dia(checkpoint.data_saida.hour),
+                        'dia_semana': get_dia_semana(checkpoint.data_saida.weekday())
+                    })
+                else:
+                    # Apenas entrada (ainda ativo)
+                    timeline_data.append({
+                        'id': f"{checkpoint.id}_entrada",
+                        'cerca': checkpoint.cerca,
+                        'data': data_evento.strftime('%Y-%m-%d'),
+                        'hora': data_evento.strftime('%H:%M:%S'),
+                        'timestamp': int(data_evento.timestamp() * 1000),
+                        'tipo': 'ativa',
+                        'duracao': None,
+                        'periodo': get_periodo_do_dia(data_evento.hour),
+                        'dia_semana': get_dia_semana(data_evento.weekday())
+                    })
+        
+        return timeline_data
+    
+    def get_periodo_do_dia(hora):
+        """Retorna o período do dia baseado na hora"""
+        if 6 <= hora < 12:
+            return 'Manhã'
+        elif 12 <= hora < 18:
+            return 'Tarde'
+        elif 18 <= hora < 24:
+            return 'Noite'
+        else:
+            return 'Madrugada'
+    
+    def get_dia_semana(weekday):
+        """Retorna o dia da semana em português"""
+        dias = {
+            0: 'Segunda-feira', 1: 'Terça-feira', 2: 'Quarta-feira', 
+            3: 'Quinta-feira', 4: 'Sexta-feira', 5: 'Sábado', 6: 'Domingo'
+        }
+        return dias.get(weekday, 'Desconhecido')
+    
+    # Gerar dados do timeline
+    timeline_data = gerar_dados_timeline(checkpoints_queryset)
+    
     # Estatísticas gerais
     total_checkpoints = checkpoints.count()
     cercas_distintas = checkpoints.values('cerca').distinct().count()
@@ -1320,6 +1403,7 @@ def cercas_unidade(request, unidade_id):
     # Converter dados dos gráficos para JSON
     import json
     chart_data_json = json.dumps(chart_data, default=str)
+    timeline_data_json = json.dumps(timeline_data, default=str)
     
     # Implementar paginação
     paginator = Paginator(checkpoints, 100)  # 100 registros por página
@@ -1342,6 +1426,7 @@ def cercas_unidade(request, unidade_id):
         'is_paginated': page_obj.has_other_pages(),
         # Dados para gráficos em JSON
         'chart_data_json': chart_data_json,
+        'timeline_data_json': timeline_data_json,  # NOVO
     }
     
     return render(request, 'umbrella360/unidades/cercas.html', context)

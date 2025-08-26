@@ -12,9 +12,13 @@ from dataclasses import dataclass
 from tqdm import tqdm
 import decimal
 
+from django.utils import timezone
+from datetime import timedelta
+import pytz
 
 
-deposito = rf"C:\TERRA DADOS\laboratorium\Site\terra_dados_site\TERRA_DADOS_SITE\umbrella360\deposito"
+
+deposito = rf"umbrella360\deposito"
 
 #empresas
 
@@ -37,12 +41,14 @@ class Command(BaseCommand):
 
 
         ##################################################
-
+        self.Limpeza()
         ##################################################
 
-        self.TESTE()
+        self.atualizar_01()
 
-        #self.processamento_global()
+        #self.TESTE()
+
+        self.processamento_global()
 
 
 
@@ -57,6 +63,13 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Comando concluído às {end_time.strftime("%H:%M:%S")}'))
         self.stdout.write(self.style.SUCCESS(f'Tempo total de execução: {execution_time}'))
 
+
+    def Limpeza(self):
+        # Limpa os dados antigos
+        Infrações.objects.all().delete()
+        CheckPoint.objects.all().delete()
+        Unidade.objects.all().delete()
+        Viagem_Base.objects.all().delete()
 
     def atualizar_01(self):
         #lista as empresas registradas
@@ -75,8 +88,8 @@ class Command(BaseCommand):
             #busca relatórios
             relatórios = Wialon.buscadora_reports(sid)
             #salva os relatorios em .txt no deposito
-            with open(f'{deposito}/{empresa.nome}_relatorios.txt', 'w') as f:
-                f.write(json.dumps(relatórios, indent=4))
+            #with open(f'{deposito}/{empresa.nome}_relatorios.txt', 'w') as f:
+            #    f.write(json.dumps(relatórios, indent=4))
 
             unidades = Wialon.unidades_simples(sid)
             print(f'Unidades encontradas: {colored(len(unidades), "green")}')
@@ -146,11 +159,11 @@ class Command(BaseCommand):
             self.update_or_create_trip(processamento_df)
             Wialon.clean_up_result(sid)
 
-    def CLTDR_CP_01(self, sid, processamento_df, recurso, template, flag, Objeto, dias, periodo):
+    def CLTDR_CP_01(self, sid, processamento_df, recurso, template, flag, Objeto, dias):
         #Adicionado resource, template
-        print(f'Coletando dados de relatório [Cercas] para ({periodo})')
+        print(f'Coletando dados de relatório [Cercas]')
 
-        relatorio = Wialon.Colheitadeira_JSON_CP_01(sid, flag=flag, reportResourceId=recurso, reportTemplateId=template, reportObjectId=Objeto, reportObjectSecId=0, unit_id="teste",  tempo_dias=dias, periodo=periodo)
+        relatorio = Wialon.Colheitadeira_JSON_CP_01(sid, flag=flag, reportResourceId=recurso, reportTemplateId=template, reportObjectId=Objeto, reportObjectSecId=0, unit_id="teste",  tempo_dias=dias)
 
         if relatorio is not None:
             #----
@@ -159,8 +172,8 @@ class Command(BaseCommand):
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
             print(processamento_df)
-            processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]CERCAS_{periodo}.xlsx', index=False)
-            self.update_or_create_checkpoint(processamento_df, periodo)
+            #processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]CERCAS.xlsx', index=False)
+            self.update_or_create_checkpoint(processamento_df)
             Wialon.clean_up_result(sid)
 
     def CLTDR_MOT_01(self, sid, processamento_df, Objeto, flag, dias, periodo):
@@ -193,11 +206,11 @@ class Command(BaseCommand):
             self.update_or_create_trip(processamento_df)
             Wialon.clean_up_result(sid)
 
-    def CLTDR_INFRA_01(self, sid, processamento_df, recurso, template, flag, Objeto, dias, periodo):
+    def CLTDR_INFRA_01(self, sid, processamento_df, recurso, template, flag, Objeto, dias):
         #Adicionado resource, template
-        print(f'Coletando dados de relatório [INFRAÇÕES] para ({periodo})')
+        print(f'Coletando dados de relatório [INFRAÇÕES]')
 
-        relatorio = Wialon.Colheitadeira_JSON_INFRA_02(sid, flag=flag, reportResourceId=recurso, reportTemplateId=template, reportObjectId=Objeto, reportObjectSecId=0, unit_id="teste",  tempo_dias=dias, periodo=periodo)
+        relatorio = Wialon.Colheitadeira_JSON_INFRA_02(sid, flag=flag, reportResourceId=recurso, reportTemplateId=template, reportObjectId=Objeto, reportObjectSecId=0, unit_id="teste",  tempo_dias=dias)
 
         if relatorio is not None:
             #----
@@ -206,7 +219,9 @@ class Command(BaseCommand):
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
             print(processamento_df)
-            processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]INFRA_{periodo}.xlsx', index=False)
+            #-----
+            #processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]INFRA.xlsx', index=False)
+            #-----
             self.update_or_create_infração(processamento_df)
             Wialon.clean_up_result(sid)
 
@@ -216,15 +231,22 @@ class Command(BaseCommand):
         if not sid:
             self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
             return
-
+        
+        
         Wialon.set_locale()
         processamento_df = pd.DataFrame()
 
+        print(Infrações.objects.all())
+        print(f'Número de infrações antes da limpeza: {Infrações.objects.count()}')
+        print(CheckPoint.objects.all())
+        print(f'Número de checkpoints antes da limpeza: {CheckPoint.objects.count()}')
+
+
         
-        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=1, periodo="Ontem")
+        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=1)
         processamento_df = pd.DataFrame()   
 
-        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=1, periodo="Ontem")
+        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=1)
         processamento_df = pd.DataFrame()
 
 
@@ -241,6 +263,8 @@ class Command(BaseCommand):
         Wialon.set_locale()
         processamento_df = pd.DataFrame()
 
+
+
         ###__UNIDADES__TODAS__###
 
         self.CLTDR_01(sid, processamento_df, flag=16777218, dias=1, periodo="Ontem")
@@ -252,31 +276,43 @@ class Command(BaseCommand):
 
         processamento_df = pd.DataFrame()
 
-        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=1, periodo="Ontem")
 
 
 
         ###
         processamento_df = pd.DataFrame()
 
-        #motoristas CPBRASCELL
+        #Cargo Polo
+        #motoristas 
         self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
         self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
         self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
 
         processamento_df = pd.DataFrame()
 
-        #Motoristas PLACIDOs
+        #PLACIDO
+        #Motoristas 
         self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
         self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
         self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
 
         processamento_df = pd.DataFrame()
 
-        #motoristas SFRESGATE
+
+        #SFRESGATE
+        #motoristas 
         self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777218, dias=1, periodo="Ontem")
         self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777220, dias=1, periodo="Últimos 7 dias")
         self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777224, dias=1, periodo="Últimos 30 dias")
+        processamento_df = pd.DataFrame()
+
+        #checkpoints e infrações
+        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
+        processamento_df = pd.DataFrame()   
+
+        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
+        processamento_df = pd.DataFrame()
+
 
     def processamento_teste(self, empresa):
         if empresa.nome == 'CPBRACELL':
@@ -863,7 +899,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
                     continue
 
-    def update_or_create_checkpoint(self, processamento_df, periodo):
+    def update_or_create_checkpoint(self, processamento_df):
         if not processamento_df.empty:
             for index, row in processamento_df.iterrows():
                 try:
@@ -883,9 +919,10 @@ class Command(BaseCommand):
                     unidade_instance = unidades.first()  # Obter a instância única
                     
                     # Processa os valores de data/hora
-                    hora_entrada = self.processar_datetime(row.get('Hora de entrada'))
-                    hora_saida = self.processar_datetime(row.get('Hora de saída'))
+                    hora_entrada = self.processar_datetime2(row.get('Hora de entrada'))
+                    hora_saida = self.processar_datetime2(row.get('Hora de saída'))
                     duracao = self.processar_duracao(row.get('Duração em', ''))
+
 
 
                     # Processa a cerca eletrônica (texto)
@@ -893,15 +930,12 @@ class Command(BaseCommand):
 
                     CheckPoint.objects.update_or_create(
                         unidade=unidade_instance,  # CORREÇÃO: Usar a instância em vez do QuerySet
-                        período=periodo,
                         cerca=cerca_eletronica,
-                        defaults={
-                            'data_entrada': hora_entrada,
-                            'data_saida': hora_saida,
-                            'duracao': duracao,
-                        }
+                        data_entrada=hora_entrada,
+                        data_saida=hora_saida,
+                        duracao=duracao
                     )
-                    self.stdout.write(self.style.SUCCESS(f'CheckPoint  {colored(row["Grouping"], "cyan")} - {colored(periodo, "magenta")} - Cerca: {colored(cerca_eletronica, "green")} - Hora de entrada: {colored(hora_entrada, "blue")} - Hora de saída: {colored(hora_saida, "blue")}. - Duração: {colored(duracao, "green")}'))
+                    self.stdout.write(self.style.SUCCESS(f'CheckPoint  {colored(row["Grouping"], "cyan")} -  - Cerca: {colored(cerca_eletronica, "green")} - Hora de entrada: {colored(hora_entrada, "blue")} - Hora de saída: {colored(hora_saida, "blue")}. - Duração: {colored(duracao, "green")}'))
 
                 except Unidade.DoesNotExist:
                     self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
@@ -949,7 +983,7 @@ class Command(BaseCommand):
                         unidade=unidade_instance,
                         velocidade=velocidade,
                         limite=limite,  
-                        data=self.processar_datetime(data),
+                        data=self.processar_datetime2(data),
                         localizacao=maps,
                     )
                     self.stdout.write(self.style.SUCCESS(f'WORKED!'))
@@ -961,22 +995,22 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(f'Erro ao processar linha {index + 1}: {str(e)}'))
                     continue
 
-
-
     def processar_datetime(self, valor_datetime):
         """
-        Processa valores de data/hora do Excel
+        Processa valores de data/hora do Excel e aplica fuso horário GMT-03 (Brasília)
         """
         try:
             if pd.isna(valor_datetime) or valor_datetime == '' or valor_datetime is None:
                 return None
             
+
+            
             # Se já é um datetime do pandas
             if isinstance(valor_datetime, pd.Timestamp):
-                return valor_datetime.to_pydatetime()
-            
-            # Se é string, tenta converter
-            if isinstance(valor_datetime, str):
+                dt = valor_datetime.to_pydatetime()
+            elif isinstance(valor_datetime, str):
+                # Se é string, tenta converter
+                dt = None
                 # Tenta alguns formatos comuns - colocando o formato correto primeiro
                 formatos = [
                     '%d.%m.%Y %H:%M:%S',  # 17.08.2025 15:31:02 (formato correto)
@@ -989,15 +1023,86 @@ class Command(BaseCommand):
                 
                 for formato in formatos:
                     try:
-                        return datetime.strptime(valor_datetime.strip(), formato)
+                        dt = datetime.strptime(valor_datetime.strip(), formato)
+                        break
                     except ValueError:
                         continue
                 
-                # Se não conseguiu converter, retorna None
-                self.stdout.write(self.style.WARNING(f'Formato de data/hora não reconhecido: {valor_datetime}'))
+                if dt is None:
+                    # Se não conseguiu converter, retorna None
+                    self.stdout.write(self.style.WARNING(f'Formato de data/hora não reconhecido: {valor_datetime}'))
+                    return None
+            else:
                 return None
             
+            # FORÇA BRUTA: Subtrai 3 horas diretamente
+            dt_brasilia = dt - timedelta(hours=3)
+            
+            # Aplica o timezone de Brasília ao resultado
+            brasilia_tz = pytz.timezone('America/Sao_Paulo')
+            
+            # Se o datetime resultante é "naive", localiza no timezone de Brasília
+            if dt_brasilia.tzinfo is None:
+                dt_brasilia = brasilia_tz.localize(dt_brasilia)
+            else:
+                # Se já tem timezone, converte para Brasília
+                dt_brasilia = dt_brasilia.astimezone(brasilia_tz)
+            
+            return dt_brasilia
+            
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'Erro ao processar data/hora "{valor_datetime}": {e}'))
             return None
+        
+
+    
+    def processar_datetime2(self, valor_datetime):
+        """
+        Processa valores de data/hora do Excel e aplica fuso horário GMT-03 (Brasília)
+        """
+        try:
+            if pd.isna(valor_datetime) or valor_datetime == '' or valor_datetime is None:
+                return None
+            
+            from django.utils import timezone
+            from datetime import timedelta
+            import pytz
+            
+            # Se já é um datetime do pandas
+            if isinstance(valor_datetime, pd.Timestamp):
+                dt = valor_datetime.to_pydatetime()
+            elif isinstance(valor_datetime, str):
+                # Se é string, tenta converter
+                dt = None
+                # Tenta alguns formatos comuns - colocando o formato correto primeiro
+                formatos = [
+                    '%d.%m.%Y %H:%M:%S',  # 17.08.2025 15:31:02 (formato correto)
+                    '%Y-%m-%d %H:%M:%S',  # 2025-08-17 15:31:02
+                    '%d/%m/%Y %H:%M:%S',  # 17/08/2025 15:31:02
+                    '%Y-%m-%d',           # 2025-08-17
+                    '%d.%m.%Y',           # 17.08.2025
+                    '%d/%m/%Y',           # 17/08/2025
+                ]
+                
+                for formato in formatos:
+                    try:
+                        dt = datetime.strptime(valor_datetime.strip(), formato)
+                        break
+                    except ValueError:
+                        continue
+                
+                if dt is None:
+                    # Se não conseguiu converter, retorna None
+                    self.stdout.write(self.style.WARNING(f'Formato de data/hora não reconhecido: {valor_datetime}'))
+                    return None
+            else:
+                return None
+            
+            # FORÇA BRUTA: Subtrai 3 horas diretamente
+            dt_brasilia = dt - timedelta(hours=3)
+            
+            
+            return dt_brasilia
             
         except Exception as e:
             self.stdout.write(self.style.WARNING(f'Erro ao processar data/hora "{valor_datetime}": {e}'))
