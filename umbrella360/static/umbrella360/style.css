@@ -1648,20 +1648,20 @@ body.tema-empresarial .filter-count {
 /* Correção para tabelas legadas também */
 .tema-cafe table thead {
     background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%) !important;
-    color: #F5DEB3 !important;
+    color: #604512 !important;
 }
 
 .tema-cafe table thead th {
     background: transparent !important;
-    color: #F5DEB3 !important;
+    color: #ffd993 !important;
 }
 
 .tema-empresarial table thead {
     background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%) !important;
-    color: #ecf0f1 !important;
+    color: #0d5263 !important;
 }
 
 .tema-empresarial table thead th {
     background: transparent !important;
-    color: #ecf0f1 !important;
+    color: #ffffff !important;
 }

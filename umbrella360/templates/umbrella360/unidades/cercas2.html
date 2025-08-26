@@ -1,0 +1,1367 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CheckPoints - {{ unidade.nm|default:unidade.id }} - Umbrella360</title>
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=9">
+    <link rel="stylesheet" href="{% static 'umbrella360/style_refatorado.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'umbrella360/theme-fixes.css' %}?v=1">
+    <script src="{% static 'umbrella360/theme-toggle.js' %}?v=2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+      .cercas-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+      
+      .cercas-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      }
+      
+      .cercas-header h1 {
+        margin: 0 0 0.5rem 0;
+        font-size: 2.2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      }
+      
+      .cercas-header p {
+        margin: 0;
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+      
+      .stats-overview {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border: 1px solid #dee2e6;
+      }
+      
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+      }
+      
+      .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+        border: 1px solid #e9ecef;
+        transition: transform 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      }
+      
+      .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      }
+      
+      .stat-value {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0.5rem 0;
+      }
+      
+      .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .filter-section {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+      }
+      
+      .filter-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        align-items: end;
+      }
+      
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      
+      .filter-group label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.95rem;
+      }
+      
+      .filter-group select,
+      .filter-group input {
+        padding: 0.75rem;
+        border: 2px solid #ced4da;
+        border-radius: 8px;
+        background: white;
+        color: #495057;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+      }
+      
+      .filter-group select:focus,
+      .filter-group input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+      }
+      
+      .filter-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: end;
+      }
+      
+      .btn-filter {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+      }
+      
+      .btn-filter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        text-decoration: none;
+        color: white;
+      }
+      
+      .btn-clear {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+      }
+      
+      .checkpoints-table-container {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        border: 1px solid #dee2e6;
+      }
+      
+      .checkpoints-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+      }
+      
+      .checkpoints-table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+      
+      .checkpoints-table thead th {
+        padding: 1.2rem 1rem;
+        text-align: left;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      
+      .checkpoints-table tbody tr {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid #e9ecef;
+      }
+      
+      .checkpoints-table tbody tr:nth-child(even) {
+        background: #f8f9fa;
+      }
+      
+      .checkpoints-table tbody tr:hover {
+        background: #e3f2fd;
+        transform: scale(1.01);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      
+      .checkpoints-table tbody td {
+        padding: 1rem;
+        border-right: 1px solid #f1f3f4;
+        vertical-align: middle;
+      }
+      
+      .checkpoint-cerca {
+        background: linear-gradient(135deg, #e7f3ff, #cce7ff);
+        color: #0066cc;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: inline-block;
+        border: 1px solid #b3d9ff;
+      }
+      
+      .checkpoint-status {
+        padding: 0.3rem 0.7rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .status-entrada {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      
+      .status-saida {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+      
+      .status-ativa {
+        background: linear-gradient(135deg, #cce5ff, #99d6ff);
+        color: #004085;
+        border: 1px solid #99d6ff;
+      }
+      
+      .duracao-badge {
+        background: linear-gradient(135deg, #e8f5e8, #d1edcc);
+        color: #28a745;
+        padding: 0.3rem 0.7rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 1px solid #c3e6cb;
+      }
+      
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 2rem 0;
+        padding: 1rem;
+      }
+      
+      .pagination a,
+      .pagination span {
+        padding: 0.75rem 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #495057;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+      
+      .pagination a:hover {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+        transform: translateY(-1px);
+      }
+      
+      .pagination .current {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+      }
+      
+      .no-data {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+      }
+      
+      .no-data h3 {
+        color: #495057;
+        margin-bottom: 1rem;
+      }
+      
+      /* NOVOS ESTILOS PARA TIMELINE */
+      .timeline-section {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+      }
+      
+      .timeline-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      
+      .timeline-filter-group {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      
+      .timeline-filter-group select,
+      .timeline-filter-group input {
+        padding: 0.5rem;
+        border: 1px solid #ced4da;
+        border-radius: 5px;
+        font-size: 0.9rem;
+      }
+      
+      .timeline-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+      }
+      
+      .timeline-tab {
+        padding: 0.75rem 1.5rem;
+        border: 1px solid #dee2e6;
+        background: #f8f9fa;
+        color: #495057;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+      }
+      
+      .timeline-tab.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+      }
+      
+      .timeline-tab:hover:not(.active) {
+        background: #e9ecef;
+      }
+      
+      .timeline-container {
+        position: relative;
+        height: 400px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        padding: 1rem;
+        background: #fafafa;
+      }
+      
+      .timeline-chart-container {
+        position: relative;
+        height: 300px;
+        margin-bottom: 2rem;
+      }
+      
+      .timeline-visual {
+        position: relative;
+        padding-left: 2rem;
+      }
+      
+      .timeline-line {
+        position: absolute;
+        left: 1rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, #007bff, #6f42c1);
+      }
+      
+      .timeline-event {
+        position: relative;
+        margin-bottom: 2rem;
+        padding-left: 2rem;
+      }
+      
+      .timeline-event:before {
+        content: '';
+        position: absolute;
+        left: -0.5rem;
+        top: 0.5rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #007bff;
+      }
+      
+      .timeline-event.entrada:before {
+        background: #28a745;
+        box-shadow: 0 0 0 2px #28a745;
+      }
+      
+      .timeline-event.saida:before {
+        background: #ffc107;
+        box-shadow: 0 0 0 2px #ffc107;
+      }
+      
+      .timeline-event.ativa:before {
+        background: #007bff;
+        box-shadow: 0 0 0 2px #007bff;
+        animation: pulse 2s infinite;
+      }
+      
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+      }
+      
+      .timeline-event-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+      }
+      
+      .timeline-event-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      }
+      
+      .timeline-event-header {
+        display: flex;
+        justify-content: between;
+        align-items: flex-start;
+        margin-bottom: 0.5rem;
+      }
+      
+      .timeline-event-title {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 0.95rem;
+      }
+      
+      .timeline-event-time {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-left: auto;
+      }
+      
+      .timeline-event-details {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 0.5rem;
+      }
+      
+      .timeline-event-badge {
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+      
+      .badge-entrada {
+        background: #d4edda;
+        color: #155724;
+      }
+      
+      .badge-saida {
+        background: #fff3cd;
+        color: #856404;
+      }
+      
+      .badge-ativa {
+        background: #cce5ff;
+        color: #004085;
+      }
+      
+      .timeline-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+      
+      .timeline-stat-card {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid #dee2e6;
+      }
+      
+      .timeline-stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+      }
+      
+      .timeline-stat-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .timeline-empty {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+      }
+      
+      @media (max-width: 768px) {
+        .cercas-container {
+          padding: 1rem;
+        }
+        
+        .stats-grid {
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+        
+        .filter-form {
+          grid-template-columns: 1fr;
+        }
+        
+        .checkpoints-table-container {
+          overflow-x: auto;
+        }
+        
+        .checkpoints-table {
+          min-width: 800px;
+        }
+        
+        .checkpoints-table thead th,
+        .checkpoints-table tbody td {
+          padding: 0.75rem 0.5rem;
+          font-size: 0.85rem;
+        }
+        
+        .timeline-controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        
+        .timeline-filter-group {
+          justify-content: center;
+        }
+        
+        .timeline-tabs {
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+        
+        .timeline-event {
+          margin-bottom: 1.5rem;
+        }
+        
+        .timeline-stats {
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- Botão de alternância de tema -->
+    <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
+      <span class="theme-icon">◐</span> Noite de Verão
+    </button>
+
+    <div class="header">
+      <h1>CheckPoints da Unidade</h1>
+      <p class="tagline">{{ unidade.nm|default:unidade.id }} - Histórico Completo</p>
+      <div class="menu-buttons">
+        <a href="{% url 'index' %}" class="btn btn-secondary">Início</a>
+        <a href="{% url 'detalhes_unidade' unidade.id %}" class="btn btn-secondary">Voltar à Unidade</a>
+        <a href="{% url 'lista_unidades' %}" class="btn btn-secondary">Lista de Unidades</a>
+        {% if request.session.empresa_nome %}
+          <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <main class="cercas-container">
+      
+      <!-- Cabeçalho da Unidade -->
+      <div class="cercas-header">
+        <h1>CheckPoints - {{ unidade.nm|default:unidade.id }}</h1>
+        <p>Histórico completo de passagens por cercas geográficas</p>
+        {% if unidade.cls %}
+          <small style="opacity: 0.8; font-size: 1rem; margin-top: 0.5rem; display: block;">
+            Classificação: {{ unidade.cls }}
+          </small>
+        {% endif %}
+      </div>
+
+      <!-- Estatísticas Gerais -->
+      <div class="stats-overview">
+        <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50;">Resumo dos CheckPoints</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">{{ total_checkpoints }}</div>
+            <div class="stat-label">Total de Passagens</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ cercas_distintas }}</div>
+            <div class="stat-label">Cercas Diferentes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ tempo_total_parado }}</div>
+            <div class="stat-label">Tempo Total em Cercas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ media_permanencia }}</div>
+            <div class="stat-label">Tempo Médio por Cerca</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOVA SEÇÃO: Timeline de Passagens -->
+      <div class="timeline-section">
+        <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50;">
+          📅 Timeline de Passagens pelas Cercas
+        </h3>
+        
+        <!-- Controles do Timeline -->
+        <div class="timeline-controls">
+          <div class="timeline-filter-group">
+            <label for="timeline-periodo">Período:</label>
+            <select id="timeline-periodo" onchange="filtrarTimeline()">
+              <option value="7">Últimos 7 dias</option>
+              <option value="15">Últimos 15 dias</option>
+              <option value="30" selected>Últimos 30 dias</option>
+            </select>
+            
+            <label for="timeline-cerca-filter">Cerca:</label>
+            <select id="timeline-cerca-filter" onchange="filtrarTimeline()">
+              <option value="">Todas as cercas</option>
+            </select>
+            
+            <label for="timeline-tipo-filter">Tipo:</label>
+            <select id="timeline-tipo-filter" onchange="filtrarTimeline()">
+              <option value="">Todos os tipos</option>
+              <option value="entrada">Entrada</option>
+              <option value="saida">Saída</option>
+              <option value="ativa">Em andamento</option>
+            </select>
+          </div>
+          
+          <div class="timeline-filter-group">
+            <button onclick="exportarTimeline()" class="btn-filter" style="font-size: 0.9rem;">
+              📥 Exportar Timeline
+            </button>
+            <button onclick="atualizarTimeline()" class="btn-filter" style="font-size: 0.9rem;">
+              🔄 Atualizar
+            </button>
+          </div>
+        </div>
+
+        <!-- Abas do Timeline -->
+        <div class="timeline-tabs">
+          <div class="timeline-tab active" onclick="mostrarTimeline('visual')" id="tab-visual">
+            📊 Timeline Visual
+          </div>
+          <div class="timeline-tab" onclick="mostrarTimeline('grafico')" id="tab-grafico">
+            📈 Gráfico Temporal
+          </div>
+          <div class="timeline-tab" onclick="mostrarTimeline('lista')" id="tab-lista">
+            📋 Lista Cronológica
+          </div>
+        </div>
+
+        <!-- Estatísticas do Timeline -->
+        <div class="timeline-stats" id="timeline-stats">
+          <div class="timeline-stat-card">
+            <div class="timeline-stat-value" id="stat-eventos-timeline">0</div>
+            <div class="timeline-stat-label">Eventos no Período</div>
+          </div>
+          <div class="timeline-stat-card">
+            <div class="timeline-stat-value" id="stat-cercas-timeline">0</div>
+            <div class="timeline-stat-label">Cercas Visitadas</div>
+          </div>
+          <div class="timeline-stat-card">
+            <div class="timeline-stat-value" id="stat-duracao-timeline">0</div>
+            <div class="timeline-stat-label">Tempo Total</div>
+          </div>
+          <div class="timeline-stat-card">
+            <div class="timeline-stat-value" id="stat-mais-visitada">-</div>
+            <div class="timeline-stat-label">Cerca Mais Visitada</div>
+          </div>
+        </div>
+
+        <!-- Container do Timeline Visual -->
+        <div id="timeline-visual-container" class="timeline-container">
+          <div class="timeline-visual" id="timeline-visual">
+            <div class="timeline-line"></div>
+            <div id="timeline-events"></div>
+          </div>
+        </div>
+
+        <!-- Container do Gráfico Temporal -->
+        <div id="timeline-chart-container" class="timeline-chart-container" style="display: none;">
+          <canvas id="timeline-chart"></canvas>
+        </div>
+
+        <!-- Container da Lista Cronológica -->
+        <div id="timeline-list-container" class="timeline-container" style="display: none;">
+          <div id="timeline-list"></div>
+        </div>
+      </div>
+
+      <!-- Filtros originais -->
+      <div class="filter-section">
+        <h3 style="margin-bottom: 1.5rem; color: #2c3e50; text-align: center;">🔍 Filtros de Busca</h3>
+        <form method="get" class="filter-form">
+          <div class="filter-group">
+            <label for="cerca">Filtrar por Cerca:</label>
+            <select name="cerca" id="cerca">
+              <option value="">Todas as Cercas</option>
+              {% for cerca_opcao in cercas_disponiveis %}
+                <option value="{{ cerca_opcao }}" {% if cerca_selecionada == cerca_opcao %}selected{% endif %}>
+                  {{ cerca_opcao }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="data_inicio">Data Início:</label>
+            <input type="date" name="data_inicio" id="data_inicio" value="{{ data_inicio }}">
+          </div>
+          
+          <div class="filter-group">
+            <label for="data_fim">Data Fim:</label>
+            <input type="date" name="data_fim" id="data_fim" value="{{ data_fim }}">
+          </div>
+          
+          <div class="filter-group">
+            <label for="tipo_evento">Tipo de Evento:</label>
+            <select name="tipo_evento" id="tipo_evento">
+              <option value="">Todos os Tipos</option>
+              <option value="entrada" {% if tipo_evento == 'entrada' %}selected{% endif %}>Entrada</option>
+              <option value="saida" {% if tipo_evento == 'saida' %}selected{% endif %}>Saída</option>
+              <option value="permanencia" {% if tipo_evento == 'permanencia' %}selected{% endif %}>Permanência</option>
+            </select>
+          </div>
+          
+          <div class="filter-actions">
+            <button type="submit" class="btn-filter">Aplicar Filtros</button>
+            <a href="{% url 'cercas_unidade' unidade.id %}" class="btn-filter btn-clear">Limpar Filtros</a>
+          </div>
+        </form>
+        
+        <!-- Botões de Exportação -->
+        <div class="export-buttons" style="margin-top: 1.5rem; text-align: center; padding-top: 1.5rem; border-top: 1px solid #dee2e6;">
+          <h4 style="margin-bottom: 1rem; color: #495057;">📥 Exportar Dados</h4>
+          <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{% url 'export_cercas_excel' unidade.id %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" 
+               class="btn-filter" 
+               style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;"
+               title="Exportar dados filtrados para Excel">
+              Exportar Excel
+            </a>
+            <a href="{% url 'export_cercas_pdf' unidade.id %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" 
+               class="btn-filter" 
+               style="background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;"
+               title="Exportar dados filtrados para PDF">
+              Exportar PDF
+            </a>
+          </div>
+          <p style="margin-top: 0.75rem; color: #6c757d; font-size: 0.85rem;">
+            💡 Os arquivos exportados respeitarão todos os filtros aplicados
+          </p>
+        </div>
+      </div>
+
+      <!-- Tabela de CheckPoints -->
+      <div class="checkpoints-table-container">
+        {% if checkpoints %}
+          <table class="checkpoints-table">
+            <thead>
+              <tr>
+                <th>Cerca</th>
+                <th>Data/Hora Entrada</th>
+                <th>Data/Hora Saída</th>
+                <th>Duração</th>
+                <th>Status</th>
+                <th>Dia da Semana</th>
+                <th>Período</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for checkpoint in checkpoints %}
+                <tr>
+                  <td>
+                    <span class="checkpoint-cerca">
+                      {{ checkpoint.cerca|truncatechars:30 }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if checkpoint.data_entrada %}
+                      <strong>{{ checkpoint.data_entrada|date:"d/m/Y" }}</strong><br>
+                      <small style="color: #6c757d;">{{ checkpoint.data_entrada|date:"H:i:s" }}</small>
+                    {% else %}
+                      <span style="color: #6c757d;">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if checkpoint.data_saida %}
+                      <strong>{{ checkpoint.data_saida|date:"d/m/Y" }}</strong><br>
+                      <small style="color: #6c757d;">{{ checkpoint.data_saida|date:"H:i:s" }}</small>
+                    {% else %}
+                      <span class="checkpoint-status status-ativa">Em Andamento</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if checkpoint.duracao %}
+                      <span class="duracao-badge">{{ checkpoint.duracao }}</span>
+                    {% else %}
+                      <span style="color: #6c757d;">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if checkpoint.data_saida %}
+                      <span class="checkpoint-status status-saida">Finalizada</span>
+                    {% elif checkpoint.data_entrada %}
+                      <span class="checkpoint-status status-ativa">Ativa</span>
+                    {% else %}
+                      <span class="checkpoint-status status-entrada">Iniciada</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if checkpoint.data_entrada %}
+                      <span style="font-weight: 500; color: #495057;">
+                        {% if checkpoint.data_entrada.weekday == 0 %}Segunda-feira
+                        {% elif checkpoint.data_entrada.weekday == 1 %}Terça-feira
+                        {% elif checkpoint.data_entrada.weekday == 2 %}Quarta-feira
+                        {% elif checkpoint.data_entrada.weekday == 3 %}Quinta-feira
+                        {% elif checkpoint.data_entrada.weekday == 4 %}Sexta-feira
+                        {% elif checkpoint.data_entrada.weekday == 5 %}Sábado
+                        {% elif checkpoint.data_entrada.weekday == 6 %}Domingo
+                        {% endif %}
+                      </span>
+                    {% else %}
+                      <span style="color: #6c757d;">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if checkpoint.data_entrada %}
+                      {% if checkpoint.data_entrada.hour >= 6 and checkpoint.data_entrada.hour < 12 %}
+                        <span style="color: #ffc107; font-weight: 500;">🌅 Manhã</span>
+                      {% elif checkpoint.data_entrada.hour >= 12 and checkpoint.data_entrada.hour < 18 %}
+                        <span style="color: #fd7e14; font-weight: 500;">☀️ Tarde</span>
+                      {% elif checkpoint.data_entrada.hour >= 18 and checkpoint.data_entrada.hour < 24 %}
+                        <span style="color: #6f42c1; font-weight: 500;">🌙 Noite</span>
+                      {% else %}
+                        <span style="color: #495057; font-weight: 500;">🌌 Madrugada</span>
+                      {% endif %}
+                    {% else %}
+                      <span style="color: #6c757d;">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="no-data">
+            <h3>📭 Nenhum checkpoint encontrado</h3>
+            <p>Não há registros de passagens por cercas para os filtros aplicados.</p>
+            <p>Tente alterar os critérios de busca ou verificar se existem dados para esta unidade.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Paginação -->
+      {% if is_paginated %}
+        <div class="pagination">
+          {% if page_obj.has_previous %}
+            <a href="?page=1{% if request.GET.cerca %}&cerca={{ request.GET.cerca }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}{% if request.GET.data_fim %}&data_fim={{ request.GET.data_fim }}{% endif %}{% if request.GET.tipo_evento %}&tipo_evento={{ request.GET.tipo_evento }}{% endif %}">&laquo; Primeira</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.cerca %}&cerca={{ request.GET.cerca }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}{% if request.GET.data_fim %}&data_fim={{ request.GET.data_fim }}{% endif %}{% if request.GET.tipo_evento %}&tipo_evento={{ request.GET.tipo_evento }}{% endif %}">‹ Anterior</a>
+          {% endif %}
+          
+          <span class="current">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+          </span>
+          
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.cerca %}&cerca={{ request.GET.cerca }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}{% if request.GET.data_fim %}&data_fim={{ request.GET.data_fim }}{% endif %}{% if request.GET.tipo_evento %}&tipo_evento={{ request.GET.tipo_evento }}{% endif %}">Próxima ›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.cerca %}&cerca={{ request.GET.cerca }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}{% if request.GET.data_fim %}&data_fim={{ request.GET.data_fim }}{% endif %}{% if request.GET.tipo_evento %}&tipo_evento={{ request.GET.tipo_evento }}{% endif %}">Última &raquo;</a>
+          {% endif %}
+        </div>
+        
+        <div style="text-align: center; color: #6c757d; margin: 1rem 0;">
+          Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros
+        </div>
+      {% endif %}
+
+    </main>
+
+    <footer class="footer">
+      <p>&copy; 2025 Umbrella360. CheckPoints - {{ unidade.nm|default:unidade.id }}</p>
+      <p><em>"Rastreamento completo e transparente de cada movimento"</em></p>
+    </footer>
+
+    <!-- NOVO SCRIPT: Funcionalidades do Timeline -->
+    <script>
+      // Dados do timeline vindos do Django
+      let timelineData = {{ timeline_data_json|safe }};
+      let timelineDataOriginal = [...timelineData];
+      let timelineChart = null;
+      
+      // Inicializar timeline quando a página carregar
+      document.addEventListener('DOMContentLoaded', function() {
+        inicializarTimeline();
+        preencherFiltrosCercas();
+        atualizarEstatisticasTimeline();
+      });
+      
+      function inicializarTimeline() {
+        mostrarTimeline('visual');
+        renderizarTimelineVisual();
+      }
+      
+      function preencherFiltrosCercas() {
+        const cercaFilter = document.getElementById('timeline-cerca-filter');
+        const cercas = [...new Set(timelineData.map(item => item.cerca))].sort();
+        
+        cercas.forEach(cerca => {
+          const option = document.createElement('option');
+          option.value = cerca;
+          option.textContent = cerca.length > 30 ? cerca.substring(0, 30) + '...' : cerca;
+          cercaFilter.appendChild(option);
+        });
+      }
+      
+      function mostrarTimeline(tipo) {
+        // Atualizar abas ativas
+        document.querySelectorAll('.timeline-tab').forEach(tab => {
+          tab.classList.remove('active');
+        });
+        document.getElementById(`tab-${tipo}`).classList.add('active');
+        
+        // Esconder todos os containers
+        document.getElementById('timeline-visual-container').style.display = 'none';
+        document.getElementById('timeline-chart-container').style.display = 'none';
+        document.getElementById('timeline-list-container').style.display = 'none';
+        
+        // Mostrar container selecionado
+        switch(tipo) {
+          case 'visual':
+            document.getElementById('timeline-visual-container').style.display = 'block';
+            renderizarTimelineVisual();
+            break;
+          case 'grafico':
+            document.getElementById('timeline-chart-container').style.display = 'block';
+            renderizarGraficoTemporal();
+            break;
+          case 'lista':
+            document.getElementById('timeline-list-container').style.display = 'block';
+            renderizarListaCronologica();
+            break;
+        }
+      }
+      
+      function renderizarTimelineVisual() {
+        const eventsContainer = document.getElementById('timeline-events');
+        eventsContainer.innerHTML = '';
+        
+        if (timelineData.length === 0) {
+          eventsContainer.innerHTML = `
+            <div class="timeline-empty">
+              <h4>📭 Nenhum evento encontrado</h4>
+              <p>Não há registros para o período e filtros selecionados.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Agrupar eventos por data
+        const eventosPorData = {};
+        timelineData.forEach(evento => {
+          if (!eventosPorData[evento.data]) {
+            eventosPorData[evento.data] = [];
+          }
+          eventosPorData[evento.data].push(evento);
+        });
+        
+        // Renderizar eventos agrupados por data
+        Object.keys(eventosPorData).sort().reverse().forEach(data => {
+          const dataFormatada = new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          
+          const dataHeader = document.createElement('div');
+          dataHeader.innerHTML = `
+            <div style="background: #f8f9fa; padding: 0.75rem 1rem; border-radius: 6px; margin: 1.5rem 0 1rem 0; border-left: 4px solid #007bff;">
+              <strong style="color: #2c3e50;">${dataFormatada}</strong>
+              <span style="color: #6c757d; margin-left: 1rem;">${eventosPorData[data].length} evento(s)</span>
+            </div>
+          `;
+          eventsContainer.appendChild(dataHeader);
+          
+          // Ordenar eventos do dia por hora
+          eventosPorData[data].sort((a, b) => b.timestamp - a.timestamp).forEach(evento => {
+            const eventDiv = document.createElement('div');
+            eventDiv.className = `timeline-event ${evento.tipo}`;
+            
+            const badgeClass = `badge-${evento.tipo}`;
+            const tipoTexto = evento.tipo === 'entrada' ? 'Entrada' : 
+                             evento.tipo === 'saida' ? 'Saída' : 'Em Andamento';
+            
+            eventDiv.innerHTML = `
+              <div class="timeline-event-card">
+                <div class="timeline-event-header">
+                  <div class="timeline-event-title">${evento.cerca}</div>
+                  <div class="timeline-event-time">${evento.hora}</div>
+                </div>
+                <div class="timeline-event-details">
+                  <span class="timeline-event-badge ${badgeClass}">${tipoTexto}</span>
+                  <span class="timeline-event-badge" style="background: #e9ecef; color: #495057;">${evento.periodo}</span>
+                  <span class="timeline-event-badge" style="background: #f8f9fa; color: #6c757d;">${evento.dia_semana}</span>
+                  ${evento.duracao ? `<span class="timeline-event-badge" style="background: #d4edda; color: #155724;">⏱️ ${evento.duracao}</span>` : ''}
+                </div>
+              </div>
+            `;
+            
+            eventsContainer.appendChild(eventDiv);
+          });
+        });
+      }
+      
+      function renderizarGraficoTemporal() {
+        const ctx = document.getElementById('timeline-chart');
+        
+        // Destruir gráfico anterior se existir
+        if (timelineChart) {
+          timelineChart.destroy();
+        }
+        
+        if (timelineData.length === 0) {
+          ctx.parentElement.innerHTML = `
+            <div class="timeline-empty">
+              <h4>📊 Nenhum dado para gráfico</h4>
+              <p>Não há registros suficientes para gerar o gráfico temporal.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Preparar dados para o gráfico
+        const dadosGrafico = prepararDadosGrafico();
+        
+        timelineChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            datasets: [
+              {
+                label: 'Entrada',
+                data: dadosGrafico.entradas,
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.4,
+                pointRadius: 6,
+                pointHoverRadius: 8
+              },
+              {
+                label: 'Saída',
+                data: dadosGrafico.saidas,
+                borderColor: '#ffc107',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                tension: 0.4,
+                pointRadius: 6,
+                pointHoverRadius: 8
+              },
+              {
+                label: 'Em Andamento',
+                data: dadosGrafico.ativas,
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                tension: 0.4,
+                pointRadius: 8,
+                pointHoverRadius: 10
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: 'Timeline de Passagens pelas Cercas'
+              },
+              tooltip: {
+                mode: 'nearest',
+                intersect: false,
+                callbacks: {
+                  title: function(context) {
+                    const point = context[0];
+                    return new Date(point.parsed.x).toLocaleString('pt-BR');
+                  },
+                  label: function(context) {
+                    const dataPoint = context.raw;
+                    return `${context.dataset.label}: ${dataPoint.cerca}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                type: 'time',
+                time: {
+                  unit: 'hour',
+                  displayFormats: {
+                    hour: 'DD/MM HH:mm'
+                  }
+                },
+                title: {
+                  display: true,
+                  text: 'Data e Hora'
+                }
+              },
+              y: {
+                display: false
+              }
+            },
+            elements: {
+              point: {
+                radius: 6
+              }
+            }
+          }
+        });
+      }
+      
+      function prepararDadosGrafico() {
+        const entradas = [];
+        const saidas = [];
+        const ativas = [];
+        
+        timelineData.forEach(evento => {
+          const dataPoint = {
+            x: evento.timestamp,
+            y: Math.random(), // Valor Y aleatório para espalhar os pontos
+            cerca: evento.cerca,
+            hora: evento.hora
+          };
+          
+          if (evento.tipo === 'entrada') {
+            entradas.push(dataPoint);
+          } else if (evento.tipo === 'saida') {
+            saidas.push(dataPoint);
+          } else {
+            ativas.push(dataPoint);
+          }
+        });
+        
+        return { entradas, saidas, ativas };
+      }
+      
+      function renderizarListaCronologica() {
+        const listContainer = document.getElementById('timeline-list');
+        listContainer.innerHTML = '';
+        
+        if (timelineData.length === 0) {
+          listContainer.innerHTML = `
+            <div class="timeline-empty">
+              <h4>📋 Nenhum evento encontrado</h4>
+              <p>Não há registros para o período e filtros selecionados.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Criar tabela da lista cronológica
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        
+        table.innerHTML = `
+          <thead style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+            <tr>
+              <th style="padding: 1rem; text-align: left; font-weight: 600;">Data/Hora</th>
+              <th style="padding: 1rem; text-align: left; font-weight: 600;">Cerca</th>
+              <th style="padding: 1rem; text-align: left; font-weight: 600;">Tipo</th>
+              <th style="padding: 1rem; text-align: left; font-weight: 600;">Período</th>
+              <th style="padding: 1rem; text-align: left; font-weight: 600;">Duração</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        `;
+        
+        const tbody = table.querySelector('tbody');
+        
+        // Ordenar por timestamp (mais recente primeiro)
+        timelineData.sort((a, b) => b.timestamp - a.timestamp).forEach((evento, index) => {
+          const row = document.createElement('tr');
+          row.style.borderBottom = '1px solid #e9ecef';
+          if (index % 2 === 0) {
+            row.style.backgroundColor = '#fafafa';
+          }
+          
+          const tipoTexto = evento.tipo === 'entrada' ? 'Entrada' : 
+                           evento.tipo === 'saida' ? 'Saída' : 'Em Andamento';
+          const badgeClass = `badge-${evento.tipo}`;
+          
+          row.innerHTML = `
+            <td style="padding: 1rem;">${evento.data} ${evento.hora}</td>
+            <td style="padding: 1rem;">${evento.cerca}</td>
+            <td style="padding: 1rem;"><span class="timeline-event-badge ${badgeClass}">${tipoTexto}</span></td>
+            <td style="padding: 1rem;">${evento.periodo}</td>
+            <td style="padding: 1rem;">${evento.duracao || '-'}</td>
+          `;
+          
+          tbody.appendChild(row);
+        });
+        
+        listContainer.appendChild(table);
+      }
+      
+      function filtrarTimeline() {
+        const periodo = document.getElementById('timeline-periodo').value;
+        const cerca = document.getElementById('timeline-cerca-filter').value;
+        const tipo = document.getElementById('timeline-tipo-filter').value;
+        
+        // Resetar dados
+        timelineData = [...timelineDataOriginal];
+        
+        // Aplicar filtros
+        const agora = new Date();
+        const dataLimite = new Date(agora.getTime() - (periodo * 24 * 60 * 60 * 1000));
+        
+        timelineData = timelineData.filter(evento => {
+          const dataEvento = new Date(evento.timestamp);
+          
+          // Filtro de período
+          if (dataEvento < dataLimite) return false;
+          
+          // Filtro de cerca
+          if (cerca && !evento.cerca.toLowerCase().includes(cerca.toLowerCase())) return false;
+          
+          // Filtro de tipo
+          if (tipo && evento.tipo !== tipo) return false;
+          
+          return true;
+        });
+        
+        // Atualizar visualização
+        atualizarEstatisticasTimeline();
+        const tabAtiva = document.querySelector('.timeline-tab.active');
+        if (tabAtiva) {
+          const tipoAtivo = tabAtiva.id.replace('tab-', '');
+          mostrarTimeline(tipoAtivo);
+        }
+      }
+      
+      function atualizarEstatisticasTimeline() {
+        const totalEventos = timelineData.length;
+        const cercasUnicas = [...new Set(timelineData.map(evento => evento.cerca))];
+        
+        // Calcular duração total
+        let duracaoTotal = 0;
+        timelineData.forEach(evento => {
+          if (evento.duracao) {
+            const duracao = evento.duracao.match(/(\d+):(\d+):(\d+)/);
+            if (duracao) {
+              duracaoTotal += parseInt(duracao[1]) * 3600 + parseInt(duracao[2]) * 60 + parseInt(duracao[3]);
+            }
+          }
+        });
+        
+        const duracaoFormatada = formatarDuracao(duracaoTotal);
+        
+        // Cerca mais visitada
+        const contadorCercas = {};
+        timelineData.forEach(evento => {
+          contadorCercas[evento.cerca] = (contadorCercas[evento.cerca] || 0) + 1;
+        });
+        
+        const cercaMaisVisitada = Object.keys(contadorCercas).reduce((a, b) => 
+          contadorCercas[a] > contadorCercas[b] ? a : b, '-');
+        
+        // Atualizar estatísticas na tela
+        document.getElementById('stat-eventos-timeline').textContent = totalEventos;
+        document.getElementById('stat-cercas-timeline').textContent = cercasUnicas.length;
+        document.getElementById('stat-duracao-timeline').textContent = duracaoFormatada;
+        document.getElementById('stat-mais-visitada').textContent = 
+          cercaMaisVisitada.length > 15 ? cercaMaisVisitada.substring(0, 15) + '...' : cercaMaisVisitada;
+      }
+      
+      function formatarDuracao(segundos) {
+        const horas = Math.floor(segundos / 3600);
+        const minutos = Math.floor((segundos % 3600) / 60);
+        
+        if (horas > 0) {
+          return `${horas}h ${minutos}min`;
+        } else {
+          return `${minutos} min`;
+        }
+      }
+      
+      function atualizarTimeline() {
+        // Recarregar a página para buscar dados atualizados
+        window.location.reload();
+      }
+      
+      function exportarTimeline() {
+        // Criar CSV com dados do timeline
+        const headers = ['Data', 'Hora', 'Cerca', 'Tipo', 'Período', 'Dia da Semana', 'Duração'];
+        const csvContent = [headers.join(',')];
+        
+        timelineData.forEach(evento => {
+          const row = [
+            evento.data,
+            evento.hora,
+            `"${evento.cerca}"`,
+            evento.tipo,
+            evento.periodo,
+            evento.dia_semana,
+            evento.duracao || ''
+          ];
+          csvContent.push(row.join(','));
+        });
+        
+        const csvString = csvContent.join('\n');
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        
+        if (link.download !== undefined) {
+          const url = URL.createObjectURL(blob);
+          link.setAttribute('href', url);
+          link.setAttribute('download', `timeline_cercas_{{ unidade.id }}_${new Date().toISOString().split('T')[0]}.csv`);
+          link.style.visibility = 'hidden';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      }
+    </script>
+  </body>
+</html>

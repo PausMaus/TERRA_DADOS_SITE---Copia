@@ -585,34 +585,13 @@
           
           <!-- Seletor de Data -->
           <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
-            <button onclick="navegarDia(-1)" 
-                    style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 0.5rem;"
-                    title="Dia anterior">
-              ◀ Anterior
-            </button>
-            
-            <div style="display: flex; align-items: center; gap: 1rem;">
-              <label for="data_especifica" style="font-weight: 600; color: #495057;">Selecione uma data:</label>
-              <input type="date" 
-                     id="data_especifica" 
-                     style="padding: 0.75rem; border: 2px solid #ced4da; border-radius: 8px; background: white; color: #495057; font-size: 0.95rem;"
-                     onchange="filtrarPorDiaTimeline(this.value)">
-            </div>
-            
-            <button onclick="navegarDia(1)" 
-                    style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 0.5rem;"
-                    title="Próximo dia">
-              Próximo ▶
-            </button>
-            
-            <button onclick="irParaHoje()" 
-                    style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;"
-                    title="Ir para hoje">
-              📅 Hoje
-            </button>
-            
+            <label for="data_especifica" style="font-weight: 600; color: #495057;">Selecione uma data:</label>
+            <input type="date" 
+                   id="data_especifica" 
+                   style="padding: 0.75rem; border: 2px solid #ced4da; border-radius: 8px; background: white; color: #495057; font-size: 0.95rem;"
+                   onchange="filtrarPorDiaTimeline(this.value)">
             <button onclick="limparFiltroDataTimeline()" 
-                    style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                    style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
               Limpar
             </button>
           </div>
@@ -757,6 +736,7 @@
             headersRow.innerHTML += `
               <th style="padding: 1rem; text-align: center; font-weight: 600; min-width: 180px; word-break: break-word; font-size: 0.85rem;" title="${evento.cerca} - Entrada: ${evento.horario_entrada}">
                 <div style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.25rem;">${tituloColuna}</div>
+                <div style="font-size: 0.75rem; opacity: 0.8; font-weight: 400;">📍 ${evento.horario_entrada}</div>
               </th>
             `;
           });
@@ -782,7 +762,7 @@
             color: #135200;
             font-size: 1rem;
           `;
-          entradaLabelCell.innerHTML = '<br><strong>ENTRADAS</strong>';
+          entradaLabelCell.innerHTML = '🟢<br><strong>ENTRADAS</strong>';
           entradaRow.appendChild(entradaLabelCell);
 
           // Células de entrada para cada evento único
@@ -808,7 +788,7 @@
                 justify-content: center;
                 align-items: center;
               ">
-                <div style="font-size: 1.1rem; margin-bottom: 0.25rem;"> ${evento.horario_entrada}</div>
+                <div style="font-size: 1.1rem; margin-bottom: 0.25rem;">⏰ ${evento.horario_entrada}</div>
                 ${status}
               </div>
             `;
@@ -835,7 +815,7 @@
             color: #1565c0;
             font-size: 0.9rem;
           `;
-          timelineLabelCell.innerHTML = '<br><strong>TIMELINE</strong>';
+          timelineLabelCell.innerHTML = '📍<br><strong>TIMELINE</strong>';
           timelineRow.appendChild(timelineLabelCell);
 
           // Células da timeline para cada evento
@@ -967,7 +947,7 @@
             color: #ad4e00;
             font-size: 1rem;
           `;
-          saidaLabelCell.innerHTML = '<br><strong>SAÍDAS</strong>';
+          saidaLabelCell.innerHTML = '🟠<br><strong>SAÍDAS</strong>';
           saidaRow.appendChild(saidaLabelCell);
 
           // Células de saída para cada evento único
@@ -992,7 +972,7 @@
                   justify-content: center;
                   align-items: center;
                 ">
-                  <div style="font-size: 1.1rem;"> ${evento.horario_saida}</div>
+                  <div style="font-size: 1.1rem;">⏰ ${evento.horario_saida}</div>
                 </div>
               `;
             } else {
@@ -1059,31 +1039,6 @@
           `;
         }
 
-        // Função para navegar entre dias
-        function navegarDia(direcao) {
-          const inputData = document.getElementById('data_especifica');
-          let dataAtual = inputData.value;
-          
-          if (!dataAtual) {
-            // Se não há data selecionada, usar hoje
-            dataAtual = new Date().toISOString().split('T')[0];
-          }
-          
-          const data = new Date(dataAtual);
-          data.setDate(data.getDate() + direcao);
-          
-          const novaData = data.toISOString().split('T')[0];
-          inputData.value = novaData;
-          filtrarPorDiaTimeline(novaData);
-        }
-
-        // Função para ir para hoje
-        function irParaHoje() {
-          const hoje = new Date().toISOString().split('T')[0];
-          document.getElementById('data_especifica').value = hoje;
-          filtrarPorDiaTimeline(hoje);
-        }
-
         function limparFiltroDataTimeline() {
           document.getElementById('data_especifica').value = '';
           document.getElementById('daily-timeline-container').style.display = 'none';
@@ -1094,10 +1049,7 @@
         }
 
         function formatarDataTimeline(dataString) {
-          // Criar data corretamente a partir da string YYYY-MM-DD
-          const partes = dataString.split('-');
-          const data = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
-          
+          const data = new Date(dataString);
           const opcoes = { 
             weekday: 'long', 
             year: 'numeric', 

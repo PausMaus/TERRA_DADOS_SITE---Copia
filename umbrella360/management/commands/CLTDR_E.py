@@ -12,18 +12,13 @@ from dataclasses import dataclass
 from tqdm import tqdm
 import decimal
 
+from django.utils import timezone
+from datetime import timedelta
+import pytz
 
 
 deposito = rf"umbrella360\deposito"
 
-#empresas
-
-WIALON_TOKEN_BRAS = "517e0e42b9a966f628a9b8cffff3ffc3F57FA748F075501F5667A26AFA278AC983E1C616"
-
-WIALON_TOKEN_PLAC = "82fee29da11ea1312f1c8235247a0d82DC991707A4435C60FE7FFB27BD0D0F32BF59B709"
-
-WIALON_TOKEN_SF = "5a35fb756820f83c975a1bc846a35a43C16F97789A714DEC2BC5F4D3C6D26C06CC35CAAD"
-#
 
 WIALON_TOKEN_UMBR = "fcc5baae18cdbea20200265b6b8a4af142DD8BF34CF94701039765308B2527031174B00A"
 #*********#
@@ -64,7 +59,7 @@ class Command(BaseCommand):
         # Limpa os dados antigos
         Infrações.objects.all().delete()
         CheckPoint.objects.all().delete()
-        Unidade.objects.all().delete()
+        #Unidade.objects.all().delete()
         Viagem_Base.objects.all().delete()
 
     def atualizar_01(self):
@@ -83,10 +78,14 @@ class Command(BaseCommand):
 
             #busca relatórios
             relatórios = Wialon.buscadora_reports(sid)
+            print(f'Relatórios encontrados: {colored(len(relatórios), "green")}')
+            relatórios = json.dumps(relatórios, indent=4)
+            print(f'Relatórios: {relatórios}')
+            #-------
             #salva os relatorios em .txt no deposito
-            with open(f'{deposito}/{empresa.nome}_relatorios.txt', 'w') as f:
-                f.write(json.dumps(relatórios, indent=4))
-
+            #with open(f'{deposito}/{empresa.nome}_relatorios.txt', 'w') as f:
+            #    f.write(json.dumps(relatórios, indent=4))
+            #-------
             unidades = Wialon.unidades_simples(sid)
             print(f'Unidades encontradas: {colored(len(unidades), "green")}')
             #-------
@@ -168,7 +167,7 @@ class Command(BaseCommand):
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
             print(processamento_df)
-            processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]CERCAS.xlsx', index=False)
+            #processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]CERCAS.xlsx', index=False)
             self.update_or_create_checkpoint(processamento_df)
             Wialon.clean_up_result(sid)
 
@@ -215,7 +214,9 @@ class Command(BaseCommand):
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
             print(processamento_df)
-            processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]INFRA.xlsx', index=False)
+            #-----
+            #processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]INFRA.xlsx', index=False)
+            #-----
             self.update_or_create_infração(processamento_df)
             Wialon.clean_up_result(sid)
 
@@ -997,9 +998,7 @@ class Command(BaseCommand):
             if pd.isna(valor_datetime) or valor_datetime == '' or valor_datetime is None:
                 return None
             
-            from django.utils import timezone
-            from datetime import timedelta
-            import pytz
+
             
             # Se já é um datetime do pandas
             if isinstance(valor_datetime, pd.Timestamp):

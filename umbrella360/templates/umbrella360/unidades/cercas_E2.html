@@ -552,6 +552,8 @@
         {% endif %}
       </div>
 
+      
+
       <!-- Paginação -->
       {% if is_paginated %}
         <div class="pagination">
@@ -574,6 +576,198 @@
           Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros
         </div>
       {% endif %}
+
+
+      <!-- Tabela Secundária - Resumo por Dia -->
+      <div class="daily-summary-section" style="margin-top: 3rem;">
+        <div style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 15px; padding: 2rem; border: 1px solid #dee2e6;">
+          <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50;">📅 Resumo de Passagens por Dia Específico</h3>
+          
+          <!-- Seletor de Data -->
+          <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+            <label for="data_especifica" style="font-weight: 600; color: #495057;">Selecione uma data:</label>
+            <input type="date" 
+                   id="data_especifica" 
+                   style="padding: 0.75rem; border: 2px solid #ced4da; border-radius: 8px; background: white; color: #495057; font-size: 0.95rem;"
+                   onchange="filtrarPorDia(this.value)">
+            <button onclick="limparFiltroData()" 
+                    style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+              Limpar
+            </button>
+          </div>
+
+          <!-- Tabela de Resumo Diário -->
+          <div id="daily-table-container" style="display: none;">
+            <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+                <thead style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
+                  <tr>
+                    <th style="padding: 1rem; text-align: left; font-weight: 600;">Cerca</th>
+                    <th style="padding: 1rem; text-align: center; font-weight: 600;">Hora Entrada</th>
+                    <th style="padding: 1rem; text-align: center; font-weight: 600;">Hora Saída</th>
+                    <th style="padding: 1rem; text-align: center; font-weight: 600;">Duração</th>
+                    <th style="padding: 1rem; text-align: center; font-weight: 600;">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="daily-table-body">
+                  <!-- Dados preenchidos via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Estatísticas do Dia -->
+            <div id="daily-stats" style="margin-top: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+              <!-- Estatísticas preenchidas via JavaScript -->
+            </div>
+          </div>
+
+          <!-- Mensagem quando nenhuma data está selecionada -->
+          <div id="no-date-selected" style="text-align: center; padding: 2rem; color: #6c757d;">
+            <p style="margin: 0; font-size: 1.1rem;">📅 Selecione uma data para ver o resumo das passagens do dia</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- JavaScript para funcionalidade da tabela diária -->
+      <script>
+        // Dados dos checkpoints (passados do Django)
+        const checkpointsData = [
+          {% for checkpoint in checkpoints %}
+          {
+            cerca: "{{ checkpoint.cerca|escapejs }}",
+            data_entrada: "{{ checkpoint.data_entrada|date:'Y-m-d H:i:s'|default:'' }}",
+            data_saida: "{{ checkpoint.data_saida|date:'Y-m-d H:i:s'|default:'' }}",
+            duracao: "{{ checkpoint.duracao|default:'' }}",
+            data_entrada_date: "{{ checkpoint.data_entrada|date:'Y-m-d'|default:'' }}"
+          },
+          {% endfor %}
+        ];
+
+        function filtrarPorDia(dataSelecionada) {
+          if (!dataSelecionada) {
+            document.getElementById('daily-table-container').style.display = 'none';
+            document.getElementById('no-date-selected').style.display = 'block';
+            return;
+          }
+
+          // Filtrar checkpoints do dia selecionado
+          const checkpointsDoDia = checkpointsData.filter(cp => 
+            cp.data_entrada_date === dataSelecionada
+          );
+
+          if (checkpointsDoDia.length === 0) {
+            document.getElementById('daily-table-container').style.display = 'none';
+            document.getElementById('no-date-selected').innerHTML = `
+              <p style="margin: 0; font-size: 1.1rem; color: #e74c3c;">
+                📭 Nenhum checkpoint encontrado para a data ${formatarData(dataSelecionada)}
+              </p>
+            `;
+            document.getElementById('no-date-selected').style.display = 'block';
+            return;
+          }
+
+          // Mostrar tabela e ocultar mensagem
+          document.getElementById('daily-table-container').style.display = 'block';
+          document.getElementById('no-date-selected').style.display = 'none';
+
+          // Preencher tabela
+          const tbody = document.getElementById('daily-table-body');
+          tbody.innerHTML = '';
+
+          checkpointsDoDia.forEach((checkpoint, index) => {
+            const horaEntrada = checkpoint.data_entrada ? 
+              new Date(checkpoint.data_entrada).toLocaleTimeString('pt-BR') : '-';
+            const horaSaida = checkpoint.data_saida ? 
+              new Date(checkpoint.data_saida).toLocaleTimeString('pt-BR') : '-';
+            
+            let status, statusClass;
+            if (checkpoint.data_saida) {
+              status = 'Finalizada';
+              statusClass = 'status-saida';
+            } else if (checkpoint.data_entrada) {
+              status = 'Ativa';
+              statusClass = 'status-ativa';
+            } else {
+              status = 'Iniciada';
+              statusClass = 'status-entrada';
+            }
+
+            const row = `
+              <tr style="border-bottom: 1px solid #e9ecef; ${index % 2 === 0 ? 'background: #f8f9fa;' : 'background: white;'}">
+                <td style="padding: 1rem;">
+                  <span style="background: linear-gradient(135deg, #e7f3ff, #cce7ff); color: #0066cc; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.875rem; font-weight: 500;">
+                    ${checkpoint.cerca.length > 25 ? checkpoint.cerca.substring(0, 25) + '...' : checkpoint.cerca}
+                  </span>
+                </td>
+                <td style="padding: 1rem; text-align: center; font-weight: 500;">
+                  ${horaEntrada}
+                </td>
+                <td style="padding: 1rem; text-align: center; font-weight: 500;">
+                  ${horaSaida}
+                </td>
+                <td style="padding: 1rem; text-align: center;">
+                  ${checkpoint.duracao ? 
+                    `<span style="background: linear-gradient(135deg, #e8f5e8, #d1edcc); color: #28a745; padding: 0.3rem 0.7rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">${checkpoint.duracao}</span>` : 
+                    '<span style="color: #6c757d;">-</span>'
+                  }
+                </td>
+                <td style="padding: 1rem; text-align: center;">
+                  <span class="checkpoint-status ${statusClass}" style="padding: 0.3rem 0.7rem; border-radius: 15px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">
+                    ${status}
+                  </span>
+                </td>
+              </tr>
+            `;
+            tbody.innerHTML += row;
+          });
+
+          // Calcular e mostrar estatísticas do dia
+          const totalPassagens = checkpointsDoDia.length;
+          const cercasUnicas = [...new Set(checkpointsDoDia.map(cp => cp.cerca))].length;
+          const finalizadas = checkpointsDoDia.filter(cp => cp.data_saida).length;
+          const ativas = checkpointsDoDia.filter(cp => cp.data_entrada && !cp.data_saida).length;
+
+          document.getElementById('daily-stats').innerHTML = `
+            <div style="background: white; padding: 1.5rem; border-radius: 10px; text-align: center; border: 1px solid #e9ecef; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+              <div style="font-size: 2rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">${totalPassagens}</div>
+              <div style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">Total de Passagens</div>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 10px; text-align: center; border: 1px solid #e9ecef; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+              <div style="font-size: 2rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">${cercasUnicas}</div>
+              <div style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">Cercas Diferentes</div>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 10px; text-align: center; border: 1px solid #e9ecef; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+              <div style="font-size: 2rem; font-weight: 700; color: #28a745; margin: 0.5rem 0;">${finalizadas}</div>
+              <div style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">Finalizadas</div>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 10px; text-align: center; border: 1px solid #e9ecef; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+              <div style="font-size: 2rem; font-weight: 700; color: #007bff; margin: 0.5rem 0;">${ativas}</div>
+              <div style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">Ativas</div>
+            </div>
+          `;
+        }
+
+        function limparFiltroData() {
+          document.getElementById('data_especifica').value = '';
+          document.getElementById('daily-table-container').style.display = 'none';
+          document.getElementById('no-date-selected').style.display = 'block';
+          document.getElementById('no-date-selected').innerHTML = `
+            <p style="margin: 0; font-size: 1.1rem;">📅 Selecione uma data para ver o resumo das passagens do dia</p>
+          `;
+        }
+
+        function formatarData(dataString) {
+          const data = new Date(dataString);
+          return data.toLocaleDateString('pt-BR');
+        }
+
+        // Definir data de hoje como padrão (opcional)
+        document.addEventListener('DOMContentLoaded', function() {
+          const hoje = new Date().toISOString().split('T')[0];
+          document.getElementById('data_especifica').value = hoje;
+          filtrarPorDia(hoje);
+        });
+      </script>
 
     </main>
 

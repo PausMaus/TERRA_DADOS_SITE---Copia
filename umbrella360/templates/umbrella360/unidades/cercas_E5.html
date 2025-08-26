@@ -552,6 +552,8 @@
         {% endif %}
       </div>
 
+      
+
       <!-- Paginação -->
       {% if is_paginated %}
         <div class="pagination">
@@ -574,6 +576,369 @@
           Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros
         </div>
       {% endif %}
+
+
+      <!-- Tabela Secundária - Resumo por Dia -->
+      <div class="daily-summary-section" style="margin-top: 3rem;">
+        <div style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 15px; padding: 2rem; border: 1px solid #dee2e6;">
+          <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50;">📅 Timeline de Cercas por Dia</h3>
+          
+          <!-- Seletor de Data -->
+          <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+            <label for="data_especifica" style="font-weight: 600; color: #495057;">Selecione uma data:</label>
+            <input type="date" 
+                   id="data_especifica" 
+                   style="padding: 0.75rem; border: 2px solid #ced4da; border-radius: 8px; background: white; color: #495057; font-size: 0.95rem;"
+                   onchange="filtrarPorDiaTimeline(this.value)">
+            <button onclick="limparFiltroDataTimeline()" 
+                    style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+              Limpar
+            </button>
+          </div>
+
+          <!-- Tabela Timeline (Cercas como Headers) -->
+          <div id="daily-timeline-container" style="display: none;">
+            <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+              <!-- Cabeçalho da Timeline -->
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; text-align: center;">
+                <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">🕒 Timeline de Passagens</h4>
+                <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.9;" id="timeline-date">Data selecionada</p>
+              </div>
+
+              <!-- Tabela com Cercas como Colunas -->
+              <div style="overflow-x: auto; max-width: 100%;">
+                <table style="width: 100%; min-width: 800px; border-collapse: collapse; font-size: 0.9rem;" id="timeline-table">
+                  <thead style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
+                    <tr id="timeline-headers">
+                      <th style="padding: 1rem; text-align: center; font-weight: 600; min-width: 120px; position: sticky; left: 0; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); z-index: 2;">Tipo de Evento</th>
+                      <!-- Cercas serão adicionadas dinamicamente aqui -->
+                    </tr>
+                  </thead>
+                  <tbody id="timeline-body">
+                    <!-- Dados preenchidos via JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <!-- Legenda -->
+            <div style="margin-top: 1rem; padding: 1rem; background: white; border-radius: 10px; border: 1px solid #dee2e6;">
+              <h5 style="margin: 0 0 0.75rem 0; color: #495057; text-align: center;">📋 Legenda</h5>
+              <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; font-size: 0.85rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div style="width: 20px; height: 20px; background: linear-gradient(135deg, #d1f2eb, #a3e9d0); border: 2px solid #52c41a; border-radius: 4px;"></div>
+                  <span>Entrada na Cerca</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div style="width: 20px; height: 20px; background: linear-gradient(135deg, #fff2e6, #ffe0cc); border: 2px solid #fa8c16; border-radius: 4px;"></div>
+                  <span>Saída da Cerca</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div style="width: 20px; height: 20px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border: 2px solid #6c757d; border-radius: 4px;"></div>
+                  <span>Sem Evento</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Estatísticas do Dia -->
+            <div id="daily-timeline-stats" style="margin-top: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+              <!-- Estatísticas preenchidas via JavaScript -->
+            </div>
+          </div>
+
+          <!-- Mensagem quando nenhuma data está selecionada -->
+          <div id="no-date-timeline-selected" style="text-align: center; padding: 2rem; color: #6c757d;">
+            <p style="margin: 0; font-size: 1.1rem;">📅 Selecione uma data para ver a timeline das cercas</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- JavaScript para funcionalidade da timeline -->
+      <script>
+        // Dados dos checkpoints (passados do Django)
+        const checkpointsData = [
+          {% for checkpoint in checkpoints %}
+          {
+            cerca: "{{ checkpoint.cerca|escapejs }}",
+            data_entrada: "{{ checkpoint.data_entrada|date:'Y-m-d H:i:s'|default:'' }}",
+            data_saida: "{{ checkpoint.data_saida|date:'Y-m-d H:i:s'|default:'' }}",
+            duracao: "{{ checkpoint.duracao|default:'' }}",
+            data_entrada_date: "{{ checkpoint.data_entrada|date:'Y-m-d'|default:'' }}"
+          },
+          {% endfor %}
+        ];
+
+        function filtrarPorDiaTimeline(dataSelecionada) {
+          if (!dataSelecionada) {
+            document.getElementById('daily-timeline-container').style.display = 'none';
+            document.getElementById('no-date-timeline-selected').style.display = 'block';
+            return;
+          }
+
+          // Filtrar checkpoints do dia selecionado
+          const checkpointsDoDia = checkpointsData.filter(cp => 
+            cp.data_entrada_date === dataSelecionada
+          );
+
+          if (checkpointsDoDia.length === 0) {
+            document.getElementById('daily-timeline-container').style.display = 'none';
+            document.getElementById('no-date-timeline-selected').innerHTML = `
+              <p style="margin: 0; font-size: 1.1rem; color: #e74c3c;">
+                📭 Nenhum checkpoint encontrado para a data ${formatarDataTimeline(dataSelecionada)}
+              </p>
+            `;
+            document.getElementById('no-date-timeline-selected').style.display = 'block';
+            return;
+          }
+
+          // Mostrar container e ocultar mensagem
+          document.getElementById('daily-timeline-container').style.display = 'block';
+          document.getElementById('no-date-timeline-selected').style.display = 'none';
+          
+          // Atualizar data no cabeçalho
+          document.getElementById('timeline-date').textContent = formatarDataTimeline(dataSelecionada);
+
+          // Criar lista de eventos únicos (cada passagem por cerca é um evento único)
+          const eventosUnicos = [];
+          checkpointsDoDia.forEach((cp, index) => {
+            if (cp.data_entrada) {
+              eventosUnicos.push({
+                id: `evento_${index}`,
+                cerca: cp.cerca,
+                horario_entrada: new Date(cp.data_entrada).toTimeString().substring(0, 5),
+                horario_saida: cp.data_saida ? new Date(cp.data_saida).toTimeString().substring(0, 5) : null,
+                duracao: cp.duracao,
+                data_entrada: cp.data_entrada,
+                data_saida: cp.data_saida,
+                ordem: new Date(cp.data_entrada).getTime()
+              });
+            }
+          });
+
+          // Ordenar eventos por horário de entrada
+          eventosUnicos.sort((a, b) => a.ordem - b.ordem);
+          
+          // Criar headers da tabela - cada evento é uma coluna única
+          const headersRow = document.getElementById('timeline-headers');
+          headersRow.innerHTML = `
+            <th style="padding: 1rem; text-align: center; font-weight: 600; min-width: 120px; position: sticky; left: 0; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); z-index: 2; border-right: 2px solid rgba(255,255,255,0.3);">Tipo de Evento</th>
+          `;
+          
+          eventosUnicos.forEach((evento, index) => {
+            const cercaTruncada = evento.cerca.length > 15 ? evento.cerca.substring(0, 12) + '...' : evento.cerca;
+            const sequencia = eventosUnicos.filter(e => e.cerca === evento.cerca).indexOf(evento) + 1;
+            const totalSequencias = eventosUnicos.filter(e => e.cerca === evento.cerca).length;
+            
+            const tituloColuna = totalSequencias > 1 ? 
+              `${cercaTruncada} (${sequencia}/${totalSequencias})` : 
+              cercaTruncada;
+            
+            headersRow.innerHTML += `
+              <th style="padding: 1rem; text-align: center; font-weight: 600; min-width: 180px; word-break: break-word; font-size: 0.85rem;" title="${evento.cerca} - Entrada: ${evento.horario_entrada}">
+                <div style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.25rem;">${tituloColuna}</div>
+                <div style="font-size: 0.75rem; opacity: 0.8; font-weight: 400;">📍 ${evento.horario_entrada}</div>
+              </th>
+            `;
+          });
+
+          // Preencher tbody com duas linhas fixas
+          const tbody = document.getElementById('timeline-body');
+          tbody.innerHTML = '';
+
+          // Linha de Entradas
+          const entradaRow = document.createElement('tr');
+          entradaRow.style.cssText = 'border-bottom: 1px solid #e9ecef; background: #f8f9fa;';
+          
+          const entradaLabelCell = document.createElement('td');
+          entradaLabelCell.style.cssText = `
+            padding: 1rem; 
+            text-align: center; 
+            font-weight: 700; 
+            background: linear-gradient(135deg, #d1f2eb, #a3e9d0); 
+            position: sticky; 
+            left: 0; 
+            border-right: 2px solid #e9ecef;
+            z-index: 1;
+            color: #135200;
+            font-size: 1rem;
+          `;
+          entradaLabelCell.innerHTML = '🟢<br><strong>ENTRADAS</strong>';
+          entradaRow.appendChild(entradaLabelCell);
+
+          // Células de entrada para cada evento único
+          eventosUnicos.forEach(evento => {
+            const cell = document.createElement('td');
+            cell.style.cssText = 'padding: 0.75rem; text-align: center; vertical-align: middle; min-height: 80px;';
+            
+            const duracao = evento.duracao ? `<div style="font-size: 0.7rem; color: #28a745; margin-top: 0.25rem;">⏱️ ${evento.duracao}</div>` : '';
+            const status = !evento.data_saida ? '<div style="font-size: 0.7rem; color: #007bff; margin-top: 0.25rem;">🔄 Em andamento</div>' : '';
+            
+            cell.innerHTML = `
+              <div style="
+                background: linear-gradient(135deg, #d1f2eb, #a3e9d0);
+                border: 2px solid #52c41a;
+                color: #135200;
+                padding: 0.75rem;
+                border-radius: 10px;
+                font-size: 0.85rem;
+                font-weight: 600;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+                min-height: 60px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+              ">
+                <div style="font-size: 1.1rem; margin-bottom: 0.25rem;">⏰ ${evento.horario_entrada}</div>
+                ${duracao}${status}
+              </div>
+            `;
+            
+            entradaRow.appendChild(cell);
+          });
+
+          tbody.appendChild(entradaRow);
+
+          // Linha de Saídas
+          const saidaRow = document.createElement('tr');
+          saidaRow.style.cssText = 'border-bottom: 1px solid #e9ecef; background: white;';
+          
+          const saidaLabelCell = document.createElement('td');
+          saidaLabelCell.style.cssText = `
+            padding: 1rem; 
+            text-align: center; 
+            font-weight: 700; 
+            background: linear-gradient(135deg, #fff2e6, #ffe0cc); 
+            position: sticky; 
+            left: 0; 
+            border-right: 2px solid #e9ecef;
+            z-index: 1;
+            color: #ad4e00;
+            font-size: 1rem;
+          `;
+          saidaLabelCell.innerHTML = '🟠<br><strong>SAÍDAS</strong>';
+          saidaRow.appendChild(saidaLabelCell);
+
+          // Células de saída para cada evento único
+          eventosUnicos.forEach(evento => {
+            const cell = document.createElement('td');
+            cell.style.cssText = 'padding: 0.75rem; text-align: center; vertical-align: middle; min-height: 80px;';
+            
+            if (evento.horario_saida) {
+              cell.innerHTML = `
+                <div style="
+                  background: linear-gradient(135deg, #fff2e6, #ffe0cc);
+                  border: 2px solid #fa8c16;
+                  color: #ad4e00;
+                  padding: 0.75rem;
+                  border-radius: 10px;
+                  font-size: 0.85rem;
+                  font-weight: 600;
+                  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+                  min-height: 60px;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                ">
+                  <div style="font-size: 1.1rem;">⏰ ${evento.horario_saida}</div>
+                </div>
+              `;
+            } else {
+              cell.innerHTML = `
+                <div style="
+                  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+                  border: 2px solid #2196f3;
+                  color: #1565c0;
+                  padding: 0.75rem;
+                  border-radius: 10px;
+                  font-size: 0.8rem;
+                  font-weight: 600;
+                  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+                  min-height: 60px;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                  opacity: 0.8;
+                ">
+                  <div style="font-size: 1rem;">🔄</div>
+                  <div style="font-size: 0.75rem; margin-top: 0.25rem;">Aguardando</div>
+                </div>
+              `;
+            }
+            
+            saidaRow.appendChild(cell);
+          });
+
+          tbody.appendChild(saidaRow);
+
+          // Calcular e mostrar estatísticas
+          const totalPassagens = eventosUnicos.length;
+          const cercasUnicas = [...new Set(eventosUnicos.map(e => e.cerca))];
+          const totalCercas = cercasUnicas.length;
+          const totalEntradas = eventosUnicos.length;
+          const totalSaidas = eventosUnicos.filter(e => e.horario_saida).length;
+          const emAndamento = totalEntradas - totalSaidas;
+
+          // Calcular estatística de cercas mais visitadas
+          const visitasPorCerca = {};
+          eventosUnicos.forEach(evento => {
+            visitasPorCerca[evento.cerca] = (visitasPorCerca[evento.cerca] || 0) + 1;
+          });
+          const cercaMaisVisitada = Object.entries(visitasPorCerca).reduce((a, b) => a[1] > b[1] ? a : b);
+
+          document.getElementById('daily-timeline-stats').innerHTML = `
+            <div style="background: white; padding: 1.25rem; border-radius: 10px; text-align: center; border: 1px solid #e9ecef; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+              <div style="font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">${totalPassagens}</div>
+              <div style="color: #6c757d; font-size: 0.85rem; font-weight: 500; text-transform: uppercase;">Eventos Únicos</div>
+            </div>
+            <div style="background: white; padding: 1.25rem; border-radius: 10px; text-align: center; border: 1px solid #e9ecef; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+              <div style="font-size: 1.8rem; font-weight: 700; color: #52c41a; margin: 0.5rem 0;">${totalEntradas}</div>
+              <div style="color: #6c757d; font-size: 0.85rem; font-weight: 500; text-transform: uppercase;">Entradas</div>
+            </div>
+            <div style="background: white; padding: 1.25rem; border-radius: 10px; text-align: center; border: 1px solid #e9ecef; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+              <div style="font-size: 1.8rem; font-weight: 700; color: #fa8c16; margin: 0.5rem 0;">${totalSaidas}</div>
+              <div style="color: #6c757d; font-size: 0.85rem; font-weight: 500; text-transform: uppercase;">Saídas</div>
+            </div>
+            <div style="background: white; padding: 1.25rem; border-radius: 10px; text-align: center; border: 1px solid #e9ecef; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+              <div style="font-size: 1.8rem; font-weight: 700; color: #007bff; margin: 0.5rem 0;">${emAndamento}</div>
+              <div style="color: #6c757d; font-size: 0.85rem; font-weight: 500; text-transform: uppercase;">Em Andamento</div>
+            </div>
+            <div style="background: white; padding: 1.25rem; border-radius: 10px; text-align: center; border: 1px solid #e9ecef; box-shadow: 0 2px 10px rgba(0,0,0,0.05); grid-column: 1 / -1;">
+              <div style="font-size: 1.2rem; font-weight: 700; color: #6f42c1; margin: 0.5rem 0;">${cercaMaisVisitada[0]}</div>
+              <div style="color: #6c757d; font-size: 0.85rem; font-weight: 500; text-transform: uppercase;">Cerca Mais Visitada (${cercaMaisVisitada[1]}x)</div>
+            </div>
+          `;
+        }
+
+        function limparFiltroDataTimeline() {
+          document.getElementById('data_especifica').value = '';
+          document.getElementById('daily-timeline-container').style.display = 'none';
+          document.getElementById('no-date-timeline-selected').style.display = 'block';
+          document.getElementById('no-date-timeline-selected').innerHTML = `
+            <p style="margin: 0; font-size: 1.1rem;">📅 Selecione uma data para ver a timeline das cercas</p>
+          `;
+        }
+
+        function formatarDataTimeline(dataString) {
+          const data = new Date(dataString);
+          const opcoes = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          };
+          return data.toLocaleDateString('pt-BR', opcoes);
+        }
+
+        // Definir data de hoje como padrão
+        document.addEventListener('DOMContentLoaded', function() {
+          const hoje = new Date().toISOString().split('T')[0];
+          document.getElementById('data_especifica').value = hoje;
+          filtrarPorDiaTimeline(hoje);
+        });
+      </script>
 
     </main>
 

@@ -585,34 +585,13 @@
           
           <!-- Seletor de Data -->
           <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
-            <button onclick="navegarDia(-1)" 
-                    style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 0.5rem;"
-                    title="Dia anterior">
-              ◀ Anterior
-            </button>
-            
-            <div style="display: flex; align-items: center; gap: 1rem;">
-              <label for="data_especifica" style="font-weight: 600; color: #495057;">Selecione uma data:</label>
-              <input type="date" 
-                     id="data_especifica" 
-                     style="padding: 0.75rem; border: 2px solid #ced4da; border-radius: 8px; background: white; color: #495057; font-size: 0.95rem;"
-                     onchange="filtrarPorDiaTimeline(this.value)">
-            </div>
-            
-            <button onclick="navegarDia(1)" 
-                    style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 0.5rem;"
-                    title="Próximo dia">
-              Próximo ▶
-            </button>
-            
-            <button onclick="irParaHoje()" 
-                    style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;"
-                    title="Ir para hoje">
-              📅 Hoje
-            </button>
-            
+            <label for="data_especifica" style="font-weight: 600; color: #495057;">Selecione uma data:</label>
+            <input type="date" 
+                   id="data_especifica" 
+                   style="padding: 0.75rem; border: 2px solid #ced4da; border-radius: 8px; background: white; color: #495057; font-size: 0.95rem;"
+                   onchange="filtrarPorDiaTimeline(this.value)">
             <button onclick="limparFiltroDataTimeline()" 
-                    style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                    style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
               Limpar
             </button>
           </div>
@@ -757,6 +736,7 @@
             headersRow.innerHTML += `
               <th style="padding: 1rem; text-align: center; font-weight: 600; min-width: 180px; word-break: break-word; font-size: 0.85rem;" title="${evento.cerca} - Entrada: ${evento.horario_entrada}">
                 <div style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.25rem;">${tituloColuna}</div>
+                <div style="font-size: 0.75rem; opacity: 0.8; font-weight: 400;">📍 ${evento.horario_entrada}</div>
               </th>
             `;
           });
@@ -782,7 +762,7 @@
             color: #135200;
             font-size: 1rem;
           `;
-          entradaLabelCell.innerHTML = '<br><strong>ENTRADAS</strong>';
+          entradaLabelCell.innerHTML = '🟢<br><strong>ENTRADAS</strong>';
           entradaRow.appendChild(entradaLabelCell);
 
           // Células de entrada para cada evento único
@@ -808,7 +788,7 @@
                 justify-content: center;
                 align-items: center;
               ">
-                <div style="font-size: 1.1rem; margin-bottom: 0.25rem;"> ${evento.horario_entrada}</div>
+                <div style="font-size: 1.1rem; margin-bottom: 0.25rem;">⏰ ${evento.horario_entrada}</div>
                 ${status}
               </div>
             `;
@@ -835,7 +815,7 @@
             color: #1565c0;
             font-size: 0.9rem;
           `;
-          timelineLabelCell.innerHTML = '<br><strong>TIMELINE</strong>';
+          timelineLabelCell.innerHTML = '📍<br><strong>TIMELINE</strong>';
           timelineRow.appendChild(timelineLabelCell);
 
           // Células da timeline para cada evento
@@ -843,30 +823,32 @@
             const cell = document.createElement('td');
             cell.style.cssText = 'padding: 0.5rem; text-align: center; vertical-align: middle; position: relative;';
             
+            // Calcular posição na timeline do dia (0-100%)
+            const inicioEvento = new Date(evento.data_entrada);
+            const horaInicio = inicioEvento.getHours() + inicioEvento.getMinutes() / 60;
+            const porcentagemDia = (horaInicio / 24) * 100;
+            
             // Duração visual (se houver saída)
             let duracaoVisual = '';
             let corDuracao = '#007bff';
-            if (evento.horario_saida && evento.data_saida) {
+            if (evento.horario_saida) {
               const fimEvento = new Date(evento.data_saida);
-              const inicioEvento = new Date(evento.data_entrada);
-              const duracaoMinutos = (fimEvento - inicioEvento) / (1000 * 60); // duração em minutos
-              
-              // Calcular largura baseada na duração (min: 30px, max: 150px)
-              const larguraBase = Math.min(Math.max(duracaoMinutos / 10, 30), 150);
+              const horaFim = fimEvento.getHours() + fimEvento.getMinutes() / 60;
+              const duracaoHoras = horaFim - horaInicio;
+              const larguraDuracao = Math.max(10, (duracaoHoras / 24) * 100);
               corDuracao = '#28a745';
               
               duracaoVisual = `
                 <div style="
                   position: absolute;
-                  bottom: -35px;
+                  bottom: 15px;
                   left: 50%;
                   transform: translateX(-50%);
-                  width: ${larguraBase}px;
-                  height: 6px;
+                  width: ${larguraDuracao}%;
+                  height: 4px;
                   background: linear-gradient(90deg, ${corDuracao}, ${corDuracao}99);
-                  border-radius: 3px;
-                  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                  border: 1px solid rgba(255,255,255,0.5);
+                  border-radius: 2px;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
                 "></div>
               `;
             }
@@ -879,18 +861,16 @@
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
-                margin-bottom: 40px;
               ">
                 <!-- Ponto na timeline -->
                 <div style="
-                  width: 14px;
-                  height: 14px;
+                  width: 12px;
+                  height: 12px;
                   background: ${evento.horario_saida ? '#28a745' : '#007bff'};
                   border: 3px solid white;
                   border-radius: 50%;
-                  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
                   z-index: 3;
-                  position: relative;
                 "></div>
                 
                 <!-- Linha conectora (exceto no último) -->
@@ -900,45 +880,38 @@
                     top: 20px;
                     right: -50%;
                     width: 100%;
-                    height: 3px;
+                    height: 2px;
                     background: linear-gradient(90deg, #dee2e6, #ced4da);
                     z-index: 1;
-                    border-radius: 2px;
                   "></div>
                 ` : ''}
                 
                 <!-- Indicador de sequência -->
                 <div style="
                   position: absolute;
-                  top: -12px;
+                  top: -8px;
                   left: 50%;
                   transform: translateX(-50%);
                   background: ${evento.horario_saida ? '#28a745' : '#007bff'};
                   color: white;
-                  font-size: 0.75rem;
+                  font-size: 0.7rem;
                   font-weight: 700;
-                  padding: 0.25rem 0.5rem;
-                  border-radius: 12px;
-                  min-width: 24px;
-                  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-                  border: 2px solid white;
+                  padding: 0.2rem 0.4rem;
+                  border-radius: 10px;
+                  min-width: 20px;
+                  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
                 ">${index + 1}</div>
                 
-                <!-- Duração abaixo da timeline -->
+                <!-- Horário na timeline -->
                 <div style="
                   position: absolute;
-                  bottom: -30px;
+                  bottom: -25px;
                   left: 50%;
                   transform: translateX(-50%);
-                  font-size: 0.75rem;
-                  font-weight: 700;
-                  color: ${evento.horario_saida ? '#28a745' : '#007bff'};
+                  font-size: 0.7rem;
+                  font-weight: 600;
+                  color: #495057;
                   white-space: nowrap;
-                  background: white;
-                  padding: 0.2rem 0.5rem;
-                  border-radius: 6px;
-                  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-                  border: 1px solid ${evento.horario_saida ? '#28a745' : '#007bff'};
                 ">${evento.duracao || 'Em andamento'}</div>
                 
                 ${duracaoVisual}
@@ -967,7 +940,7 @@
             color: #ad4e00;
             font-size: 1rem;
           `;
-          saidaLabelCell.innerHTML = '<br><strong>SAÍDAS</strong>';
+          saidaLabelCell.innerHTML = '🟠<br><strong>SAÍDAS</strong>';
           saidaRow.appendChild(saidaLabelCell);
 
           // Células de saída para cada evento único
@@ -992,7 +965,7 @@
                   justify-content: center;
                   align-items: center;
                 ">
-                  <div style="font-size: 1.1rem;"> ${evento.horario_saida}</div>
+                  <div style="font-size: 1.1rem;">⏰ ${evento.horario_saida}</div>
                 </div>
               `;
             } else {
@@ -1059,31 +1032,6 @@
           `;
         }
 
-        // Função para navegar entre dias
-        function navegarDia(direcao) {
-          const inputData = document.getElementById('data_especifica');
-          let dataAtual = inputData.value;
-          
-          if (!dataAtual) {
-            // Se não há data selecionada, usar hoje
-            dataAtual = new Date().toISOString().split('T')[0];
-          }
-          
-          const data = new Date(dataAtual);
-          data.setDate(data.getDate() + direcao);
-          
-          const novaData = data.toISOString().split('T')[0];
-          inputData.value = novaData;
-          filtrarPorDiaTimeline(novaData);
-        }
-
-        // Função para ir para hoje
-        function irParaHoje() {
-          const hoje = new Date().toISOString().split('T')[0];
-          document.getElementById('data_especifica').value = hoje;
-          filtrarPorDiaTimeline(hoje);
-        }
-
         function limparFiltroDataTimeline() {
           document.getElementById('data_especifica').value = '';
           document.getElementById('daily-timeline-container').style.display = 'none';
@@ -1094,10 +1042,7 @@
         }
 
         function formatarDataTimeline(dataString) {
-          // Criar data corretamente a partir da string YYYY-MM-DD
-          const partes = dataString.split('-');
-          const data = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
-          
+          const data = new Date(dataString);
           const opcoes = { 
             weekday: 'long', 
             year: 'numeric', 
