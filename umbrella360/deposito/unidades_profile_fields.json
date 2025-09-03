@@ -1,0 +1,1980 @@
+[
+  {
+    "unit_id": 401943217,
+    "unit_name": "SFRESGATE_2685",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1755183441,
+        "modified_time": 1755183441
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1755183441,
+        "modified_time": 1755183441
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1755183441,
+        "modified_time": 1755183441
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1755183441,
+        "modified_time": 1755183441
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1755183441,
+        "modified_time": 1755183441
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1755183441,
+        "modified_time": 1755183441
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1755183441,
+        "modified_time": 1755183441
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1755183441,
+        "modified_time": 1755183441
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1755183441,
+        "modified_time": 1755183441
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1755183441,
+        "modified_time": 1755183441
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86"
+  },
+  {
+    "unit_id": 401916880,
+    "unit_name": "SFRESGATE_5271",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1753363813,
+        "modified_time": 1753363813
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1753363813,
+        "modified_time": 1753363813
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1753363813,
+        "modified_time": 1753363813
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1753363813,
+        "modified_time": 1753363813
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1753363813,
+        "modified_time": 1753363813
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1753363813,
+        "modified_time": 1753363813
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1753363813,
+        "modified_time": 1753363813
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1753363813,
+        "modified_time": 1753363813
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1753363813,
+        "modified_time": 1753363813
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1753363813,
+        "modified_time": 1753363813
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86"
+  },
+  {
+    "unit_id": 401941806,
+    "unit_name": "SFRESGATE_9673",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1755097361,
+        "modified_time": 1755097361
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1755097361,
+        "modified_time": 1755097361
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1755097361,
+        "modified_time": 1755097361
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1755097361,
+        "modified_time": 1755097361
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1755097361,
+        "modified_time": 1755097361
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1755097361,
+        "modified_time": 1755097361
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1755097361,
+        "modified_time": 1755097361
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1755097361,
+        "modified_time": 1755097361
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1755097361,
+        "modified_time": 1755097361
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1755097361,
+        "modified_time": 1755097361
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86"
+  },
+  {
+    "unit_id": 401916024,
+    "unit_name": "SFRESGATE_BPQ3E25",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1753298084,
+        "modified_time": 1753298084
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1753298084,
+        "modified_time": 1753298084
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1753298084,
+        "modified_time": 1753298084
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1753298084,
+        "modified_time": 1753298084
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1753298084,
+        "modified_time": 1753298084
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1753298084,
+        "modified_time": 1753298084
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1753298084,
+        "modified_time": 1753298084
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1753298084,
+        "modified_time": 1753298084
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1753298084,
+        "modified_time": 1753298084
+      },
+      "registration_plate": {
+        "value": "BPQ3E25",
+        "field_id": 10,
+        "created_time": 1753298084,
+        "modified_time": 1754321606
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "BPQ3E25"
+  },
+  {
+    "unit_id": 401915533,
+    "unit_name": "SFRESGATE_DRI8I74",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1753283745,
+        "modified_time": 1753283745
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1753283745,
+        "modified_time": 1753283745
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1753283745,
+        "modified_time": 1753283745
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1753283745,
+        "modified_time": 1753283745
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1753283745,
+        "modified_time": 1753283745
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1753283745,
+        "modified_time": 1753283745
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1753283745,
+        "modified_time": 1753283745
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1753283745,
+        "modified_time": 1753283745
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1753283745,
+        "modified_time": 1753283745
+      },
+      "registration_plate": {
+        "value": "DRI8I74",
+        "field_id": 10,
+        "created_time": 1753283745,
+        "modified_time": 1754321394
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "DRI8I74"
+  },
+  {
+    "unit_id": 401906339,
+    "unit_name": "SFRESGATE_DRQ5I21",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1752605271,
+        "modified_time": 1752605271
+      },
+      "registration_plate": {
+        "value": "DRQ5I21",
+        "field_id": 2,
+        "created_time": 1754320948,
+        "modified_time": 1754320948
+      }
+    },
+    "vehicle_class": "empty_vehicle",
+    "registration_plate": "DRQ5I21"
+  },
+  {
+    "unit_id": 401941781,
+    "unit_name": "SFRESGATE_EWN7294",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1755096431,
+        "modified_time": 1755096431
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1755096431,
+        "modified_time": 1755096431
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1755096431,
+        "modified_time": 1755096431
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1755096431,
+        "modified_time": 1755096431
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1755096431,
+        "modified_time": 1755096431
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1755096431,
+        "modified_time": 1755096431
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1755096431,
+        "modified_time": 1755096431
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1755096431,
+        "modified_time": 1755096431
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1755096431,
+        "modified_time": 1755096431
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1755096431,
+        "modified_time": 1755096431
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86"
+  },
+  {
+    "unit_id": 401880997,
+    "unit_name": "SFRESGATE_SIV2J35",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1750866122,
+        "modified_time": 1750866122
+      }
+    },
+    "vehicle_class": "empty_vehicle"
+  },
+  {
+    "unit_id": 401879378,
+    "unit_name": "SFRESGATE_SJI6G54",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1750775624,
+        "modified_time": 1750775624
+      }
+    },
+    "vehicle_class": "empty_vehicle"
+  },
+  {
+    "unit_id": 401916817,
+    "unit_name": "SFRESGATE_SJI6G63",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1753358309,
+        "modified_time": 1753358309
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1753358309,
+        "modified_time": 1753358309
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1753358309,
+        "modified_time": 1753358309
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1753358309,
+        "modified_time": 1753358309
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1753358309,
+        "modified_time": 1753358309
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1753358309,
+        "modified_time": 1753358309
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1753358309,
+        "modified_time": 1753358309
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1753358309,
+        "modified_time": 1753358309
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1753358309,
+        "modified_time": 1753358309
+      },
+      "registration_plate": {
+        "value": "SJI6G63",
+        "field_id": 10,
+        "created_time": 1753358309,
+        "modified_time": 1754321676
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G63"
+  },
+  {
+    "unit_id": 401879179,
+    "unit_name": "SFRESGATE_SJI6G64",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1750771271,
+        "modified_time": 1750771271
+      }
+    },
+    "vehicle_class": "empty_vehicle"
+  },
+  {
+    "unit_id": 401889700,
+    "unit_name": "SFRESGATE_SJI6G68",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1751478936,
+        "modified_time": 1751478936
+      }
+    },
+    "vehicle_class": "empty_vehicle"
+  },
+  {
+    "unit_id": 401880902,
+    "unit_name": "SFRESGATE_SJI6G72",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1750863778,
+        "modified_time": 1750863778
+      }
+    },
+    "vehicle_class": "empty_vehicle"
+  },
+  {
+    "unit_id": 401889343,
+    "unit_name": "SFRESGATE_SJI6G74",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1751469465,
+        "modified_time": 1752762370
+      },
+      "registration_plate": {
+        "value": "SYF6G05",
+        "field_id": 2,
+        "created_time": 1752762370,
+        "modified_time": 1752762370
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 3,
+        "created_time": 1752762370,
+        "modified_time": 1752778227
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1752762370,
+        "modified_time": 1752762370
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 5,
+        "created_time": 1752762770,
+        "modified_time": 1752762770
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 6,
+        "created_time": 1752762770,
+        "modified_time": 1752762770
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1752778227,
+        "modified_time": 1752778227
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1752778227,
+        "modified_time": 1752778227
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 9,
+        "created_time": 1752778227,
+        "modified_time": 1752778227
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 10,
+        "created_time": 1752778227,
+        "modified_time": 1752778227
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "registration_plate": "SYF6G05",
+    "brand": "Fiat 1.0",
+    "color": "Branca",
+    "model": "Cronos",
+    "year": "2023",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "engine_model": "71cv",
+    "engine_power": "52,2"
+  },
+  {
+    "unit_id": 401927850,
+    "unit_name": "SFRESGATE_SJI6G75",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1754072538,
+        "modified_time": 1754072538
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1754072538,
+        "modified_time": 1754072538
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1754072538,
+        "modified_time": 1754072538
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1754072538,
+        "modified_time": 1754072538
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1754072538,
+        "modified_time": 1754072538
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1754072538,
+        "modified_time": 1754072538
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1754072538,
+        "modified_time": 1754072538
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1754072538,
+        "modified_time": 1754072538
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1754072538,
+        "modified_time": 1754072538
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1754072538,
+        "modified_time": 1754072538
+      },
+      "co2_emission": {
+        "value": "98",
+        "field_id": 11,
+        "created_time": 1754072538,
+        "modified_time": 1754072538
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86",
+    "co2_emission": "98"
+  },
+  {
+    "unit_id": 401928009,
+    "unit_name": "SFRESGATE_SJI6G77",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1754076128,
+        "modified_time": 1754076128
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1754076128,
+        "modified_time": 1754076128
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1754076128,
+        "modified_time": 1754076128
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1754076128,
+        "modified_time": 1754076128
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1754076128,
+        "modified_time": 1754076128
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1754076128,
+        "modified_time": 1754076128
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1754076128,
+        "modified_time": 1754076128
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1754076128,
+        "modified_time": 1754076128
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1754076128,
+        "modified_time": 1754076128
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1754076128,
+        "modified_time": 1754076128
+      },
+      "co2_emission": {
+        "value": "98",
+        "field_id": 11,
+        "created_time": 1754076128,
+        "modified_time": 1754076128
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86",
+    "co2_emission": "98"
+  },
+  {
+    "unit_id": 401916826,
+    "unit_name": "SFRESGATE_SJI6G78",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1753360085,
+        "modified_time": 1753360085
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1753360085,
+        "modified_time": 1753360085
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1753360085,
+        "modified_time": 1753360085
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1753360085,
+        "modified_time": 1753360085
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1753360085,
+        "modified_time": 1753360085
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1753360085,
+        "modified_time": 1753360085
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1753360085,
+        "modified_time": 1753360085
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1753360085,
+        "modified_time": 1753360085
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1753360085,
+        "modified_time": 1753360085
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023"
+  },
+  {
+    "unit_id": 401927802,
+    "unit_name": "SFRESGATE_SJI6G79",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1754071688,
+        "modified_time": 1754071688
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1754071688,
+        "modified_time": 1754071688
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1754071688,
+        "modified_time": 1754071688
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1754071688,
+        "modified_time": 1754071688
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1754071688,
+        "modified_time": 1754071688
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1754071688,
+        "modified_time": 1754071688
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1754071688,
+        "modified_time": 1754071688
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1754071688,
+        "modified_time": 1754071688
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1754071688,
+        "modified_time": 1754071688
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1754071688,
+        "modified_time": 1754071688
+      },
+      "co2_emission": {
+        "value": "98",
+        "field_id": 11,
+        "created_time": 1754071688,
+        "modified_time": 1754071688
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86",
+    "co2_emission": "98"
+  },
+  {
+    "unit_id": 401879415,
+    "unit_name": "SFRESGATE_SJI6G82",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1750776767,
+        "modified_time": 1752778695
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1752778695,
+        "modified_time": 1752778695
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1752778695,
+        "modified_time": 1752778695
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1752778695,
+        "modified_time": 1752778695
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1752778695,
+        "modified_time": 1752778695
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1752778695,
+        "modified_time": 1752778695
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1752778695,
+        "modified_time": 1752778695
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1752778695,
+        "modified_time": 1752778695
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1752778695,
+        "modified_time": 1752778695
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1752778695,
+        "modified_time": 1752778695
+      },
+      "co2_emission": {
+        "value": "98",
+        "field_id": 11,
+        "created_time": 1753705838,
+        "modified_time": 1753705838
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86",
+    "co2_emission": "98"
+  },
+  {
+    "unit_id": 401928011,
+    "unit_name": "SFRESGATE_SJI6G85",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1754076152,
+        "modified_time": 1754076152
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1754076152,
+        "modified_time": 1754076152
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1754076152,
+        "modified_time": 1754076152
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1754076152,
+        "modified_time": 1754076152
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1754076152,
+        "modified_time": 1754076152
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1754076152,
+        "modified_time": 1754076152
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1754076152,
+        "modified_time": 1754076152
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1754076152,
+        "modified_time": 1754076152
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1754076152,
+        "modified_time": 1754076152
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1754076152,
+        "modified_time": 1754076152
+      },
+      "co2_emission": {
+        "value": "98",
+        "field_id": 11,
+        "created_time": 1754076152,
+        "modified_time": 1754076152
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86",
+    "co2_emission": "98"
+  },
+  {
+    "unit_id": 401915520,
+    "unit_name": "SFRESGATE_SJI6G86",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1753282887,
+        "modified_time": 1753282887
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1753282887,
+        "modified_time": 1753282887
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1753282887,
+        "modified_time": 1753282887
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1753282887,
+        "modified_time": 1753282887
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1753282887,
+        "modified_time": 1753282887
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1753282887,
+        "modified_time": 1753282887
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1753282887,
+        "modified_time": 1753282887
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1753282887,
+        "modified_time": 1753282887
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1753282887,
+        "modified_time": 1753282887
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1753282887,
+        "modified_time": 1753282887
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86"
+  },
+  {
+    "unit_id": 401927726,
+    "unit_name": "SFRESGATE_SJI6G88",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1754069917,
+        "modified_time": 1754069917
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1754069917,
+        "modified_time": 1754069917
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1754069917,
+        "modified_time": 1754069917
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1754069917,
+        "modified_time": 1754069917
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1754069917,
+        "modified_time": 1754069917
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1754069917,
+        "modified_time": 1754069917
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1754069917,
+        "modified_time": 1754069917
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1754069917,
+        "modified_time": 1754069917
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1754069917,
+        "modified_time": 1754069917
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1754069917,
+        "modified_time": 1754069917
+      },
+      "co2_emission": {
+        "value": "98",
+        "field_id": 11,
+        "created_time": 1754069917,
+        "modified_time": 1754069917
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86",
+    "co2_emission": "98"
+  },
+  {
+    "unit_id": 401881369,
+    "unit_name": "SFRESGATE_SJI6G89",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1750878786,
+        "modified_time": 1750878786
+      },
+      "registration_plate": {
+        "value": "SJI6G89",
+        "field_id": 2,
+        "created_time": 1754321234,
+        "modified_time": 1754321234
+      }
+    },
+    "vehicle_class": "empty_vehicle",
+    "registration_plate": "SJI6G89"
+  },
+  {
+    "unit_id": 401915486,
+    "unit_name": "SFRESGATE_SJI6G90",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1753281669,
+        "modified_time": 1753281669
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1753281669,
+        "modified_time": 1753281669
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1753281669,
+        "modified_time": 1753281669
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1753281669,
+        "modified_time": 1753281669
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1753281669,
+        "modified_time": 1753281669
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1753281669,
+        "modified_time": 1753281669
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1753281669,
+        "modified_time": 1753281669
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1753281669,
+        "modified_time": 1753281669
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1753281669,
+        "modified_time": 1753281669
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1753281669,
+        "modified_time": 1753281669
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86"
+  },
+  {
+    "unit_id": 401929767,
+    "unit_name": "SFRESGATE_SJI6G91",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1754323630,
+        "modified_time": 1754323630
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1754323630,
+        "modified_time": 1754323630
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1754323630,
+        "modified_time": 1754323630
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1754323630,
+        "modified_time": 1754323630
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1754323630,
+        "modified_time": 1754323630
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1754323630,
+        "modified_time": 1754323630
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1754323630,
+        "modified_time": 1754323630
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1754323630,
+        "modified_time": 1754323630
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1754323630,
+        "modified_time": 1754323630
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1754323630,
+        "modified_time": 1754323630
+      },
+      "co2_emission": {
+        "value": "98",
+        "field_id": 11,
+        "created_time": 1754323630,
+        "modified_time": 1754323630
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86",
+    "co2_emission": "98"
+  },
+  {
+    "unit_id": 401906383,
+    "unit_name": "SFRESGATE_SJI6G92",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1752607352,
+        "modified_time": 1752607352
+      }
+    },
+    "vehicle_class": "empty_vehicle"
+  },
+  {
+    "unit_id": 401881418,
+    "unit_name": "SFRESGATE_SJI6G96",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1750880510,
+        "modified_time": 1750880510
+      },
+      "registration_plate": {
+        "value": "SJI6G96",
+        "field_id": 2,
+        "created_time": 1754321287,
+        "modified_time": 1754321287
+      }
+    },
+    "vehicle_class": "empty_vehicle",
+    "registration_plate": "SJI6G96"
+  },
+  {
+    "unit_id": 401916092,
+    "unit_name": "SFRESGATE_SJI6G97",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1753299842,
+        "modified_time": 1753299842
+      },
+      "registration_plate": {
+        "value": "SJI6G97",
+        "field_id": 2,
+        "created_time": 1754320665,
+        "modified_time": 1754320665
+      }
+    },
+    "vehicle_class": "empty_vehicle",
+    "registration_plate": "SJI6G97"
+  },
+  {
+    "unit_id": 401897329,
+    "unit_name": "SFRESGATE_SJI6G99",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1751982938,
+        "modified_time": 1751982938
+      },
+      "registration_plate": {
+        "value": "SJI6G99",
+        "field_id": 2,
+        "created_time": 1754321347,
+        "modified_time": 1754321347
+      }
+    },
+    "vehicle_class": "empty_vehicle",
+    "registration_plate": "SJI6G99"
+  },
+  {
+    "unit_id": 401907057,
+    "unit_name": "SFRESGATE_SYB8E00",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1752668065,
+        "modified_time": 1752668065
+      },
+      "registration_plate": {
+        "value": "SYB8E00",
+        "field_id": 2,
+        "created_time": 1754321092,
+        "modified_time": 1754321092
+      }
+    },
+    "vehicle_class": "empty_vehicle",
+    "registration_plate": "SYB8E00"
+  },
+  {
+    "unit_id": 401916068,
+    "unit_name": "SFRESGATE_SYB8E10",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1753299258,
+        "modified_time": 1753299258
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1753299258,
+        "modified_time": 1753299258
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1753299258,
+        "modified_time": 1753299258
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1753299258,
+        "modified_time": 1753299258
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1753299258,
+        "modified_time": 1753299258
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1753299258,
+        "modified_time": 1753299258
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1753299258,
+        "modified_time": 1753299258
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1753299258,
+        "modified_time": 1753299258
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1753299258,
+        "modified_time": 1753299258
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1753299258,
+        "modified_time": 1753299258
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86"
+  },
+  {
+    "unit_id": 401879325,
+    "unit_name": "SFRESGATE_SYB8E11",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1750773829,
+        "modified_time": 1750773829
+      }
+    },
+    "vehicle_class": "empty_vehicle"
+  },
+  {
+    "unit_id": 401907137,
+    "unit_name": "SFRESGATE_SYB8E23",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1752673970,
+        "modified_time": 1752673970
+      },
+      "registration_plate": {
+        "value": "SYB8E23",
+        "field_id": 2,
+        "created_time": 1754321151,
+        "modified_time": 1754321151
+      }
+    },
+    "vehicle_class": "empty_vehicle",
+    "registration_plate": "SYB8E23"
+  },
+  {
+    "unit_id": 401946422,
+    "unit_name": "SFRESGATE_SYB8E28",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1755516454,
+        "modified_time": 1755516454
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1755516454,
+        "modified_time": 1755516454
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1755516454,
+        "modified_time": 1755516454
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1755516454,
+        "modified_time": 1755516454
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1755516454,
+        "modified_time": 1755516454
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1755516454,
+        "modified_time": 1755516454
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1755516454,
+        "modified_time": 1755516454
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1755516454,
+        "modified_time": 1755516454
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1755516454,
+        "modified_time": 1755516454
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1755516454,
+        "modified_time": 1755516454
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86"
+  },
+  {
+    "unit_id": 401906350,
+    "unit_name": "SFRESGATE_SYB8E24",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1752605697,
+        "modified_time": 1752605697
+      },
+      "registration_plate": {
+        "value": "SYB8E24",
+        "field_id": 2,
+        "created_time": 1754320877,
+        "modified_time": 1754320877
+      }
+    },
+    "vehicle_class": "empty_vehicle",
+    "registration_plate": "SYB8E24"
+  },
+  {
+    "unit_id": 401941723,
+    "unit_name": "SFRESGATE_SYB8E25",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1755094762,
+        "modified_time": 1755094762
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1755094762,
+        "modified_time": 1755094762
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1755094762,
+        "modified_time": 1755094762
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1755094762,
+        "modified_time": 1755094762
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1755094762,
+        "modified_time": 1755094762
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1755094762,
+        "modified_time": 1755094762
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1755094762,
+        "modified_time": 1755094762
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1755094762,
+        "modified_time": 1755094762
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1755094762,
+        "modified_time": 1755094762
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1755094762,
+        "modified_time": 1755094762
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86"
+  },
+  {
+    "unit_id": 401915500,
+    "unit_name": "SFRESGATE_SYF6G05",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "passenger_car",
+        "field_id": 1,
+        "created_time": 1753282241,
+        "modified_time": 1753282241
+      },
+      "brand": {
+        "value": "Fiat 1.0",
+        "field_id": 2,
+        "created_time": 1753282241,
+        "modified_time": 1753282241
+      },
+      "model": {
+        "value": "Cronos",
+        "field_id": 3,
+        "created_time": 1753282241,
+        "modified_time": 1753282241
+      },
+      "color": {
+        "value": "Branca",
+        "field_id": 4,
+        "created_time": 1753282241,
+        "modified_time": 1753282241
+      },
+      "engine_model": {
+        "value": "71cv",
+        "field_id": 5,
+        "created_time": 1753282241,
+        "modified_time": 1753282241
+      },
+      "engine_power": {
+        "value": "52,2",
+        "field_id": 6,
+        "created_time": 1753282241,
+        "modified_time": 1753282241
+      },
+      "engine_displacement": {
+        "value": "999cm³",
+        "field_id": 7,
+        "created_time": 1753282241,
+        "modified_time": 1753282241
+      },
+      "primary_fuel_type": {
+        "value": "Flex",
+        "field_id": 8,
+        "created_time": 1753282241,
+        "modified_time": 1753282241
+      },
+      "year": {
+        "value": "2023",
+        "field_id": 9,
+        "created_time": 1753282241,
+        "modified_time": 1753282241
+      },
+      "registration_plate": {
+        "value": "SJI6G86",
+        "field_id": 10,
+        "created_time": 1753282241,
+        "modified_time": 1753282241
+      }
+    },
+    "vehicle_class": "passenger_car",
+    "brand": "Fiat 1.0",
+    "model": "Cronos",
+    "color": "Branca",
+    "engine_model": "71cv",
+    "engine_power": "52,2",
+    "engine_displacement": "999cm³",
+    "primary_fuel_type": "Flex",
+    "year": "2023",
+    "registration_plate": "SJI6G86"
+  },
+  {
+    "unit_id": 401880666,
+    "unit_name": "SFRESGATE_SYZ2F17",
+    "profile_fields": {
+      "vehicle_class": {
+        "value": "empty_vehicle",
+        "field_id": 1,
+        "created_time": 1750854283,
+        "modified_time": 1750854283
+      }
+    },
+    "vehicle_class": "empty_vehicle"
+  }
+]

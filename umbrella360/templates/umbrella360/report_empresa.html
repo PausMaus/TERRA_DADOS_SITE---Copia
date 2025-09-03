@@ -72,19 +72,10 @@
     </div>
     
     <div class="header">
-      <h1>
-        {% block header_title %}
-          Dashboard 
-          {% if empresa_logada %}
-        - {{ empresa_logada.nome }}
-          {% endif %}
-        {% endblock %}
-      </h1>
         <div class="menu-buttons">
           <a href="{% url 'index' %}" class="btn btn-secondary">Início</a>
-          <a href="{% url 'ranking_empresa' %}" class="btn btn-primary">Ranking</a>
-          <a href="{% url 'lista_unidades' %}" class="btn btn-secondary">Unidades</a>
-          <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+          <a href="{% url 'report_empresa' %}" class="btn btn-primary">Painel</a>
+          <a href="{% url 'ranking_empresa' %}" class="btn btn-secondary">Ranking</a>
         </div>
     </div>
 
@@ -220,6 +211,8 @@
     <footer class="footer">
       <p>&copy; 2025 Umbrella360. Transformando o Brasil através da logística inteligente.</p>
       <p><em>"Nós enxergamos um mundo mais justo, mais humano e mais sustentável."</em></p>
+      <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+
     </footer>
 
     <style>

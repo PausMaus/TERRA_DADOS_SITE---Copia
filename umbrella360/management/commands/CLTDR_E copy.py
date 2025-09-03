@@ -11,64 +11,186 @@ from decimal import Decimal
 from dataclasses import dataclass
 from tqdm import tqdm
 import decimal
-
 from django.utils import timezone
 from datetime import timedelta
 import pytz
 
 
-
 deposito = rf"umbrella360\deposito"
 
-#empresas
+# frotas
+frt_cpbr = 401914599
+frt_plac = 401929585
+frt_sfre = 401939414
 
-WIALON_TOKEN_BRAS = "517e0e42b9a966f628a9b8cffff3ffc3F57FA748F075501F5667A26AFA278AC983E1C616"
-
-WIALON_TOKEN_PLAC = "82fee29da11ea1312f1c8235247a0d82DC991707A4435C60FE7FFB27BD0D0F32BF59B709"
-
-WIALON_TOKEN_SF = "5a35fb756820f83c975a1bc846a35a43C16F97789A714DEC2BC5F4D3C6D26C06CC35CAAD"
-#
 
 WIALON_TOKEN_UMBR = "fcc5baae18cdbea20200265b6b8a4af142DD8BF34CF94701039765308B2527031174B00A"
-#*********#
+##################################################
 
 class Command(BaseCommand):
     help = 'Importa dados da API Wialon'
     def handle(self, *args, **kwargs):
+        ##################################################
         start_time = datetime.now()
         self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
-
-
-
         ##################################################
-        self.Limpeza()
+        # TESTE #
+        self.TESTE_03()
         ##################################################
-
-        self.atualizar_01()
-
-        #self.TESTE()
-
-        self.processamento_global()
-
-
-
+        
+        ##################################################
+        # PRINCIPAL #
+        #self.PRINCIPAL()
         ##############################
 
 
         
-        
-
+        ##################################################
         end_time = datetime.now()
         execution_time = end_time - start_time
         self.stdout.write(self.style.SUCCESS(f'Comando concluído às {end_time.strftime("%H:%M:%S")}'))
         self.stdout.write(self.style.SUCCESS(f'Tempo total de execução: {execution_time}'))
+    #######################################################################################
 
+
+    def TESTE(self):
+
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+            self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+            return
+        
+        
+        Wialon.set_locale()
+        processamento_df = pd.DataFrame()
+
+        print(Infrações.objects.all())
+        print(f'Número de infrações antes da limpeza: {Infrações.objects.count()}')
+        print(CheckPoint.objects.all())
+        print(f'Número de checkpoints antes da limpeza: {CheckPoint.objects.count()}')
+
+
+        
+        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=1)
+        processamento_df = pd.DataFrame()   
+
+        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=1)
+        processamento_df = pd.DataFrame()
+
+
+        Wialon.wialon_logout(sid)
+
+    def TESTE_02(self):
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                return
+        
+        processamento_df = pd.DataFrame()
+                
+        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=1, periodo="Ontem")
+        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=7, periodo="Últimos 7 dias")
+        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=30, periodo="Últimos 30 dias")
+        #
+        Wialon.wialon_logout(sid)
+
+    def TESTE_03(self):
+        bandeiras = []
+        self.Limpeza()  
+        print("Iniciando processamento global...")
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                return
+
+        Wialon.set_locale()
+
+
+        ###__UNIDADES__TODAS__###
+        print(colored("Processando Unidades...",'yellow'))
+        processamento_df = pd.DataFrame()
+        # Coleta de dados para o relatório
+
+        
+        #self.CLTDR_01(sid, processamento_df, flag=16777218, dias=1, periodo="Ontem")
+        #self.CLTDR_01(sid, processamento_df, flag=16777218, dias=7, periodo="Últimos 7 dias")
+        #self.CLTDR_01(sid, processamento_df, flag=16777218, dias=20, periodo="Últimos 20 dias")
+        #
+        #self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_cpbr, dias=30, periodo="Últimos 30 dias")
+
+        #
+        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401939410, dias=1, periodo="Últimos 30 dias")
+        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401939414, dias=1, periodo="Últimos 30 dias")
+        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401929585, dias=1, periodo="Últimos 30 dias")
+        #
+        processamento_df = pd.DataFrame()
+        ###
+
+
+        ###__CARGO__POLO__###
+        # CAMINHOES
+        self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=1, periodo="Ontem")
+        self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=7, periodo="Últimos 7 dias")
+        self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=30, periodo="Últimos 30 dias")
+
+
+        #motoristas 
+        #self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
+        #self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
+        #self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
+
+        processamento_df = pd.DataFrame()
+
+        ###__PLACIDO__###
+        # CAMINHÕES
+        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=1, periodo="Ontem")
+        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=7, periodo="Últimos 7 dias")
+        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=30, periodo="Últimos 30 dias")
+
+        #Motoristas
+        #self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
+        #self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
+        #self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
+
+        processamento_df = pd.DataFrame()
+
+
+        ###__SFRESGATE__###
+        # VEICULOS
+        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=1, periodo="Ontem")
+        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=7, periodo="Últimos 7 dias")
+        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=30, periodo="Últimos 30 dias")
+
+        #motoristas 
+        #self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777218, dias=1, periodo="Ontem")
+        #self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777220, dias=1, periodo="Últimos 7 dias")
+        #self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777224, dias=1, periodo="Últimos 30 dias")
+        #processamento_df = pd.DataFrame()
+
+        #checkpoints e infrações
+        #self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
+        processamento_df = pd.DataFrame()   
+
+        #self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
+        processamento_df = pd.DataFrame()
+
+        print(bandeiras)
+        Wialon.wialon_logout(sid)
+
+
+
+
+
+    def PRINCIPAL(self):
+        self.Limpeza()
+        self.atualizar_01()
+        self.processamento_global()
 
     def Limpeza(self):
         # Limpa os dados antigos
+        #Unidade.objects.all().delete()
         Infrações.objects.all().delete()
         CheckPoint.objects.all().delete()
-        Unidade.objects.all().delete()
         Viagem_Base.objects.all().delete()
 
     def atualizar_01(self):
@@ -87,10 +209,14 @@ class Command(BaseCommand):
 
             #busca relatórios
             relatórios = Wialon.buscadora_reports(sid)
+            print(f'Relatórios encontrados: {colored(len(relatórios), "green")}')
+            relatórios = json.dumps(relatórios, indent=4)
+            print(f'Relatórios: {relatórios}')
+            #-------
             #salva os relatorios em .txt no deposito
             #with open(f'{deposito}/{empresa.nome}_relatorios.txt', 'w') as f:
             #    f.write(json.dumps(relatórios, indent=4))
-
+            #-------
             unidades = Wialon.unidades_simples(sid)
             print(f'Unidades encontradas: {colored(len(unidades), "green")}')
             #-------
@@ -113,10 +239,76 @@ class Command(BaseCommand):
             #faz logout
             Wialon.wialon_logout(sid)
 
-    def CLTDR_01(self, sid, processamento_df, flag, dias, periodo):
-        print(f'Coletando dados de relatório para ({periodo})')
+    def processamento_global(self):
+        print("Iniciando processamento global...")
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                return
 
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=flag, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401946382, reportObjectSecId=0, unit_id="teste",  tempo_dias=dias, periodo=periodo)
+        Wialon.set_locale()
+        processamento_df = pd.DataFrame()
+
+        ###__UNIDADES__TODAS__###
+        print("Processando Unidades...")
+        self.processador_unidades_totais(sid, processamento_df)
+        print("Unidades processadas.")
+        ###
+
+        processamento_df = pd.DataFrame()
+
+        ###__CARGO__POLO__###
+        #motoristas 
+        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
+        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
+        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
+
+        processamento_df = pd.DataFrame()
+
+        ###__PLACIDO__###
+        #Motoristas 
+        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
+        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
+        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
+
+        processamento_df = pd.DataFrame()
+
+
+        ###__SFRESGATE__###
+        #motoristas 
+        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777218, dias=1, periodo="Ontem")
+        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777220, dias=1, periodo="Últimos 7 dias")
+        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777224, dias=1, periodo="Últimos 30 dias")
+        processamento_df = pd.DataFrame()
+
+        #checkpoints e infrações
+        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
+        processamento_df = pd.DataFrame()   
+
+        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
+        processamento_df = pd.DataFrame()
+
+    def processador_unidades_totais(self, sid, processamento_df):
+        print("Processando Unidades...")
+        # Coleta de dados para o relatório
+        
+        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=1, periodo="Ontem")
+        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=7, periodo="Últimos 7 dias")
+        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=30, periodo="Últimos 30 dias")
+        #
+        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401939410, dias=1, periodo="Últimos 30 dias")
+        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401939414, dias=1, periodo="Últimos 30 dias")
+        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401929585, dias=1, periodo="Últimos 30 dias")
+        #
+        processamento_df = pd.DataFrame()
+
+        
+#######################################################################################
+    def CLTDR_01(self, sid, processamento_df, flag, dias, periodo):
+        print(colored("="*30,'yellow'))
+        print(colored(f'Coletando dados de unidades para ({periodo})','cyan'))
+
+        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=flag, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401946382, reportObjectSecId=0, unit_id="CLTDR_01",  tempo_dias=dias, periodo=periodo)
 
         if relatorio is not None:
             #---
@@ -157,6 +349,42 @@ class Command(BaseCommand):
 
             print(processamento_df)
             self.update_or_create_trip(processamento_df)
+            Wialon.clean_up_result(sid)
+
+
+    def CLTDR_04(self, sid, processamento_df, recurso, template, flag, Objeto, dias, periodo):
+        #Adicionado resource, template
+        print(f'Coletando dados de relatório para ({periodo})')
+
+        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=flag, reportResourceId=recurso, reportTemplateId=template, reportObjectId=Objeto, reportObjectSecId=0, unit_id="teste",  tempo_dias=dias, periodo=periodo)
+
+        if relatorio is not None:
+            #----
+            #print(f'Relatório coletado: {relatorio}')
+            #----
+            processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
+
+            print(processamento_df)
+
+            self.viagem(processamento_df)
+            Wialon.clean_up_result(sid)
+
+
+    def CLTDR_TESTE(self, sid, processamento_df, recurso, template, flag, Objeto, dias, periodo):
+        print(f'Coletando dados de relatório para ({periodo})')
+
+        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=flag, reportResourceId=recurso, reportTemplateId=template, reportObjectId=Objeto, reportObjectSecId=0, unit_id="teste",  tempo_dias=dias, periodo=periodo)
+
+        if relatorio is not None:
+            #----
+            #print(f'Relatório coletado: {relatorio}')
+            #----
+            processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
+
+            print(processamento_df)
+            # salva em xlsx no deposito
+            processamento_df.to_excel(f'{deposito}/relatorio_[UMBR]TESTE.xlsx', index=False)
+
             Wialon.clean_up_result(sid)
 
     def CLTDR_CP_01(self, sid, processamento_df, recurso, template, flag, Objeto, dias):
@@ -225,93 +453,7 @@ class Command(BaseCommand):
             self.update_or_create_infração(processamento_df)
             Wialon.clean_up_result(sid)
 
-    def TESTE(self):
 
-        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
-        if not sid:
-            self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-            return
-        
-        
-        Wialon.set_locale()
-        processamento_df = pd.DataFrame()
-
-        print(Infrações.objects.all())
-        print(f'Número de infrações antes da limpeza: {Infrações.objects.count()}')
-        print(CheckPoint.objects.all())
-        print(f'Número de checkpoints antes da limpeza: {CheckPoint.objects.count()}')
-
-
-        
-        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=1)
-        processamento_df = pd.DataFrame()   
-
-        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=1)
-        processamento_df = pd.DataFrame()
-
-
-        Wialon.wialon_logout(sid)
-
-
-
-    def processamento_global(self):
-        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        Wialon.set_locale()
-        processamento_df = pd.DataFrame()
-
-
-
-        ###__UNIDADES__TODAS__###
-
-        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_01(sid, processamento_df, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_01(sid, processamento_df, flag=16777224, dias=1, periodo="Últimos 30 dias")
-        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401939410, dias=1, periodo="Últimos 30 dias")
-        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401939414, dias=1, periodo="Últimos 30 dias")
-        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401929585, dias=1, periodo="Últimos 30 dias")
-
-        processamento_df = pd.DataFrame()
-
-
-
-
-        ###
-        processamento_df = pd.DataFrame()
-
-        #Cargo Polo
-        #motoristas 
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-        processamento_df = pd.DataFrame()
-
-        #PLACIDO
-        #Motoristas 
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-        processamento_df = pd.DataFrame()
-
-
-        #SFRESGATE
-        #motoristas 
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777224, dias=1, periodo="Últimos 30 dias")
-        processamento_df = pd.DataFrame()
-
-        #checkpoints e infrações
-        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
-        processamento_df = pd.DataFrame()   
-
-        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
-        processamento_df = pd.DataFrame()
 
 
     def processamento_teste(self, empresa):
@@ -625,8 +767,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
             return
         
-
-
         #coloca os dados em um dataframe
         df_unidades = pd.DataFrame(unidades)
         print(f'Unidades encontradas:' , colored(f'{len(df_unidades)}', 'green'))
@@ -657,7 +797,9 @@ class Command(BaseCommand):
                 marca = 'Fiat'
             unidade_id = f"{empresa_nome}_{unidade_id}"
 
+            #+---
             print(f'Unidade: {placa} | ID: {unidade_id} | Restante do nome: {restante_nome} | Marca: {marca} | Classe: {cls} | Empresa: {empresa.nome}')
+            #+---
 
             # Atualiza a unidade no banco de dados
             Unidade.objects.update_or_create(
@@ -899,6 +1041,79 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
                     continue
 
+
+
+    def viagem(self, processamento_df):
+        if not processamento_df.empty:
+            for index, row in processamento_df.iterrows():
+                try:
+                    unidades = Unidade.objects.filter(nm=row['Grouping'])
+                    
+                    if not unidades.exists():
+                        self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
+                        continue
+                    
+                    if unidades.count() > 1:
+                        self.stdout.write(self.style.WARNING(f'Múltiplas unidades encontradas com nome "{colored(row["Grouping"], "red")}". Usando a primeira.'))
+                        # Log das unidades duplicadas para análise
+                        for unidade in unidades:
+                            self.stdout.write(self.style.WARNING(f'  - ID: {unidade.id}, Empresa: {unidade.empresa.nome if unidade.empresa else "N/A"}'))
+                    
+                    unidade_instance = unidades.first()
+                    
+                    # Processa os valores numericos
+                    quilometragem = self.processar_valor_numerico(row.get('Quilometragem Percorrida', '0'))
+                    consumo = self.processar_valor_numerico(row.get('Consumido por AbsFCS', '0'))
+                    km_media = self.processar_valor_numerico(row.get('Média de Consumo de Combustivel em Movimento', '0'))
+                    velocidade_media = self.processar_valor_numerico(row.get('Velocidade média', '0'))
+                    rpm_medio = self.processar_valor_numerico(row.get('RPM médio do motor', '0'))
+                    temperatura_media = self.processar_valor_numerico(row.get('Temperatura média', '0'))
+                    co2 = self.processar_valor_numerico(row.get('Emissões de CO2', '0'))
+                    odometro = self.processar_valor_numerico(row.get('Hodometro Atual', '0'))
+
+
+                    try:
+                        quilometragem_value = float(quilometragem)
+                        consumo_value = float(consumo)
+                        km_media_value = float(km_media)
+                        velocidade_media_value = float(velocidade_media)
+                        rpm_medio_value = float(rpm_medio)
+                        temperatura_media_value = float(temperatura_media)
+                        co2_value = float(co2)
+                        odometro_value = float(odometro)
+                    except (ValueError, TypeError):
+                        km_media_value = 0.00
+                        velocidade_media_value = 0.00
+                        rpm_medio_value = 0.00
+                        temperatura_media_value = 0.00
+                        co2_value = 0.00
+                        odometro_value = 0.00
+
+                    
+                    Viagem_Base.objects.update_or_create(
+                        unidade=unidade_instance,
+                        período=row['periodo'],
+                        defaults={
+                            'quilometragem': quilometragem_value,
+                            'Consumido': consumo_value,
+                            'Quilometragem_média': km_media_value,
+                            'Velocidade_média': velocidade_media_value,
+                            'RPM_médio': rpm_medio_value,
+                            'Temperatura_média': temperatura_media_value,
+                            'Emissões_CO2': co2_value,
+
+                        }
+                    )
+                    Unidade.objects.filter(id=unidade_instance.id).update(odometro=odometro_value)
+
+                    self.stdout.write(self.style.SUCCESS(f'Viagem: {colored(row["Grouping"], "cyan")} - {colored(row["periodo"], "magenta")} - {colored(quilometragem_value, "green")}'))
+
+                except Unidade.DoesNotExist:
+                    self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
+                    continue
+
+
+
     def update_or_create_checkpoint(self, processamento_df):
         if not processamento_df.empty:
             for index, row in processamento_df.iterrows():
@@ -935,8 +1150,9 @@ class Command(BaseCommand):
                         data_saida=hora_saida,
                         duracao=duracao
                     )
-                    self.stdout.write(self.style.SUCCESS(f'CheckPoint  {colored(row["Grouping"], "cyan")} -  - Cerca: {colored(cerca_eletronica, "green")} - Hora de entrada: {colored(hora_entrada, "blue")} - Hora de saída: {colored(hora_saida, "blue")}. - Duração: {colored(duracao, "green")}'))
-
+                    #+---
+                    #self.stdout.write(self.style.SUCCESS(f'CheckPoint  {colored(row["Grouping"], "cyan")} -  - Cerca: {colored(cerca_eletronica, "green")} - Hora de entrada: {colored(hora_entrada, "blue")} - Hora de saída: {colored(hora_saida, "blue")}. - Duração: {colored(duracao, "green")}'))
+                    #+---
                 except Unidade.DoesNotExist:
                     self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
                     continue

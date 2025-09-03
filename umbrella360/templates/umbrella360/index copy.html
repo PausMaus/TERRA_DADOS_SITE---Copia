@@ -1,7 +1,5 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=8">
-<link rel="stylesheet" href="{% static 'umbrella360/style_refatorado.css' %}?v=2">
-<script src="{% static 'umbrella360/theme-toggle.js' %}?v=2"></script>
 
 <!doctype html>
 <html lang="pt-BR">
@@ -12,10 +10,6 @@
   </head>
   <body>
 
-    <!-- Botão de alternância de tema -->
-    <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
-      <span class="theme-icon">◐</span> Noite de Verão
-    </button>
     
     <div class="header">
       {% if request.session.empresa_nome %}
@@ -25,10 +19,10 @@
       {% endif %}
         <div class="menu-buttons">
           {% if request.session.empresa_nome %}
-            <a href="{% url 'index' %}" class="btn btn-primary">Início</a>
-            <a href="{% url 'report_empresa' %}" class="btn btn-secondary">Painel</a>
+            <a href="{% url 'report_empresa' %}" class="btn btn-primary">Dashboard {{ request.session.empresa_nome }}</a>
             <a href="{% url 'ranking_empresa' %}" class="btn btn-secondary">Ranking</a>
-
+            <a href="{% url 'lista_unidades' %}" class="btn btn-secondary">Unidades</a>
+            <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
           {% else %}
             <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
           {% endif %}
@@ -60,13 +54,8 @@
 
         <div class="feature-card" style="border: 2px solid #ffd700; background: linear-gradient(135deg, #ffc4ff, #ffeaa7);">
           <h3>Relatórios</h3>
-          <p>Veja os Relatórios .</p>
+          <p>Veja os Relatórios {{ request.session.empresa_nome }}.</p>
           <a href="{% url 'report_empresa' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Relatórios</a>
-        </div>
-        <div class="feature-card" style="border: 2px solid #ffd700; background: linear-gradient(135deg, #b0ead3, #ffeaa7);">
-          <h3>Unidades</h3>
-          <p>Sua frota e motoristas </p>
-          <a href="{% url 'lista_unidades' %}" class="btn btn-primary" style="margin-top: 1rem;">Unidades</a>
         </div>
 
         {% else %}
@@ -129,7 +118,6 @@
     <footer class="footer">
       <p>&copy; 2025 Umbrella360. Transformando o Brasil através da logística inteligente.</p>
       <p><em>"Nós enxergamos um mundo mais justo, mais humano e mais sustentável."</em></p>
-      <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
     </footer>
   </body>
 </html>

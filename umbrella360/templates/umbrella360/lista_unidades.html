@@ -19,13 +19,9 @@
     
     <div class="header">
         <div class="menu-buttons">
-          <a href="{% url 'index' %}" class="btn btn-secondary">Página Inicial</a>
-          {% if empresa_logada %}
-            <a href="{% url 'report_empresa' %}" class="btn btn-primary">Dashboard {{ empresa_logada.nome }}</a>
-            <a href="{% url 'ranking_empresa' %}" class="btn btn-secondary">Ranking</a>
-            <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
-          {% else %}
-          {% endif %}
+          <a href="{% url 'index' %}" class="btn btn-secondary">Início</a>
+          <a href="{% url 'report_empresa' %}" class="btn btn-secondary">Painel</a>
+          <a href="{% url 'ranking_empresa' %}" class="btn btn-secondary">Ranking</a>
         </div>
     </div>
 
@@ -43,11 +39,11 @@
       <table border="1" cellpadding="8" cellspacing="0" class="sortable-table" id="tabela-unidades" style="width: 100%; margin-bottom: 2rem;">
         <thead>
           <tr>
-            <th style="background: #34495e; color: white;">Nome</th>
-            <th style="background: #34495e; color: white;">Tipo</th>
-            <th style="background: #34495e; color: white;">Marca</th>
-            <th style="background: #34495e; color: white;">Placa</th>
-            <th style="background: #34495e; color: white;">Eficiência</th>
+            <th style="color: white;">Nome</th>
+            <th style="color: white;">Tipo</th>
+            <th style="color: white;">Marca</th>
+            <th style="color: white;">Placa</th>
+            <th style="color: white;">Eficiência</th>
           </tr>
         </thead>
         <tbody>

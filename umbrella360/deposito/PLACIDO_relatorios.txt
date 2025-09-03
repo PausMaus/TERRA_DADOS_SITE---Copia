@@ -1,5 +1,0 @@
-[
-    "localizzare",
-    "Localizzare_mgr",
-    "PLACBracell"
-]

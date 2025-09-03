@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Motorista, Caminhao, Viagem_CAM, Viagem_MOT, ConfiguracaoSistema, Empresa, Unidade, Viagem_Base, CheckPoint, Infrações
-
+from .models import Veiculo
 # Register your models here.
 
 @admin.register(ConfiguracaoSistema)
@@ -111,3 +111,10 @@ class InfracoesAdmin(admin.ModelAdmin):
     search_fields = ('unidade__nm', 'localizacao')
     ordering = ('unidade', 'data')
 
+
+@admin.register(Veiculo)
+class VeiculoAdmin(admin.ModelAdmin):
+    list_display = ('placa', 'marca', 'modelo', 'ano', 'empresa')
+    list_filter = ('marca', 'modelo', 'ano', 'empresa')
+    search_fields = ('placa', 'marca', 'modelo')
+    ordering = ('placa',)

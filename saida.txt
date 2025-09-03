@@ -1,0 +1,277 @@
+Iniciando comando às 12:29:48
+Empresa: CPBRACELL
+Iniciando autenticação na API Wialon...
+Login bem-sucedido! SID: 41a57886f12a3143ebebe4568c5b7a86
+Logado como: CPBrascell_UMBRELLAINTEGRAÇÃO
+Sessão Wialon iniciada para CPBRACELL, ID de recurso: 401756219
+Wialon: set_locale: Resposta da API: {'error': 4, 'reason': 'WRONG_PARAMS'}
+==============================
+Buscadora de Relatorios:
+Encontrados 1 usuários.
+==============================
+==============================
+Buscadora de Relatorios:
+Usuários encontrados: ['CPBrascell']
+==============================
+Relatórios encontrados: 1
+Relatórios: [
+    "CPBrascell"
+]
+Unidades encontradas: 125
+Unidades:                           nm  cls         id  mu           uacl
+0          FNI6A13_CPBracell    2  401790521   0          16931
+1          FVF0F64_CPBracell    2  401756228   0  3298904003427
+2          GAN8H82_CPBracell    2  401903067   0      369120099
+3    GAN8H82_CPBracell_PRO5V    2  401756229   0      385897315
+4          GAQ2C35_CPBracell    2  401756230   0    17565766499
+..                       ...  ...        ...  ..            ...
+120        TKP5I53_CPBracell    2  401790433   0      385897315
+121        TKV7C97_CPBracell    2  401756260   0  3298904003427
+122        TLB7A08_CPBracell    2  401756263   0  3298904003427
+123        TLZ0C54_CPBracell    2  401790184   0  3298904003427
+124        TMH7E74_CPBracell    2  401756262   0      385897315
+
+[125 rows x 5 columns]
+==============================
+Buscadora de Motoristas Simples v2:
+Recurso 'CPBrascell' (ID: 401756219): 430 motorista(s)
+==============================
+==============================
+Buscadora de Motoristas Simples v2:
+Total de motoristas encontrados: 430
+==============================
+Motoristas encontrados: 430
+Motoristas:      resource_id  ...                                    position
+0      401756219  ...   {'y': -22.231294632, 'x': -49.1551361084}
+1      401756219  ...  {'y': -22.5583286285, 'x': -48.8202667236}
+2      401756219  ...  {'y': -22.5585517883, 'x': -48.8201179504}
+3      401756219  ...                            {'y': 0, 'x': 0}
+4      401756219  ...  {'y': -22.5815906525, 'x': -48.8052482605}
+..           ...  ...                                         ...
+425    401756219  ...  {'y': -21.0452575684, 'x': -51.1275215149}
+426    401756219  ...  {'y': -19.3229122162, 'x': -48.2524452209}
+427    401756219  ...  {'y': -20.4287509918, 'x': -52.8723678589}
+428    401756219  ...                            {'y': 0, 'x': 0}
+429    401756219  ...                            {'y': 0, 'x': 0}
+
+[430 rows x 12 columns]
+Unidades encontradas: 125
+Unidades:                           nm  cls         id  mu           uacl
+0          FNI6A13_CPBracell    2  401790521   0          16931
+1          FVF0F64_CPBracell    2  401756228   0  3298904003427
+2          GAN8H82_CPBracell    2  401903067   0      369120099
+3    GAN8H82_CPBracell_PRO5V    2  401756229   0      385897315
+4          GAQ2C35_CPBracell    2  401756230   0    17565766499
+..                       ...  ...        ...  ..            ...
+120        TKP5I53_CPBracell    2  401790433   0      385897315
+121        TKV7C97_CPBracell    2  401756260   0  3298904003427
+122        TLB7A08_CPBracell    2  401756263   0  3298904003427
+123        TLZ0C54_CPBracell    2  401790184   0  3298904003427
+124        TMH7E74_CPBracell    2  401756262   0      385897315
+
+[125 rows x 5 columns]
+Unidade: FNI6A13 | ID: CPBRACELL_401790521 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: FVF0F64 | ID: CPBRACELL_401756228 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GAN8H82 | ID: CPBRACELL_401903067 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GAN8H82 | ID: CPBRACELL_401756229 | Restante do nome: CPBracell PRO5V | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GAQ2C35 | ID: CPBRACELL_401756230 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GAQ2C35 | ID: CPBRACELL_401935033 | Restante do nome: CPBracell PRO5V | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GAW3J94 | ID: CPBRACELL_401756220 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GBD8F51 | ID: CPBRACELL_401756231 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GBT6J97 | ID: CPBRACELL_401756236 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GBT6J97 | ID: CPBRACELL_401914629 | Restante do nome: CPBracell PRO5V6 TESTE 2 | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GBV8C54 | ID: CPBRACELL_401756227 | Restante do nome: CPBascell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GBV8C54 | ID: CPBRACELL_401908698 | Restante do nome: CPBascell PRO5V6 | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GCP2G73 | ID: CPBRACELL_401756237 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GCP2G73 | ID: CPBRACELL_401935000 | Restante do nome: CPBracell PRO5V | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GCQ8I34 | ID: CPBRACELL_401788728 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GCQ8I34 | ID: CPBRACELL_401908643 | Restante do nome: CPBracell OBD | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GCR4H22 | ID: CPBRACELL_401790494 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GDR0J83 | ID: CPBRACELL_401756233 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GDR0J83 | ID: CPBRACELL_401908063 | Restante do nome: CPBracell PRO5V6 | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GDW4J22 | ID: CPBRACELL_401756244 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GDW4J22 | ID: CPBRACELL_401908283 | Restante do nome: CPBracell PRO5V | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GDW8E68 | ID: CPBRACELL_401756247 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GDW8E68 | ID: CPBRACELL_401909701 | Restante do nome: CPBracell PRO5V | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GDW8E56 | ID: CPBRACELL_401756238 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GDW8E56 | ID: CPBRACELL_401908588 | Restante do nome: CPBracell OBD | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GDW8E56 | ID: CPBRACELL_401940678 | Restante do nome: CPBracell PRO 5 | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GEH7E88 | ID: CPBRACELL_401756234 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GEH7E88 | ID: CPBRACELL_401908334 | Restante do nome: CPBracell PRO5V | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GEP2F46 | ID: CPBRACELL_401756248 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GEP2F46 | ID: CPBRACELL_401908198 | Restante do nome: CPBracell PRO5V | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GEP4B98 | ID: CPBRACELL_401756249 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GEP4B98 | ID: CPBRACELL_401902651 | Restante do nome: CPBracell OBD | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GEV3J57 | ID: CPBRACELL_401756250 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GFC2B18 | ID: CPBRACELL_401756251 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GFDOJ27 | ID: CPBRACELL_401756252 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GFDOJ27 | ID: CPBRACELL_401908002 | Restante do nome: CPBracell PRO5V | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GFI4G06 | ID: CPBRACELL_401756253 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GFI4G06 | ID: CPBRACELL_401908701 | Restante do nome: CPBracell OBD | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GFP6H82 | ID: CPBRACELL_401756254 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GFP6H82 | ID: CPBRACELL_401908127 | Restante do nome: CPBracell OBD | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GFP6H82 | ID: CPBRACELL_401933823 | Restante do nome: CPBracell PRO5V6 | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GGQ0E23 | ID: CPBRACELL_401790181 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GGQ1C73 | ID: CPBRACELL_401756255 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GGQ1C73 | ID: CPBRACELL_401908102 | Restante do nome: CPBracell PRO5V | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GGS6G25 | ID: CPBRACELL_401756239 | Restante do nome: CPBascell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GGS6G25 | ID: CPBRACELL_401909681 | Restante do nome: CPBascell OBD | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHA2A44 | ID: CPBRACELL_401756232 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHB1B84 | ID: CPBRACELL_401756256 | Restante do nome: CPBascell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHL3A66 | ID: CPBRACELL_401756240 | Restante do nome: CPBascell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHL3A66 | ID: CPBRACELL_401934757 | Restante do nome: CPBascell PRO5V6 | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHL8I11 | ID: CPBRACELL_401756241 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHL8I11 | ID: CPBRACELL_401908590 | Restante do nome: CPBracell OBD | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHM3H15 | ID: CPBRACELL_401790522 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHM3H15 | ID: CPBRACELL_401935583 | Restante do nome: CPBracell PRO5V | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHO0H65 | ID: CPBRACELL_401767235 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHO0H65 | ID: CPBRACELL_401909776 | Restante do nome: CPBracell OBD | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHS1H44 | ID: CPBRACELL_401756257 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHS1H44 | ID: CPBRACELL_401902955 | Restante do nome: CPBracell OBD | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHY0D77 | ID: CPBRACELL_401756242 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHY0D77 | ID: CPBRACELL_401909114 | Restante do nome: CPBracell OBD | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GHY0D77 | ID: CPBRACELL_401914082 | Restante do nome: CPBracell PRO5V TESTE 2 | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GIE5D75 | ID: CPBRACELL_401756246 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GII4G01 | ID: CPBRACELL_401756258 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GII4G01 | ID: CPBRACELL_401903246 | Restante do nome: CPBracell OBD | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GIS9A85 | ID: CPBRACELL_401756259 | Restante do nome: CPBascell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GIS9A85 | ID: CPBRACELL_401909036 | Restante do nome: CPBascell PRO5V | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GJL7C45 | ID: CPBRACELL_401756261 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: GJL7C45 | ID: CPBRACELL_401903272 | Restante do nome: CPBracell OBD | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: PDQ1F97 | ID: CPBRACELL_401938102 | Restante do nome: CPolo PRO5 | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: PDQ1G57 | ID: CPBRACELL_401938101 | Restante do nome: CPolo PRO5 | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: STF3H31 | ID: CPBRACELL_401790278 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TBI4D48 | ID: CPBRACELL_401905217 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2B67 | ID: CPBRACELL_401952434 | Restante do nome: CPBracell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2C76 | ID: CPBRACELL_401761202 | Restante do nome: CPBracell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2C79 | ID: CPBRACELL_401761209 | Restante do nome: CPBracell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2C91 | ID: CPBRACELL_401761207 | Restante do nome: CPBracell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2D26 | ID: CPBRACELL_401761197 | Restante do nome: CPBracell Scania | Marca: Scania | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2D30 | ID: CPBRACELL_401761196 | Restante do nome: CPBracell Scania | Marca: Scania | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2D40 | ID: CPBRACELL_401761212 | Restante do nome: CPBracell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2D66 | ID: CPBRACELL_401760860 | Restante do nome: CPBracell Scania | Marca: Scania | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2D72 | ID: CPBRACELL_401761206 | Restante do nome: CPBracell Scania | Marca: Scania | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2D78 | ID: CPBRACELL_401761208 | Restante do nome: CPBracell Scania | Marca: Scania | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2D82 | ID: CPBRACELL_401772406 | Restante do nome: CPBracell Scania | Marca: Scania | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2D85 | ID: CPBRACELL_401761211 | Restante do nome: CPBracell Scania | Marca: Scania | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2D88 | ID: CPBRACELL_401761200 | Restante do nome: CPBracell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2D92 | ID: CPBRACELL_401761201 | Restante do nome: CPBracell Scania | Marca: Scania | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP2E16 | ID: CPBRACELL_401756245 | Restante do nome: CPBracell Scania | Marca: Scania | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP1E86 | ID: CPBRACELL_401761205 | Restante do nome: CPBracell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDP1E90 | ID: CPBRACELL_401819675 | Restante do nome: CPBracell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2A73 | ID: CPBRACELL_401939907 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2A75 | ID: CPBRACELL_401939854 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B43 | ID: CPBRACELL_401940284 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B46 | ID: CPBRACELL_401939564 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B47 | ID: CPBRACELL_401940025 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B49 | ID: CPBRACELL_401940097 | Restante do nome: CPBracell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B53 | ID: CPBRACELL_401940385 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B54 | ID: CPBRACELL_401940498 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B56 | ID: CPBRACELL_401940557 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B58 | ID: CPBRACELL_401939773 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B59 | ID: CPBRACELL_401939995 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B60 | ID: CPBRACELL_401939994 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B62 | ID: CPBRACELL_401940002 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B65 | ID: CPBRACELL_401939744 | Restante do nome: CPBrascell PRO5S | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B70 | ID: CPBRACELL_401761198 | Restante do nome: CPBracell Scania | Marca: Scania | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B71 | ID: CPBRACELL_401761199 | Restante do nome: CPBracell Scania | Marca: Scania | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B71 | ID: CPBRACELL_401914236 | Restante do nome: CPBrascell PRO5S TESTE 2 | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TDR2B74 | ID: CPBRACELL_401761210 | Restante do nome: CPBracell Scania | Marca: Scania | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TIP8H46 | ID: CPBRACELL_401790183 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TIQ6G76 | ID: CPBRACELL_401772799 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TIT2G16 | ID: CPBRACELL_401788719 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TIT4C92 | ID: CPBRACELL_401818530 | Restante do nome: CPBracell VOLVO | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TJC1F78 | ID: CPBRACELL_401788519 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TJH6G31 | ID: CPBRACELL_401790520 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TJO0J47 | ID: CPBRACELL_401767806 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TJP7I29 | ID: CPBRACELL_401774948 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TJR7C32 | ID: CPBRACELL_401790216 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TJZ0B47 | ID: CPBRACELL_401818528 | Restante do nome: CPBracell VOLVO | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TKD2H85 | ID: CPBRACELL_401756243 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TKD9G90 | ID: CPBRACELL_401756322 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TKP5I30 | ID: CPBRACELL_401790330 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TKP5I53 | ID: CPBRACELL_401790433 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TKV7C97 | ID: CPBRACELL_401756260 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TLB7A08 | ID: CPBRACELL_401756263 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TLZ0C54 | ID: CPBRACELL_401790184 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+Unidade: TMH7E74 | ID: CPBRACELL_401756262 | Restante do nome: CPBracell | Marca: Volvo | Classe: Veículo | Empresa: CPBRACELL
+==============================
+Buscadora de Motoristas Simples v2:
+Recurso 'CPBrascell' (ID: 401756219): 430 motorista(s)
+==============================
+==============================
+Buscadora de Motoristas Simples v2:
+Total de motoristas encontrados: 430
+==============================
+Motoristas encontrados: 430
+Motoristas:      resource_id  ...                                    position
+0      401756219  ...   {'y': -22.231294632, 'x': -49.1551361084}
+1      401756219  ...  {'y': -22.5583286285, 'x': -48.8202667236}
+2      401756219  ...  {'y': -22.5585517883, 'x': -48.8201179504}
+3      401756219  ...                            {'y': 0, 'x': 0}
+4      401756219  ...  {'y': -22.5815906525, 'x': -48.8052482605}
+..           ...  ...                                         ...
+425    401756219  ...  {'y': -21.0452575684, 'x': -51.1275215149}
+426    401756219  ...  {'y': -19.3229122162, 'x': -48.2524452209}
+427    401756219  ...  {'y': -20.4287509918, 'x': -52.8723678589}
+428    401756219  ...                            {'y': 0, 'x': 0}
+429    401756219  ...                            {'y': 0, 'x': 0}
+
+[430 rows x 12 columns]
+Motorista: ADELMO DE CARVALHO COELHO | ID: CPBRACELL_1 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ADEMILSON BENEDITO PAULINO | ID: CPBRACELL_2 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: Motorista Ghost teste | ID: CPBRACELL_3 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: Jonathan Teste Localizzare | ID: CPBRACELL_4 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: TIAGO ALMIR DALAQUA | ID: CPBRACELL_5 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ADEMIR ALVES DOS SANTOS | ID: CPBRACELL_6 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: RONIE COELHO | ID: CPBRACELL_7 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: EDILCO DA SILVA | ID: CPBRACELL_8 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: JOAO CARLOS ANDRADE | ID: CPBRACELL_9 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: WELINGTON FERNANDO DOS SANTOS | ID: CPBRACELL_10 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: EDMO ALESSANDRO BALAN | ID: CPBRACELL_11 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: MARCIO ROBERTO DOS SANTOS | ID: CPBRACELL_12 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: JOSE EDUARDO DE ARAUJO | ID: CPBRACELL_13 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: LUIZ CARLOS ALVES | ID: CPBRACELL_14 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: GENESIO PELEGRINO | ID: CPBRACELL_15 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: RICARDO APARECIDO LEME DA SILVA | ID: CPBRACELL_16 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ADENILSON ROSA DA SILVA | ID: CPBRACELL_17 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: RONIVALDO ANTONIO DOS SANTOS | ID: CPBRACELL_18 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: DANIEL AUGUSTO DE GOES ARANTES | ID: CPBRACELL_19 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: JOAO VITOR DOS SANTOS | ID: CPBRACELL_20 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: RONALDO GONÇALVES DA SILVA | ID: CPBRACELL_21 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: GENIVALDO ACIELI | ID: CPBRACELL_22 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ROBERTO XAVIER DE SANTANA | ID: CPBRACELL_23 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ODAIR PORFIRIO DOS SANTOS | ID: CPBRACELL_24 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ANTONIO MARCOS LEMES | ID: CPBRACELL_25 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: LUCIRIO ALVES GOMES | ID: CPBRACELL_26 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: teste pro5 | ID: CPBRACELL_27 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: teste  2 pro5 | ID: CPBRACELL_28 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ADELMO DE CARVALHO COELHO | ID: CPBRACELL_29 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ADEMILSON BENEDITO PAULINO | ID: CPBRACELL_30 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ADEMIR ALVES DOS SANTOS | ID: CPBRACELL_31 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ADENILSON ROSA DA SILVA | ID: CPBRACELL_33 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ADILSON FALASCA DOS PASSOS | ID: CPBRACELL_34 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ADILSON FERREIRA GAMA | ID: CPBRACELL_35 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ADOLFO APARECIDO LUIS CORREA | ID: CPBRACELL_36 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ADRIANO DONIZETE TAKEDA | ID: CPBRACELL_37 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: AGNALDO CORIM DIAS | ID: CPBRACELL_38 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: AGUINALDO FRANCISCO DE ASSIS | ID: CPBRACELL_39 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: AIRTON DE OLIVEIRA | ID: CPBRACELL_40 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ALEX JESUS DE GODOY | ID: CPBRACELL_41 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ALEX RIBEIRO DA SILVA | ID: CPBRACELL_42 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ALEXANDRE APARECIDO DA SILVA | ID: CPBRACELL_43 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ALEXANDRE DE SOUZA GOMES | ID: CPBRACELL_44 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: AMILTON FOGANHOLI RIBEIRO | ID: CPBRACELL_45 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ANDERSON ROBENS CLARO | ID: CPBRACELL_46 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ANDRE LUIZ DA SILVA | ID: CPBRACELL_47 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ANDRE ROBSON DADARIO | ID: CPBRACELL_48 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ANDREW CARLOS ANFILO | ID: CPBRACELL_49 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ANTONIO MARCOS DOS SANTOS | ID: CPBRACELL_50 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ANTONIO MARCOS LEMES | ID: CPBRACELL_51 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ANTONIO PEREIRA DA SILVA | ID: CPBRACELL_52 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ANTONIO SERRA JUNIOR | ID: CPBRACELL_53 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ANTONIO SERGIO DE LIMA | ID: CPBRACELL_54 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: APARECIDO BARBIZAN | ID: CPBRACELL_55 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: ARI ALVES | ID: CPBRACELL_56 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: BENEDITO JOSE DO NASCIMENTO | ID: CPBRACELL_57 | Classe: Motorista | Empresa: CPBRACELL
+Motorista: CARLOS ALBERTO FERREIRA DOS SANTOS | ID: CPBRACELL_58 | Classe: Motorista | Empresa: CPBRACELL

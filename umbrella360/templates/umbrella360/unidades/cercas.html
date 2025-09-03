@@ -346,9 +346,7 @@
         <a href="{% url 'index' %}" class="btn btn-secondary">Início</a>
         <a href="{% url 'detalhes_unidade' unidade.id %}" class="btn btn-secondary">Voltar à Unidade</a>
         <a href="{% url 'lista_unidades' %}" class="btn btn-secondary">Lista de Unidades</a>
-        {% if request.session.empresa_nome %}
-          <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
-        {% endif %}
+
       </div>
     </div>
 
@@ -851,9 +849,9 @@
               const inicioEvento = new Date(evento.data_entrada);
               const duracaoMinutos = (fimEvento - inicioEvento) / (1000 * 60); // duração em minutos
               
-              // Calcular largura baseada na duração (min: 30px, max: 150px)
-              const larguraBase = Math.min(Math.max(duracaoMinutos / 10, 30), 150);
-              corDuracao = '#28a745';
+              // Calcular largura baseada na duração (min: 1px, max: 150px)
+              const larguraBase = Math.max(duracaoMinutos / 2, 1);
+                corDuracao = '#5DE2E7';
               
               duracaoVisual = `
                 <div style="
@@ -862,7 +860,7 @@
                   left: 50%;
                   transform: translateX(-50%);
                   width: ${larguraBase}px;
-                  height: 6px;
+                  height: 10px;
                   background: linear-gradient(90deg, ${corDuracao}, ${corDuracao}99);
                   border-radius: 3px;
                   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
@@ -1120,6 +1118,8 @@
     <footer class="footer">
       <p>&copy; 2025 Umbrella360. CheckPoints - {{ unidade.nm|default:unidade.id }}</p>
       <p><em>"Rastreamento completo e transparente de cada movimento"</em></p>
+      <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+
     </footer>
   </body>
 </html>

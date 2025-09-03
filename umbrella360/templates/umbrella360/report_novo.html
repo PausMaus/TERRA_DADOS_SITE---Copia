@@ -32,18 +32,7 @@
       </div>
       
       <form method="get" class="filters-form">
-        <div class="filter-group">
-          <label for="empresa">Empresa:</label>
-          <select name="empresa" id="empresa">
-            <option value="todas" {% if empresa_selecionada == 'todas' %}selected{% endif %}>Todas as Empresas</option>
-            {% for empresa in empresas_disponiveis %}
-              <option value="{{ empresa.id }}" {% if empresa_selecionada == empresa.id|stringformat:"s" %}selected{% endif %}>
-                {{ empresa.nome }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        
+
         <div class="filter-group">
           <label for="marca">Marca:</label>
           <select name="marca" id="marca">
@@ -93,9 +82,8 @@
       {% block content %}
       <!-- Dashboard Global da Frota -->
       <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
-        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-width: 1200px; width: 100%;">
+        <div style="background: rgba(255, 255, 255, 0); border-radius: 5px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-width: 1200px; width: 100%;">
           <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50; font-size: 1.8rem;">
-            Dashboard Global de KPIs
             {% if empresa_selecionada != 'todas' %}
               {% for empresa in empresas_disponiveis %}
                 {% if empresa.id|stringformat:"s" == empresa_selecionada %}
@@ -138,8 +126,50 @@
             </div>
           </div>
           {% endif %}
+        
+
+      <!-- Gráfico de Comparação entre Marcas -->
+      {% if marcas_stats %}
+      <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
+        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 5px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-width: 1200px; width: 100%;">
+          <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50; font-size: 1.8rem;">
+            Comparação de Performance por Marca
+          </h3>
           
-          <!-- KPIs Principais -->
+          <!-- Tabs para diferentes métricas -->
+          <div class="chart-tabs" style="margin-bottom: 2rem;">
+            <button class="chart-tab active" data-metric="quilometragem" onclick="showChart('quilometragem')">
+              Quilometragem por Veículo
+            </button>
+            <button class="chart-tab" data-metric="consumo" onclick="showChart('consumo')">
+              Consumo por Veículo
+            </button>
+            <button class="chart-tab" data-metric="eficiencia" onclick="showChart('eficiencia')">
+              Eficiência Média
+            </button>
+            <button class="chart-tab" data-metric="emissoes" onclick="showChart('emissoes')">
+              Emissões por Veículo
+            </button>
+          </div>
+          
+          <!-- Container do gráfico -->
+          <div style="position: relative; height: 400px; margin-bottom: 1rem;">
+            <canvas id="marcasChart"></canvas>
+          </div>
+          
+          <!-- Legenda das cores -->
+          <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-top: 1rem;">
+            {% for marca, stats in marcas_stats.items %}
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <div class="marca-color-indicator marca-{{ forloop.counter0 }}"></div>
+              <span style="font-weight: 500; color: #495057;">{{ marca|title }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      <!-- KPIs Principais -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
             <div class="kpi-card kpi-quilometragem">
               <h4>Quilometragem Total</h4>
@@ -189,48 +219,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Gráfico de Comparação entre Marcas -->
-      {% if marcas_stats %}
-      <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
-        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-width: 1200px; width: 100%;">
-          <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50; font-size: 1.8rem;">
-            Comparação de Performance por Marca
-          </h3>
-          
-          <!-- Tabs para diferentes métricas -->
-          <div class="chart-tabs" style="margin-bottom: 2rem;">
-            <button class="chart-tab active" data-metric="quilometragem" onclick="showChart('quilometragem')">
-              Quilometragem por Veículo
-            </button>
-            <button class="chart-tab" data-metric="consumo" onclick="showChart('consumo')">
-              Consumo por Veículo
-            </button>
-            <button class="chart-tab" data-metric="eficiencia" onclick="showChart('eficiencia')">
-              Eficiência Média
-            </button>
-            <button class="chart-tab" data-metric="emissoes" onclick="showChart('emissoes')">
-              Emissões por Veículo
-            </button>
-          </div>
-          
-          <!-- Container do gráfico -->
-          <div style="position: relative; height: 400px; margin-bottom: 1rem;">
-            <canvas id="marcasChart"></canvas>
-          </div>
-          
-          <!-- Legenda das cores -->
-          <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-top: 1rem;">
-            {% for marca, stats in marcas_stats.items %}
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <div class="marca-color-indicator marca-{{ forloop.counter0 }}"></div>
-              <span style="font-weight: 500; color: #495057;">{{ marca|title }}</span>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-      {% endif %}
 
       <!-- Informações sobre Filtros -->
       <div style="text-align: center; margin: 2rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px; color: #6c757d;">
