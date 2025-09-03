@@ -851,8 +851,9 @@
               const inicioEvento = new Date(evento.data_entrada);
               const duracaoMinutos = (fimEvento - inicioEvento) / (1000 * 60); // duração em minutos
               
-              // Calcular largura baseada na duração (min: 30px, max: 150px)
-              const larguraBase = Math.min(Math.max(duracaoMinutos / 10, 30), 150);
+              // Calcular largura baseada na duração (min: 1px, max: 150px)
+              //remover limite máximo
+              const larguraBase = Math.max(duracaoMinutos / 10, 1);
               corDuracao = '#28a745';
               
               duracaoVisual = `

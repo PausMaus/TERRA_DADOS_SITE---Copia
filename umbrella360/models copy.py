@@ -134,6 +134,7 @@ class Empresa(models.Model):
     nome = models.CharField(max_length=100, unique=True, verbose_name="Nome da Empresa")
     token = models.CharField(max_length=100, unique=True, verbose_name="Token de Acesso Wialon", blank=True, null=True)
     senha = models.CharField(max_length=100, default='senha', verbose_name="Senha de Acesso", blank=True, null=True)
+    id_recurso = models.CharField(max_length=50, unique=True, verbose_name="ID do Recurso Wialon", blank=True, null=True)
 
     def __str__(self):
         return self.nome
@@ -213,3 +214,20 @@ class CheckPoint(models.Model):
         verbose_name = "CheckPoint"
         verbose_name_plural = "CheckPoints"
         ordering = ['-data_entrada']
+
+
+
+class Infrações(models.Model):
+    unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE, related_name='infracoes')
+    data = models.DateTimeField(verbose_name="Data da Infração", blank=True, null=True)
+    limite = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Limite de Velocidade (km/h)", blank=True, null=True)
+    velocidade = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Velocidade (km/h)", blank=True, null=True)
+    localizacao = models.URLField(max_length=100, verbose_name="Localização", blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.unidade.nm} - {self.limite} ({self.data})"
+
+    class Meta:
+        verbose_name = "Infração"
+        verbose_name_plural = "Infrações"
+        ordering = ['-data']

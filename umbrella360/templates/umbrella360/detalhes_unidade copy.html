@@ -57,6 +57,16 @@
                   <strong>Placa:</strong> {{ unidade.placa }}
                 </p>
               {% endif %}
+              {% if unidade.cor %}
+                <p style="margin: 0.25rem 0 0 0; color: #495057;">
+                  <strong>Cor:</strong> {{ unidade.cor }}
+                </p>
+              {% endif %}
+              {% if unidade.modelo %}
+                <p style="margin: 0.25rem 0 0 0; color: #495057;">
+                  <strong>Modelo:</strong> {{ unidade.modelo }}
+                </p>
+              {% endif %}
             </div>
             <div style="text-align: center;">
               {% if stats_gerais.total_viagens > 0 %}
@@ -73,10 +83,12 @@
 
           <!-- KPIs Principais -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            {% if unidade.cls == 'Veículo' %}
             <div class="kpi-card kpi-consumo">
-              <h4>Quilometragem Total</h4>
-              <p>{{ stats_filtrados.total_quilometragem|floatformat:0|default:0 }} km</p>
+              <h4>Odômetro</h4>
+              <p>{{ odometro_unidade|floatformat:0|default:0 }} km</p>
             </div>
+            {% endif %}
             <div class="kpi-card kpi-eficiencia">
               <h4>Eficiência Média</h4>
               <p>{{ stats_gerais.media_eficiencia|floatformat:2|default:0 }} km/L</p>
@@ -236,9 +248,14 @@
 
     <!-- Seção de CheckPoints -->
     <section class="checkpoints-section" style="background: rgba(255, 255, 255, 0.95); margin: 2rem auto; max-width: 1200px; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
-      <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
-      CheckPoints da Unidade
-      </h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="text-align: center; color: #2c3e50; margin: 0; flex: 1;">
+          CheckPoints da Unidade
+        </h2>
+        <a href="{% url 'cercas_unidade' unidade.id %}" class="btn btn-primary" style="margin-left: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; transition: transform 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+          📋 Ver Todos os CheckPoints
+        </a>
+      </div>
       
       <!-- Estatísticas dos CheckPoints -->
       <div class="stats-overview" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
@@ -304,7 +321,6 @@
               <li class="ranking-item" style="display: flex; flex-direction: column; padding: 1rem; margin-bottom: 0.75rem; border-radius: 8px; transition: all 0.3s ease; border: 1px solid #e9ecef;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                   <strong style="color: #495057;">{{ checkpoint.cerca|truncatechars:25 }}</strong>
-                  <span style="color: #6c757d; font-size: 0.9rem;">{{ checkpoint.período }}</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #6c757d;">
                   <span>Entrada: {{ checkpoint.data_entrada|date:"d/m H:i"|default:"-" }}</span>
@@ -478,7 +494,6 @@
                 <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Data/Hora</th>
                 <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Limite</th>
                 <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Velocidade</th>
-                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Excesso</th>
                 <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Localização</th>
               </tr>
             </thead>
@@ -495,15 +510,6 @@
                   <span style="background: #ffebee; color: #c62828; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">
                     {{ infracao.velocidade|floatformat:0 }} km/h
                   </span>
-                </td>
-                <td style="padding: 0.75rem;">
-                  {% if infracao.velocidade and infracao.limite %}
-                    <span style="color: #dc3545; font-weight: 700;">
-                      +{{ infracao.velocidade|floatformat:0|add:"-"|add:infracao.limite|floatformat:0 }} km/h
-                    </span>
-                  {% else %}
-                    <span style="color: #6c757d;">-</span>
-                  {% endif %}
                 </td>
                 <td style="padding: 0.75rem;">
                   {% if infracao.localizacao %}

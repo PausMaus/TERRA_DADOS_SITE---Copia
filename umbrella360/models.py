@@ -146,7 +146,7 @@ class Empresa(models.Model):
 
 
 
-
+#unidades basicas
 class Unidade(models.Model):
     nm = models.CharField(max_length=100, verbose_name="Nome da Unidade", blank=True, null=True)
     cls = models.CharField(max_length=50, verbose_name="Classe da Unidade", blank=True, null=True)
@@ -155,6 +155,7 @@ class Unidade(models.Model):
     descricao = models.TextField(verbose_name="Descrição da Unidade", blank=True, null=True)
     marca = models.CharField(max_length=50, verbose_name="Marca da Unidade", blank=True, null=True)
     placa = models.CharField(max_length=20, verbose_name="Placa da Unidade", blank=True, null=True)
+    odometro = models.DecimalField(max_digits=15, decimal_places=2, default=0.00, verbose_name="Odômetro (km)", blank=True, null=True)
 
     def __str__(self):
         return f"{self.id} - {self.nm} ({self.cls})"
@@ -163,6 +164,22 @@ class Unidade(models.Model):
         verbose_name = "Unidade"
         verbose_name_plural = "Unidades"
         ordering = ['id']
+
+#veículo, child de Unidade
+class Veiculo(Unidade):
+    ano = models.PositiveIntegerField(verbose_name="Ano do Veículo", blank=True, null=True)
+    modelo = models.CharField(max_length=100, verbose_name="Modelo do Veículo", blank=True, null=True)
+    cor = models.CharField(max_length=50, verbose_name="Cor do Veículo", blank=True, null=True)
+    tipo_combustivel = models.CharField(max_length=50, verbose_name="Tipo de Combustível", blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.modelo} ({self.ano}) - {self.cor} - {self.tipo_combustivel}"
+
+    class Meta:
+        verbose_name = "Veículo"
+        verbose_name_plural = "Veículos"
+        ordering = ['modelo']
+
 
 
 
@@ -193,7 +210,10 @@ class Viagem_Base(models.Model):
      default=0.00, verbose_name="Emissões de CO2 (g/km)", blank=True, null=True
     )
     período = models.CharField(
-        max_length=20, default="Maio", verbose_name="Período de Referência", blank=True, null=True
+        max_length=20, verbose_name="Período de Referência", blank=True, null=True
+    )
+    motor_ocioso = models.DurationField(
+         verbose_name="Horas de Motor Ocioso", blank=True, null=True
     )
 
 
@@ -204,7 +224,7 @@ class CheckPoint(models.Model):
     data_saida = models.DateTimeField(verbose_name="Data de Saída", blank=True, null=True)
     duracao = models.DurationField(verbose_name="Duração", blank=True, null=True)
     período = models.CharField(
-        max_length=20, default="Maio", verbose_name="Período de Referência", blank=True, null=True
+        max_length=20, verbose_name="Período de Referência", blank=True, null=True
     )
 
     def __str__(self):
@@ -231,3 +251,5 @@ class Infrações(models.Model):
         verbose_name = "Infração"
         verbose_name_plural = "Infrações"
         ordering = ['-data']
+
+
