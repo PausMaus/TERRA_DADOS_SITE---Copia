@@ -52,20 +52,17 @@
 
         
         {% if request.session.empresa_nome %}
-        <div class="feature-card" style="border: 2px solid #ffd700; background: linear-gradient(135deg, #fff9c4, #ffeaa7);">
+        <div class="feature-card">
           <h3>Ranking</h3>
-          <p>Veja os melhores desempenhos da {{ request.session.empresa_nome }}.</p>
           <a href="{% url 'ranking_empresa' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Rankings</a>
         </div>
 
-        <div class="feature-card" style="border: 2px solid #ffd700; background: linear-gradient(135deg, #ffc4ff, #ffeaa7);">
+        <div class="feature-card">
           <h3>Relatórios</h3>
-          <p>Veja os Relatórios .</p>
           <a href="{% url 'report_empresa' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Relatórios</a>
         </div>
-        <div class="feature-card" style="border: 2px solid #ffd700; background: linear-gradient(135deg, #b0ead3, #ffeaa7);">
+        <div class="feature-card" >
           <h3>Unidades</h3>
-          <p>Sua frota e motoristas </p>
           <a href="{% url 'lista_unidades' %}" class="btn btn-primary" style="margin-top: 1rem;">Unidades</a>
         </div>
 

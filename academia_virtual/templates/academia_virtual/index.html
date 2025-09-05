@@ -34,9 +34,6 @@
                           <img src="{{ equipamento.imagem.url }}" alt="{{ equipamento.nome }}">
                         {% endif %}
                         <h3>{{ equipamento.nome }}</h3>
-                        {% if equipamento.descricao %}
-                          <p>{{ equipamento.descricao|truncatewords:20 }}</p>
-                        {% endif %}
                         {% if equipamento.tipo %}
                           <span class="tipo-badge">{{ equipamento.tipo }}</span>
                         {% endif %}
@@ -71,9 +68,6 @@
                           <img src="{{ equipamento.imagem.url }}" alt="{{ equipamento.nome }}">
                         {% endif %}
                         <h3>{{ equipamento.nome }}</h3>
-                        {% if equipamento.descricao %}
-                          <p>{{ equipamento.descricao|truncatewords:20 }}</p>
-                        {% endif %}
                         {% if equipamento.tipo %}
                           <span class="tipo-badge">{{ equipamento.tipo }}</span>
                         {% endif %}

@@ -1,0 +1,95 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ exercicio.nome }} - Academia Virtual</title>
+    <link rel="stylesheet" href="{% static 'academia_virtual/style.css' %}?v=5">
+  </head>
+  <body>
+    {% if exercicio.imagem %}
+      <div class="banner-header" style="background-image: url('{{ exercicio.imagem.url }}');">
+        <div class="banner-overlay">
+          <div class="banner-content">
+            <nav>
+              <a href="javascript:history.back()" class="btn-voltar">← Voltar</a>
+            </nav>
+            <h1>{{ exercicio.nome }}</h1>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="header">
+        <h1>Academia Virtual</h1>
+        <nav>
+          <a href="javascript:history.back()" class="btn-voltar">← Voltar</a>
+        </nav>
+      </div>
+    {% endif %}
+
+    <div class="detalhe-container">
+      <div class="detalhe-content">
+        <div class="detalhe-info">
+          {% if exercicio.descricao %}
+            <div class="descricao">
+              <p>{{ exercicio.descricao|linebreaks }}</p>
+            </div>
+          {% else %}
+            <p class="sem-descricao">Nenhuma descrição disponível para este exercício.</p>
+          {% endif %}
+          
+          <div class="exercicio-detalhes-completo">
+            <h3>DETALHES DO EXERCÍCIO</h3>
+            <div class="detalhes-grid">
+              {% if exercicio.dificuldade %}
+                <div class="detalhe-item">
+                  <strong>Dificuldade:</strong>
+                  <span class="dificuldade-badge">{{ exercicio.dificuldade }}</span>
+                </div>
+              {% endif %}
+              {% if exercicio.duracao %}
+                <div class="detalhe-item">
+                  <strong>Duração:</strong>
+                  <span class="duracao-info">⏱️ {{ exercicio.duracao }} minutos</span>
+                </div>
+              {% endif %}
+              {% if exercicio.series %}
+                <div class="detalhe-item">
+                  <strong>Séries:</strong>
+                  <span class="series-info">🔢 {{ exercicio.series }}</span>
+                </div>
+              {% endif %}
+              {% if exercicio.repeticoes %}
+                <div class="detalhe-item">
+                  <strong>Repetições:</strong>
+                  <span class="repeticoes-info">🔢 {{ exercicio.repeticoes }}</span>
+                </div>
+              {% endif %}
+              {% if exercicio.equipamento %}
+                <div class="detalhe-item">
+                  <strong>Equipamento:</strong>
+                  <a href="{% url 'academia_virtual:detalhe' exercicio.equipamento.id %}" class="equipamento-link">
+                    {{ exercicio.equipamento.nome }}
+                  </a>
+                </div>
+              {% endif %}
+              {% if exercicio.professor %}
+                <div class="detalhe-item">
+                  <strong>Professor:</strong>
+                  <span class="professor-info">👨‍🏫 {{ exercicio.professor.nome }}</span>
+                </div>
+              {% endif %}
+              {% if exercicio.area %}
+                <div class="detalhe-item">
+                  <strong>Área:</strong>
+                  <span class="area-info">📍 {{ exercicio.area.nome }}</span>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

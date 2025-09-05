@@ -440,7 +440,7 @@ body {
 }
 
 .feature-card {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 253, 155, 0.9);
     border-radius: var(--radius-2xl);
     padding: var(--spacing-8);
     text-align: center;
@@ -474,12 +474,7 @@ body {
     left: 100%;
 }
 
-.feature-card h3 {
-    font-size: var(--font-size-xl);
-    color: var(--gray-800);
-    margin-bottom: var(--spacing-4);
-    font-weight: var(--font-weight-semibold);
-}
+
 
 .feature-card p {
     color: var(--gray-600);

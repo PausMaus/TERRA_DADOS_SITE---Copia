@@ -184,60 +184,7 @@
         </tbody>
       </table>
       {% endif %}
-
-      <!-- Histórico de Viagens Recentes -->
-      {% if viagens %}
-      <h3 class="h3">Viagens Recentes</h3>
-      <table class="sortable-table">
-        <thead>
-          <tr>
-            <th>Período</th>
-            <th>Quilometragem (km)</th>
-            <th>Consumo (L)</th>
-            <th>Eficiência (km/L)</th>
-            {% if unidade.cls == 'Veículo' %}
-            <th>Velocidade Média</th>
-            <th>RPM Médio</th>
-            <th>Temperatura</th>
-            {% endif %}
-            <th>Emissões CO2</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for viagem in viagens %}
-          <tr>
-            <td>{{ viagem.período|title }}</td>
-            <td>{{ viagem.quilometragem|floatformat:2 }}</td>
-            <td>{{ viagem.Consumido }}</td>
-            <td>
-              <span class="efficiency-indicator" data-efficiency="{{ viagem.Quilometragem_média }}">
-                {{ viagem.Quilometragem_média|floatformat:2 }}
-              </span>
-            </td>
-            {% if unidade.cls == 'Veículo' %}
-            <td>{{ viagem.Velocidade_média|floatformat:1|default:"-" }} km/h</td>
-            <td>{{ viagem.RPM_médio|floatformat:0|default:"-" }}</td>
-            <td>{{ viagem.Temperatura_média|floatformat:1|default:"-" }}°C</td>
-            {% endif %}
-            <td>{{ viagem.Emissões_CO2|floatformat:1|default:"-" }} t</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      
-      {% if total_viagens > 20 %}
-      <div style="text-align: center; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-        <p style="margin: 0; color: #6c757d;">
-          <em>Mostrando apenas as 20 viagens mais recentes. Total de viagens: {{ total_viagens }}</em>
-        </p>
-      </div>
-      {% endif %}
-      {% else %}
-      <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 12px; margin: 2rem 0;">
-        <h4 style="color: #6c757d; margin-bottom: 1rem;">📋 Nenhuma Viagem Registrada</h4>
-        <p style="color: #6c757d; margin: 0;">Esta unidade ainda não possui dados de viagens registrados no sistema.</p>
-      </div>
-      {% endif %}
+ 
 
     </main>
 
