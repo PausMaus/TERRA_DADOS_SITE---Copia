@@ -35,8 +35,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
         ##################################################
         # TESTE #
-        #self.TESTE_03()
+        
         self.TESTE_04()
+        self.TESTE_03()
         ##################################################
         
         ##################################################
@@ -96,19 +97,22 @@ class Command(BaseCommand):
         Wialon.wialon_logout(sid)
 
     def TESTE_03(self):
-        bandeiras = []
+        def comm(msg):
+            print(colored("="*30, "blue"))
+            print(colored("TESTE 03:","green"))
+            print(f"{msg}")
+            print(colored("="*30, "blue"))
         self.Limpeza()  
-        print("Iniciando processamento global...")
+        comm("Iniciando processamento global...")
         sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
         if not sid:
                 self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
                 return
 
-        Wialon.set_locale()
-
+        #Wialon.set_locale()
 
         ###__UNIDADES__TODAS__###
-        print(colored("Processando Unidades...",'yellow'))
+        comm("Processando Unidades...")
         processamento_df = pd.DataFrame()
         # Coleta de dados para o relatório
 
@@ -133,12 +137,12 @@ class Command(BaseCommand):
         self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=1, periodo="Ontem")
         self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=7, periodo="Últimos 7 dias")
         self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=30, periodo="Últimos 30 dias")
-
+        processamento_df = pd.DataFrame()
 
         #motoristas 
-        #self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
-        #self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        #self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
+        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
+        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
+        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
 
         processamento_df = pd.DataFrame()
 
@@ -147,12 +151,12 @@ class Command(BaseCommand):
         self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=1, periodo="Ontem")
         self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=7, periodo="Últimos 7 dias")
         self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=30, periodo="Últimos 30 dias")
+        processamento_df = pd.DataFrame()
 
         #Motoristas
-        #self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
-        #self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        #self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
+        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
+        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
+        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
         processamento_df = pd.DataFrame()
 
 
@@ -161,24 +165,24 @@ class Command(BaseCommand):
         self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=1, periodo="Ontem")
         self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=7, periodo="Últimos 7 dias")
         self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=30, periodo="Últimos 30 dias")
-
+        processamento_df = pd.DataFrame()
+        
         #motoristas 
-        #self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777218, dias=1, periodo="Ontem")
-        #self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        #self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777224, dias=1, periodo="Últimos 30 dias")
-        #processamento_df = pd.DataFrame()
-
-        #checkpoints e infrações
-        #self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
-        processamento_df = pd.DataFrame()   
-
-        #self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
+        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777218, dias=1, periodo="Ontem")
+        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777220, dias=1, periodo="Últimos 7 dias")
+        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777224, dias=1, periodo="Últimos 30 dias")
         processamento_df = pd.DataFrame()
 
-        print(bandeiras)
+        #checkpoints e infrações
+        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
+        processamento_df = pd.DataFrame()   
+
+        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
+        processamento_df = pd.DataFrame()
+
         Wialon.wialon_logout(sid)
 
-    def TESTE_04(self):
+    def TESTE_04(self,nome="TESTE 04"):
         def comm(msg):
             print(colored("="*30, "yellow"))
             print(colored(f"{nome}:","green"))
@@ -187,10 +191,10 @@ class Command(BaseCommand):
         #lista as empresas registradas
         empresas = Empresa.objects.all()
         for empresa in empresas:
-            print(f'Empresa: {empresa.nome}')
+            comm(f'Empresa: {empresa.nome}')
             # Inicia a sessão Wialon para cada empresa
             sid=Wialon.authenticate_with_wialon(empresa.token)
-            print(f'Sessão Wialon iniciada para {empresa.nome}, ID de recurso: {empresa.id_recurso}')
+            comm(f'Sessão Wialon iniciada para {empresa.nome}, ID de recurso: {empresa.id_recurso}')
             if not sid:
                 self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
                 continue
@@ -199,16 +203,15 @@ class Command(BaseCommand):
             if not unidades:
                 self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
                 return
-            
-            #print(f'Unidades encontradas:' , colored(f'{len(unidades)}', 'green'))
+
+            comm(f'Unidades encontradas: {len(unidades)}')
             #print(f'Unidades: {colored(f"{unidades}", "green")}')
 
             #coloca os dados em um dataframe
             df_unidades = pd.DataFrame(unidades)
-            print(f'Unidades encontradas:' , colored(f'{len(df_unidades)}', 'green'))
-            print(f'Unidades: {df_unidades}')
+            comm(f'Unidades encontradas: {len(df_unidades)}')
+            comm(f'Unidades: {df_unidades}')
             df_unidades.to_excel(f'{deposito}/{empresa.nome}_unidades.xlsx', index=False)
-
             
 
             for unidade in df_unidades.itertuples(index=False):
@@ -223,7 +226,9 @@ class Command(BaseCommand):
                 unidade_id = f"{empresa.nome}_{id}"
 
                 # Faça algo com o nome da unidade
+                #+---
                 comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
+                #+---
 
                 # Atualiza a unidade no banco de dados
                 Veiculo.objects.update_or_create(
@@ -238,22 +243,37 @@ class Command(BaseCommand):
                         'modelo': modelo
                     }
                 )
+                comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
+            
+            #adiciona também os motoristas
+
+            motoristas = Wialon.motoristas_simples2(sid)
+            df_motoristas = pd.DataFrame(motoristas)
+            comm(f'Motoristas encontrados: {len(df_motoristas)}')
+            comm(f'Motoristas: {df_motoristas}')
+            for motorista in df_motoristas.itertuples(index=False):
+                motorista_id = motorista.driver_id
+                motorista_nome = motorista.driver_name
+                cls = 'Motorista'
 
 
+                motorista_id = f"{empresa.nome}_{motorista_id}"
 
+                comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
 
-
+                # Atualiza o motorista no banco de dados
+                Unidade.objects.update_or_create(
+                    id=motorista_id,
+                    defaults={
+                        'nm': motorista_nome,
+                        'cls': cls,
+                        'empresa': empresa,
+                    }
+                )
         #faz logout
         Wialon.wialon_logout(sid)
+        #-------------------------------------------------------------------------------------------------------------#
 
-        sid=Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
-                            #checkpoints e infrações
-        processamento_df = pd.DataFrame()
-        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
-        processamento_df = pd.DataFrame()   
-
-        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
-        processamento_df = pd.DataFrame()
 
 
 
@@ -889,7 +909,7 @@ class Command(BaseCommand):
                     'empresa': empresa
                 }
             )
-            #adiciona também os motoristas
+        #adiciona também os motoristas
 
         motoristas = Wialon.motoristas_simples2(sid)
         df_motoristas = pd.DataFrame(motoristas)

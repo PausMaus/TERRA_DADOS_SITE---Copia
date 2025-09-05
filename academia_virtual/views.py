@@ -52,3 +52,11 @@ def detalhe(request, item_id):
         'exercicios_relacionados': exercicios_relacionados,
     }
     return render(request, "academia_virtual/detalhe.html", context)
+
+def exercicio_detalhe(request, exercicio_id):
+    exercicio = get_object_or_404(Exercicio, pk=exercicio_id)
+    
+    context = {
+        'exercicio': exercicio,
+    }
+    return render(request, "academia_virtual/exercicio_detalhe.html", context)

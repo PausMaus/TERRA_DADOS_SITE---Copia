@@ -340,32 +340,22 @@
     </button>
 
     <div class="header">
-      <h1>CheckPoints da Unidade</h1>
-      <p class="tagline">{{ unidade.nm|default:unidade.id }} - Histórico Completo</p>
       <div class="menu-buttons">
         <a href="{% url 'index' %}" class="btn btn-secondary">Início</a>
         <a href="{% url 'detalhes_unidade' unidade.id %}" class="btn btn-secondary">Voltar à Unidade</a>
         <a href="{% url 'lista_unidades' %}" class="btn btn-secondary">Lista de Unidades</a>
-
       </div>
     </div>
 
     <main class="cercas-container">
       
       <!-- Cabeçalho da Unidade -->
-      <div class="cercas-header">
-        <h1>CheckPoints - {{ unidade.nm|default:unidade.id }}</h1>
-        <p>Histórico completo de passagens por cercas geográficas</p>
-        {% if unidade.cls %}
-          <small style="opacity: 0.8; font-size: 1rem; margin-top: 0.5rem; display: block;">
-            Classificação: {{ unidade.cls }}
-          </small>
-        {% endif %}
+      <div class="hero-section">
+        <h1>CheckPoints - <span class="gradient-text">{{ unidade.nm|default:unidade.id }}</span></h1>
       </div>
 
       <!-- Estatísticas Gerais -->
       <div class="stats-overview">
-        <h3 style="text-align: center; margin-bottom: 2rem; color: #2c3e50;">Resumo dos CheckPoints</h3>
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-value">{{ total_checkpoints }}</div>

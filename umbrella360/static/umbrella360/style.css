@@ -187,7 +187,7 @@ body {
 }
 
 .feature-card {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 253, 155, 0.9);
     border-radius: 15px;
     padding: 2rem;
     text-align: center;
@@ -536,9 +536,10 @@ body.tema-cafe .feature-card {
     color: #F5DEB3;
 }
 
-body.tema_cafe .feature-card h3 {
+body.tema-cafe .feature-card h3 {
     color: #F5DEB3;
 }
+
 
 /* Data Importance tema café */
 body.tema-cafe .data-importance {
@@ -1595,7 +1596,7 @@ body.tema-empresarial .filter-count {
 
 /* Tabelas ordenáveis - Tema padrão (Noite de Verão) */
 .sortable-table th {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: solid #667eea;
     color: white;
     font-weight: 600;
     text-align: left;
@@ -1607,7 +1608,7 @@ body.tema-empresarial .filter-count {
 }
 
 .sortable-table th:hover {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    background: solid #4ca24b;
     transform: translateY(-1px);
 }
 
@@ -1665,5 +1666,5 @@ body.tema-empresarial .filter-count {
 
 .tema-empresarial table thead th {
     background: transparent !important;
-    color: #ffffff !important;
+    color: #000000 !important;
 }
