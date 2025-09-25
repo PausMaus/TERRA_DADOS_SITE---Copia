@@ -33,14 +33,38 @@ WIALON_TOKEN_UMBR = "fcc5baae18cdbea20200265b6b8a4af142DD8BF34CF94701039765308B2
 class Command(BaseCommand):
     help = 'Importa dados da API Wialon'
     def handle(self, *args, **kwargs):
-        ##################################################
         start_time = datetime.now()
         self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
+    
+    
+    
+        #lista as empresas registradas
+        empresas = Empresa.objects.all()
+        for empresa in empresas:
+            print(f'Empresa: {empresa.nome}')
+            # Inicia a sessão Wialon para cada empresa
+            sid=Wialon.authenticate_with_wialon(empresa.token)
+            print(f'Sessão Wialon iniciada para {empresa.nome}.')
+            if not sid:
+                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                continue
 
-        self.principal(Empresa.objects.get(nome="CPBRACELL").token, "CPBRACELL")
-        self.principal(Empresa.objects.get(nome="PLACIDO").token, "PLACIDO")
-        self.principal(Empresa.objects.get(nome="São Francisco Resgate").token, "São Francisco Resgate")
+            #busca relatórios
+            relatórios = Wialon.buscadora_reports(sid)
+            #salva os relatorios em .txt no deposito
+            with open(f'{deposito}/{empresa.nome}_relatorios.txt', 'w') as f:
+                f.write(json.dumps(relatórios, indent=4))
 
+            # Atualiza as unidades
+            self.atualiza_unidades(sid, empresa.nome)
+
+            
+
+
+
+            #faz logout
+            Wialon.wialon_logout(sid)
+        
 
         end_time = datetime.now()
         execution_time = end_time - start_time
@@ -65,27 +89,19 @@ class Command(BaseCommand):
         #busca os relatorios
         print(Wialon.buscadora_reports(sid))
 
-        self.CLTDR_Viagens(empresa_nome, sid)
+
+        #processa as unidades
+        if empresa_nome == "CPBRASCELL":
+            self.process_units_CP(sid)
+
+
+        elif empresa_nome == "PLACIDO":
+            self.process_units_PLAC(sid)
 
         # Encerra a sessão Wialon
         Wialon.wialon_logout(sid)
 
         self.stdout.write(self.style.SUCCESS(f'Sessão Wialon encerrada para {empresa_nome}.'))
-
-
-#######################################################################################
-
-
-
-    def CLTDR_Viagens(self, empresa_nome, sid):
-        if empresa_nome == 'CPBRACELL':
-            self.process_units_CP(sid)
-
-        if empresa_nome == 'PLACIDO':
-            self.process_units_PLAC(sid)
-
-        elif empresa_nome == 'São Francisco Resgate':
-            self.process_units_SF(sid)
 
 
         #######################################################################################
@@ -125,11 +141,8 @@ class Command(BaseCommand):
                 marca = 'DAF'
             if empresa.nome == 'São Francisco Resgate':
                 marca = 'Fiat'
-            unidade_id = f"{empresa_nome}_{unidade_id}"
 
-            #+---
-            print(f'Unidade: {placa} | ID: {unidade_id} | Restante do nome: {restante_nome} | Marca: {marca} | Classe: {cls} | Empresa: {empresa.nome}')
-            #+---
+            #print(f'Unidade: {placa} | ID: {unidade_id} | Restante do nome: {restante_nome} | Marca: {marca} | Classe: {cls} | Empresa: {empresa.nome}')
 
             # Atualiza a unidade no banco de dados
             Unidade.objects.update_or_create(
@@ -143,7 +156,7 @@ class Command(BaseCommand):
                     'empresa': empresa
                 }
             )
-        #adiciona também os motoristas
+            #adiciona também os motoristas
 
         motoristas = Wialon.motoristas_simples2(sid)
         df_motoristas = pd.DataFrame(motoristas)
@@ -157,10 +170,8 @@ class Command(BaseCommand):
             if not empresa:
                 self.stdout.write(self.style.ERROR(f'Empresa {empresa_nome} não encontrada no banco de dados.'))
                 return
-
-            motorista_id = f"{empresa_nome}_{motorista_id}"
-
-            print(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
+            
+            #print(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
 
             # Atualiza o motorista no banco de dados
             Unidade.objects.update_or_create(
@@ -240,44 +251,12 @@ class Command(BaseCommand):
         self.update_or_create_trip(processamento_df)
         print(processamento_df)
 
-    def process_units_SF(self, sid):
-        # CAMINHOES SÃO FRANCISCO#######################
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='São Francisco Resgate')
-            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
-
-        processamento_df = pd.DataFrame()
-        unidades_db = unidades_db
-        # Coleta dados de relatório para 1 dia
-        
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        
-
-
-
-
-        # Atualiza ou cria as viagens no model Viagem_Base
-
-        self.update_or_create_trip(processamento_df)
-
-
-
     def process_motoristas_CP(self, sid):
         #MOTORISTAS BRASCELL####################################################################################
         unidades_db = Unidade.objects.all()
         unidades_db_ids = [unidade.id for unidade in unidades_db]
         if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')
+            unidades_db = unidades_db.filter(empresa__nome='CPBRASCELL')
             unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
 
         processamento_df = pd.DataFrame()
@@ -289,53 +268,12 @@ class Command(BaseCommand):
         print(f'Relatórios coletados para {len(processamento_df)} motoristas.')
         print(processamento_df)
 
-    def process_motoristas_CP_2(self, sid):
-        # motoristas BRASCELL#######################
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')
-            unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
-
-        processamento_df = pd.DataFrame()
-        unidades_db = unidades_db
-        # Coleta dados de relatório para 1 dia
-        
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=1, periodo='Ontem')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        #print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        #print(processamento_df)
-        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-        #print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        #print(processamento_df)
-        
-
-
-
-
-        # Atualiza ou cria as viagens no model Viagem_Base
-
-        self.update_or_create_trip(processamento_df)
 
     def update_or_create_trip(self, processamento_df):
         if not processamento_df.empty:
             for index, row in processamento_df.iterrows():
                 try:
-                    unidades = Unidade.objects.filter(nm=row['Grouping'])
-                    
-                    if not unidades.exists():
-                        self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
-                        continue
-                    
-                    if unidades.count() > 1:
-                        self.stdout.write(self.style.WARNING(f'Múltiplas unidades encontradas com nome "{colored(row["Grouping"], "red")}". Usando a primeira.'))
-                        # Log das unidades duplicadas para análise
-                        for unidade in unidades:
-                            self.stdout.write(self.style.WARNING(f'  - ID: {unidade.id}, Empresa: {unidade.empresa.nome if unidade.empresa else "N/A"}'))
-                    
-                    unidade_instance = unidades.first()
+                    unidade_instance = Unidade.objects.get(nm=row['Grouping'])
                     
                     # Processa os valores numericos
                     quilometragem = self.processar_valor_numerico(row.get('Quilometragem', '0'))
@@ -377,8 +315,8 @@ class Command(BaseCommand):
 
                         }
                     )
-                    self.stdout.write(self.style.SUCCESS(f'Viagem: {colored(row["Grouping"], "cyan")} - {colored(row["periodo"], "magenta")} - {colored(quilometragem_value, "green")}'))
-
+                    self.stdout.write(self.style.SUCCESS(f'Viagem atualizada ou criada para a unidade {row["Grouping"]} no período {row["periodo"]} com quilometragem {quilometragem_value}'))
+                
                 except Unidade.DoesNotExist:
                     self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
                     continue
@@ -393,10 +331,12 @@ class Command(BaseCommand):
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
             Wialon.clean_up_result(sid)
+            time.sleep(1)
         return processamento_df
 
+
     def retrieve_unit_data_motorista(self, sid, unidades_db, id_relatorio, processamento_df, tempo_dias, periodo):
-        for unidade in tqdm(unidades_db, desc="Processando unidades", unit="unidade"):
+        for unidade in unidades_db:
             unidade_id = unidade.id
 
             # Coleta dados de relatório para 1 dia
@@ -405,6 +345,7 @@ class Command(BaseCommand):
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
             Wialon.clean_up_result(sid)
+            time.sleep(1)
         return processamento_df
 
 
