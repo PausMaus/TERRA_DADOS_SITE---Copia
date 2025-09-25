@@ -135,6 +135,8 @@ class Empresa(models.Model):
     token = models.CharField(max_length=100, unique=True, verbose_name="Token de Acesso Wialon", blank=True, null=True)
     senha = models.CharField(max_length=100, default='senha', verbose_name="Senha de Acesso", blank=True, null=True)
     id_recurso = models.CharField(max_length=50, unique=True, verbose_name="ID do Recurso Wialon", blank=True, null=True)
+    #exemplo de ID de frota:401914599
+    frota = models.CharField(max_length=50, verbose_name="ID da Frota Wialon", blank=True, null=True)
 
     def __str__(self):
         return self.nome
@@ -155,6 +157,7 @@ class Unidade(models.Model):
     descricao = models.TextField(verbose_name="Descrição da Unidade", blank=True, null=True)
     marca = models.CharField(max_length=50, verbose_name="Marca da Unidade", blank=True, null=True)
     placa = models.CharField(max_length=20, verbose_name="Placa da Unidade", blank=True, null=True)
+    id_wialon = models.CharField(max_length=50, unique=True, verbose_name="ID Wialon", blank=True, null=True)
     odometro = models.DecimalField(max_digits=15, decimal_places=2, default=0.00, verbose_name="Odômetro (km)", blank=True, null=True)
 
     def __str__(self):
@@ -186,7 +189,7 @@ class Veiculo(Unidade):
 class Viagem_Base(models.Model):
     unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE, related_name='viagens')
     quilometragem = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.00, verbose_name="Quilometragem Atual (km)", blank=True, null=True
+        max_digits=10, decimal_places=2, default=0.00, verbose_name="Quilometragem", blank=True, null=True
     )
     Consumido = models.PositiveIntegerField(
         default=0.00, verbose_name="Combustível Total (litros)", blank=True, null=True
@@ -215,6 +218,10 @@ class Viagem_Base(models.Model):
     motor_ocioso = models.DurationField(
          verbose_name="Horas de Motor Ocioso", blank=True, null=True
     )
+    class Meta:
+        verbose_name = "Viagem Base"
+        verbose_name_plural = "Viagens"
+        ordering = ['-período']
 
 
 class CheckPoint(models.Model):
