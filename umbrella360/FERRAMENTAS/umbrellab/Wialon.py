@@ -452,6 +452,10 @@ def unidades_simples_03(session_id, empresa):
         response = requests.post(API_URL, data=params)
         response.raise_for_status()
         result = response.json()
+        #+---
+        comm(f"Resultado da busca: {json.dumps(result, indent=2, ensure_ascii=False)}")
+        #+---
+
         
         recursos = result.get("items", [])
         comm(f"Recursos encontrados: {len(recursos)}")
@@ -525,9 +529,137 @@ def unidades_simples_03(session_id, empresa):
             df = pd.DataFrame(df_data)
             
             # Salva como excel no depósito
-            excel_path = os.path.join(DEPOSITO, f"unidades_{empresa}.xlsx")
-            df.to_excel(excel_path, index=False, engine='openpyxl')
-            comm(f"DataFrame salvo em: {excel_path}")
+            # +---
+            #excel_path = os.path.join(DEPOSITO, f"unidades_{empresa}.xlsx")
+            #df.to_excel(excel_path, index=False, engine='openpyxl')
+            #comm(f"DataFrame salvo em: {excel_path}")
+            # +---
+
+            # Mostra um resumo das colunas disponíveis
+            comm(f"Colunas disponíveis no DataFrame: {df.columns.tolist()}")
+            comm(f"Total de unidades processadas: {len(df)}")
+        
+        return unidades_processadas
+        
+    except Exception as e:
+        comm(f"Erro ao buscar unidades: {e}")
+        return []
+
+def unidades_simples_04(session_id, flags):
+    """
+    Retrieve all available units (avl_unit) from Wialon with profile fields extracted.
+    """
+    nome = "Buscadora de Unidades Simples 04"
+    def comm(msg):
+        print(colored("="*30, "yellow"))
+        print(colored(f"{nome}:","green"))
+        print(f"{msg}")
+        print(colored("="*30, "yellow"))
+    
+    params = {
+        "svc": "core/search_items",
+        "params": json.dumps({
+            "spec": {
+                "itemsType": "avl_unit",
+                "propName": "sys_name",
+                "propValueMask": "*",
+                "sortType": "sys_name",
+                "propType": "profilefield",
+            },
+            "force": 1,
+            "flags": flags,  # Flags para incluir profile fields
+            "from": 0,
+            "to": 0
+        }),
+        "sid": session_id
+    }
+    
+    try:
+        response = requests.post(API_URL, data=params)
+        response.raise_for_status()
+        result = response.json()
+        #+---
+        comm(f"Resultado da busca: {json.dumps(result, indent=2, ensure_ascii=False)}")
+        #+---
+
+        
+        recursos = result.get("items", [])
+        comm(f"Recursos encontrados: {len(recursos)}")
+        
+        # Lista para armazenar todos os dados das unidades
+        unidades_processadas = []
+        
+        for recurso in recursos:
+            unit_name = recurso.get('nm', 'Unidade sem nome')
+            unit_id = recurso.get('id', 0)
+            #+---
+            #comm(f"Processando: {unit_name} (ID: {unit_id})")
+            #+---
+            
+            # Extrai os profile fields
+            pflds = recurso.get("pflds", {})
+            
+            # Dicionário para armazenar os dados da unidade atual
+            unit_data = {
+                'unit_id': unit_id,
+                'unit_name': unit_name,
+                'profile_fields': {}
+            }
+            
+            # Processa cada profile field
+            for field_key, field_data in pflds.items():
+                if isinstance(field_data, dict):
+                    field_name = field_data.get('n', f'field_{field_key}')
+                    field_value = field_data.get('v', '')
+                    field_id = field_data.get('id', 0)
+                    created_time = field_data.get('ct', 0)
+                    modified_time = field_data.get('mt', 0)
+                    
+                    # Adiciona ao dicionário de profile fields
+                    unit_data['profile_fields'][field_name] = {
+                        'value': field_value,
+                        'field_id': field_id,
+                        'created_time': created_time,
+                        'modified_time': modified_time
+                    }
+                    
+                    # Também adiciona como campo direto para facilitar acesso
+                    unit_data[field_name] = field_value
+            
+            # Adiciona a unidade processada à lista
+            unidades_processadas.append(unit_data)
+            
+            # Log dos campos encontrados para esta unidade
+            #+---
+            #comm(f"Campos encontrados para {unit_name}:")
+            #for field_name, field_info in unit_data['profile_fields'].items():
+            #    comm(f"  - {field_name}: {field_info['value']}")
+            #+---
+        
+        # Salva os dados processados no depósito
+        save_json_to_deposito(unidades_processadas, "unidades_profile_fields")
+        
+        # Cria DataFrame para análise
+        df_data = []
+        for unit in unidades_processadas:
+            row = {
+                'unit_id': unit['unit_id'],
+                'unit_name': unit['unit_name']
+            }
+            # Adiciona todos os profile fields como colunas
+            for field_name, field_info in unit['profile_fields'].items():
+                row[field_name] = field_info['value']
+            df_data.append(row)
+        
+        if df_data:
+            df = pd.DataFrame(df_data)
+            
+            # Salva como excel no depósito
+            # +---
+            #excel_path = os.path.join(DEPOSITO, f"unidades_{empresa}.xlsx")
+            #df.to_excel(excel_path, index=False, engine='openpyxl')
+            #comm(f"DataFrame salvo em: {excel_path}")
+            # +---
 
             # Mostra um resumo das colunas disponíveis
             comm(f"Colunas disponíveis no DataFrame: {df.columns.tolist()}")
@@ -539,6 +671,144 @@ def unidades_simples_03(session_id, empresa):
         comm(f"Erro ao buscar unidades: {e}")
         return []
     
+
+
+    
+def unidades_simples_05(session_id, flags):
+    """
+    Retrieve all available units (avl_unit) from Wialon with profile fields extracted.
+    """
+    nome = "Buscadora de Unidades Simples 05"
+    def comm(msg):
+        print(colored("="*30, "yellow"))
+        print(colored(f"{nome}:","green"))
+        print(f"{msg}")
+        print(colored("="*30, "yellow"))
+    
+    params = {
+        "svc": "core/search_items",
+        "params": json.dumps({
+            "spec": {
+                "itemsType": "avl_unit",
+                "propName": "sys_name",
+                "propValueMask": "*",
+                "sortType": "sys_name",
+                "propType": "profilefield",
+            },
+            "force": 1,
+            "flags": flags,  # Flags para incluir profile fields
+            "from": 0,
+            "to": 0
+        }),
+        "sid": session_id
+    }
+    
+    try:
+        response = requests.post(API_URL, data=params)
+        response.raise_for_status()
+        result = response.json()
+        #+---
+        #comm(f"Resultado da busca: {json.dumps(result, indent=2, ensure_ascii=False)}")
+        #+---
+        # Salva os dados processados no depósito
+        save_json_to_deposito(result, "unidades_profile_fields")
+
+        
+        recursos = result.get("items", [])
+        comm(f"Recursos encontrados: {len(recursos)}")
+        
+        # Lista para armazenar todos os dados das unidades
+        unidades_processadas = []
+        
+        for recurso in recursos:
+            unit_name = recurso.get('nm', 'Unidade sem nome')
+            unit_id = recurso.get('id', 0)
+            id_criador = recurso.get('crt', 'Criador não definido')
+
+            
+
+            #+---
+            #comm(f"Processando: {unit_name} (ID: {unit_id}, ID Criador: {id_criador})")
+            #+---
+            
+            # Extrai os profile fields
+            pflds = recurso.get("pflds", {})
+            
+            # Dicionário para armazenar os dados da unidade atual
+            unit_data = {
+                'unit_id': unit_id,
+                'unit_name': unit_name,
+                'id_criador': id_criador,
+                'profile_fields': {}
+            }
+            
+            # Processa cada profile field
+            for field_key, field_data in pflds.items():
+                if isinstance(field_data, dict):
+                    field_name = field_data.get('n', f'field_{field_key}')
+                    field_value = field_data.get('v', '')
+                    field_id = field_data.get('id', 0)
+                    created_time = field_data.get('ct', 0)
+                    modified_time = field_data.get('mt', 0)
+                    
+                    # Adiciona ao dicionário de profile fields
+                    unit_data['profile_fields'][field_name] = {
+                        'value': field_value,
+                        'field_id': field_id,
+                        'created_time': created_time,
+                        'modified_time': modified_time
+                    }
+                    
+                    # Também adiciona como campo direto para facilitar acesso
+                    unit_data[field_name] = field_value
+            
+            # Adiciona a unidade processada à lista
+            unidades_processadas.append(unit_data)
+            
+            # Log dos campos encontrados para esta unidade
+            #+---
+            #comm(f"Campos encontrados para {unit_name}:")
+            #for field_name, field_info in unit_data['profile_fields'].items():
+            #    comm(f"  - {field_name}: {field_info['value']}")
+            #+---
+        
+        
+        
+        # Cria DataFrame para análise
+        df_data = []
+        for unit in unidades_processadas:
+            row = {
+                'unit_id': unit['unit_id'],
+                'unit_name': unit['unit_name'],
+                'id_criador': unit['id_criador']
+            }
+            # Adiciona todos os profile fields como colunas
+            for field_name, field_info in unit['profile_fields'].items():
+                row[field_name] = field_info['value']
+            df_data.append(row)
+        
+        if df_data:
+            df = pd.DataFrame(df_data)
+            
+            # Salva como excel no depósito
+            # +---
+            #excel_path = os.path.join(DEPOSITO, f"unidades_{empresa}.xlsx")
+            #df.to_excel(excel_path, index=False, engine='openpyxl')
+            #comm(f"DataFrame salvo em: {excel_path}")
+            # +---
+
+            # Mostra um resumo das colunas disponíveis
+            comm(f"Colunas disponíveis no DataFrame: {df.columns.tolist()}")
+            comm(f"Total de unidades processadas: {len(df)}")
+        
+        
+        return unidades_processadas
+        
+    except Exception as e:
+        comm(f"Erro ao buscar unidades: {e}")
+        return []
+
+
 def motoristas_simples(session_id):
     """
     Retrieve all available drivers (avl_resource) from Wialon.
@@ -607,7 +877,8 @@ def motoristas_simples2(session_id):
         response = requests.post(API_URL, data=params)
         response.raise_for_status()
         result = response.json()
-        #comm(f"Resultado da busca: {json.dumps(result, indent=2, ensure_ascii=False)}")
+        # Salva os dados processados no depósito
+        save_json_to_deposito(result, "motoristas_simples_v2")
         
         resources = result.get("items", [])
         motoristas_lista = []
@@ -651,6 +922,79 @@ def motoristas_simples2(session_id):
     except Exception as e:
         comm(f"Erro ao buscar motoristas: {e}")
         return []
+
+
+
+def motoristas_simples_03(session_id, flags):
+    """
+    Retrieve all available drivers (avl_resource) from Wialon and extract driver details.
+    """
+    nome = "Buscadora de Motoristas Simples v3"
+    def comm(msg):
+        print(colored("="*30, "white"))
+        print(colored(f"{nome}:","green"))
+        print(f"{msg}")
+        print(colored("="*30, "white"))
+    
+    params = {
+        "svc": "core/search_items",
+        "params": json.dumps({
+            "spec": {
+                "itemsType": "avl_resource",
+                "propName": "drivers",
+                "propValueMask": "*",
+                "sortType": "drivers",
+            },
+            "force": 1,
+            "flags": flags,  # 1 (basic info) + 256 (drivers info)
+            "from": 0,
+            "to": 0
+        }),
+        "sid": session_id
+    }
+    
+    try:
+        response = requests.post(API_URL, data=params)
+        response.raise_for_status()
+        result = response.json()
+        # Salva os dados processados no depósito
+        save_json_to_deposito(result, "motoristas_simples_v3")
+        
+        resources = result.get("items", [])
+        motoristas_lista = []
+        
+        for resource in resources:
+            resource_name = resource.get("nm", "Recurso sem nome")
+            resource_id = resource.get("id", 0)
+            creator_id = resource.get("crt", 0)
+            
+            # Extrai os motoristas do campo 'drvrs'
+            drivers_dict = resource.get("drvrs", {})
+            
+            if drivers_dict:
+                comm(f"Recurso '{resource_name}' (ID: {resource_id}): {len(drivers_dict)} motorista(s)")
+                
+                # Itera sobre o dicionário de motoristas
+                for driver_key, driver_data in drivers_dict.items():
+                    motorista_info = {
+                        "resource_id": resource_id,
+                        "resource_name": resource_name,
+                        "creator_id": creator_id,
+                        "driver_id": driver_data.get("id", 0),
+                        "driver_name": driver_data.get("n", "Nome não disponível"),
+                    }
+                    motoristas_lista.append(motorista_info)
+        #+---
+        #comm(f"Total de motoristas encontrados: {len(motoristas_lista)}")
+        #+---
+        
+
+        return motoristas_lista
+        
+    except Exception as e:
+        comm(f"Erro ao buscar motoristas: {e}")
+        return []
+
 
 def get_all_drivers_basic(session_id):
     """
@@ -1013,7 +1357,7 @@ def exec_report_02(sid, resource_id, template_id, unit_id, interval_from, interv
         comm(f"Erro inesperado: {e}")
         return None
 
-def exec_report_03(sid, flag, dias, reportResourceId, reportTemplateId, reportObjectId, reportObjectSecId):
+def exec_report_03(sid, flag, dias, reportResourceId, reportTemplateId, reportObjectId, reportObjectSecId, reportObjectIdList=[]):
     """
     Executa um relatório específico para uma unidade no Wialon.
     

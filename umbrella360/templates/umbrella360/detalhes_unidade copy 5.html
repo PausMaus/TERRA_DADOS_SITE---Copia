@@ -1,0 +1,1108 @@
+{% load static %}
+{% load umbrella_tags %}
+<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=9">
+<link rel="stylesheet" href="{% static 'umbrella360/style_refatorado.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'umbrella360/report_novo.css' %}?v=1">
+<script src="{% static 'umbrella360/theme-toggle.js' %}?v=2"></script>
+<script src="{% static 'umbrella360/table-sort.js' %}?v=1"></script>
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Unidade {{ unidade.id }} - Umbrella360</title>
+  </head>
+  <body>
+    <!-- Botão de alternância de tema -->
+    <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
+      <span class="theme-icon">◐</span> Noite de Verão
+    </button>
+    
+    <div class="header">
+      <div class="menu-buttons">
+        <a href="{% url 'lista_unidades' %}" class="btn btn-secondary">← Voltar à Lista</a>
+        <a href="{% url 'ranking_empresa' %}" class="btn btn-primary">Ranking</a>
+      </div>
+    </div>
+
+    <main>
+      <!-- Informações Básicas da Unidade -->
+      <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
+        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-width: 1200px; width: 100%;">
+          
+          <!-- Cabeçalho da Unidade -->
+          <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 2rem; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+            <div style="font-size: 4rem;">
+              {% if unidade.cls == 'Motorista' %}
+                📋        
+              {% elif unidade.cls == 'Veículo' %}
+                📋              
+              {% else %}
+                📋
+              {% endif %}
+            </div>
+            <div>
+              <h2 style="margin: 0; color: #2c3e50;">{{ unidade.nm|default:unidade.id }}</h2>
+              <p style="margin: 0.5rem 0 0 0; color: #6c757d; font-size: 1.1rem;">
+                <strong>{{ unidade.cls|title }}</strong> - {{ unidade.empresa.nome }}
+              </p>
+              {% if unidade.marca %}
+                <p style="margin: 0.25rem 0 0 0; color: #495057;">
+                  <strong>Marca:</strong> {{ unidade.marca }}
+                </p>
+              {% endif %}
+              {% if unidade.placa %}
+                <p style="margin: 0.25rem 0 0 0; color: #495057;">
+                  <strong>Placa:</strong> {{ unidade.placa }}
+                </p>
+              {% endif %}
+              {% if unidade.cor %}
+                <p style="margin: 0.25rem 0 0 0; color: #495057;">
+                  <strong>Cor:</strong> {{ unidade.cor }}
+                </p>
+              {% endif %}
+            </div>
+            <div style="text-align: center;">
+              {% if stats_gerais.total_viagens > 0 %}
+                <div class="status-badge status-active">
+                  ATIVO
+                </div>
+              {% else %}
+                <div class="status-badge status-inactive">
+                  INATIVO
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- KPIs Principais -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            {% if unidade.cls == 'Veículo' %}
+            <div class="kpi-card kpi-consumo">
+              <h4>Odômetro</h4>
+              <p>{{ odometro_unidade|floatformat:0|default:0 }} km</p>
+            </div>
+            {% endif %}
+            <div class="kpi-card kpi-eficiencia">
+              <h4>Eficiência Média</h4>
+              <p>{{ stats_gerais.media_eficiencia|floatformat:2|default:0 }} km/L</p>
+            </div>
+            <div class="kpi-card kpi-custos">
+              <h4>Custo Total</h4>
+              <p>R$ {{ custo_total|floatformat:2|default:0 }}</p>
+            </div>
+          </div>
+
+          <!-- Métricas Detalhadas -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div class="metric-card">
+              <h5>Consumo Total</h5>
+              <p>{{ stats_gerais.total_consumo|floatformat:0|default:0 }} L</p>
+            </div>
+            {% if unidade.cls == 'Veículo' %}
+            <div class="metric-card">
+              <h5>Velocidade Média</h5>
+              <p>{{ stats_gerais.media_velocidade|floatformat:1|default:0 }} km/h</p>
+            </div>
+            <div class="metric-card">
+              <h5>RPM Médio</h5>
+              <p>{{ stats_gerais.media_rpm|floatformat:0|default:0 }}</p>
+            </div>
+            <div class="metric-card">
+              <h5>Temperatura Média</h5>
+              <p>{{ stats_gerais.media_temperatura|floatformat:1|default:0 }}°C</p>
+            </div>
+            {% endif %}
+            <div class="metric-card">
+              <h5>Emissões CO2</h5>
+              <p>{{ stats_gerais.total_emissoes|floatformat:0|default:0 }} t</p>
+            </div>
+          </div>
+
+          <!-- Comparação com Média do Sistema -->
+          <div class="comparison-section">
+            <h4>Comparação com Média do Sistema</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+              <div class="comparison-item">
+                <p>Esta Unidade</p>
+                <p class="comparison-value">{{ stats_gerais.media_eficiencia|floatformat:2|default:0 }} km/L</p>
+              </div>
+              <div class="comparison-item">
+                <p>Média de {{ unidade.cls|title }}s</p>
+                <p class="comparison-value">{{ media_sistema|floatformat:2 }} km/L</p>
+              </div>
+            </div>
+            <div class="performance-indicator">
+              {% if stats_gerais.media_eficiencia > media_sistema %}
+                <span class="indicator-good">Acima da Média (+{{ stats_gerais.media_eficiencia|sub:media_sistema|floatformat:2 }} km/L)</span>
+              {% elif stats_gerais.media_eficiencia < media_sistema %}
+                <span class="indicator-poor">Abaixo da Média (-{{ media_sistema|sub:stats_gerais.media_eficiencia|floatformat:2 }} km/L)</span>
+              {% else %}
+                <span class="indicator-average">Na Média do Sistema</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estatísticas por Período -->
+      {% if stats_por_periodo %}
+      <h3 class="h3">Desempenho por Período</h3>
+      <table class="sortable-table">
+        <thead>
+          <tr>
+            <th>Período</th>
+            <th>Quilometragem (km)</th>
+            <th>Consumo (L)</th>
+            <th>Eficiência Média (km/L)</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for periodo in stats_por_periodo %}
+          <tr>
+            <td><strong>{{ periodo.período|title }}</strong></td>
+            <td>{{ periodo.quilometragem_periodo|floatformat:0|default:0 }}</td>
+            <td>{{ periodo.consumo_periodo|floatformat:0|default:0 }}</td>
+            <td>
+              <span class="efficiency-indicator" data-efficiency="{{ periodo.eficiencia_periodo }}">
+                {{ periodo.eficiencia_periodo|floatformat:2|default:0 }}
+              </span>
+            </td>
+            <td>
+              {% if periodo.eficiencia_periodo > media_sistema %}
+                <span class="status-excellent">Excelente</span>
+              {% elif periodo.eficiencia_periodo > 2.0 %}
+                <span class="status-good">Bom</span>
+              {% else %}
+                <span class="status-poor">Ruim</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+ 
+
+    </main>
+        <!-- Seção do Gráfico Timeline -->
+    <section class="timeline-section" style="background: rgba(255, 255, 255, 0.95); margin: 2rem auto; max-width: 1200px; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+    <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
+    Timeline de Performance
+    </h2>
+    
+    <!-- Estatísticas do gráfico -->
+    <div class="stats-overview" style="background: linear-gradient(135deg, #e8f5e8, #d4edda); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.2rem; font-weight: 600; color: #2c3e50; margin: 0.5rem 0; line-height: 1.2;" id="timeline-periodo">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Período dos Dados</div>
+            </div>
+            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #667eea; margin: 0.5rem 0;" id="timeline-rpm-medio">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">RPM Médio</div>
+            </div>
+            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #f093fb; margin: 0.5rem 0;" id="timeline-rpm-maximo">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">RPM Máximo</div>
+            </div>
+
+            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.2rem; font-weight: 600; color: #1785eb; margin: 0.5rem 0; line-height: 1.2;" id="timeline-rpm-azul">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Azul</div>
+                <div class="stat-description" style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">(350 - 799 RPM)</div>
+            </div>
+            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.2rem; font-weight: 600; color: #0db04b; margin: 0.5rem 0; line-height: 1.2;" id="timeline-rpm-verde">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Verde</div>
+                <div class="stat-description" style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">(800 - 1300 RPM)</div>
+              </div>
+              <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.2rem; font-weight: 600; color: #e6ea00; margin: 0.5rem 0; line-height: 1.2;" id="timeline-rpm-amarela">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Amarela</div>
+                <div class="stat-description" style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">(1301 - 2300 RPM)</div>
+            </div>
+            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.2rem; font-weight: 600; color: #fe0303; margin: 0.5rem 0; line-height: 1.2;" id="timeline-rpm-vermelha">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Vermelha</div>
+                <div class="stat-description" style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">(2301 + RPM)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container do gráfico -->
+    <div class="ranking-card" style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+        <div class="ranking-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+            <h3 style="color: #2c3e50; font-size: 1.5rem; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+              Gráfico de Performance Temporal
+            </h3>
+        </div>
+        
+        <!-- Controles de Visualização -->
+        <div class="chart-controls" style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; flex-wrap: wrap;">
+            <label class="chart-control-item" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 20px; transition: all 0.3s ease;">
+                <input type="checkbox" id="toggle-rpm" checked style="transform: scale(1.2); accent-color: #667eea;">
+                <div style="width: 16px; height: 3px; background: #667eea; border-radius: 2px; margin: 0 0.25rem;"></div>
+                <span style="color: #495057;">RPM do Motor</span>
+            </label>
+            
+            <label class="chart-control-item" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 20px; transition: all 0.3s ease;">
+                <input type="checkbox" id="toggle-velocidade" checked style="transform: scale(1.2); accent-color: #f093fb;">
+                <div style="width: 16px; height: 3px; background: #f093fb; border-radius: 2px; margin: 0 0.25rem;"></div>
+                <span style="color: #495057;">Velocidade (km/h)</span>
+            </label>
+            
+            <label class="chart-control-item" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 20px; transition: all 0.3s ease;">
+                <input type="checkbox" id="toggle-altitude" checked style="transform: scale(1.2); accent-color: #ffd89b;">
+                <div style="width: 16px; height: 3px; background: #ffd89b; border-radius: 2px; margin: 0 0.25rem;"></div>
+                <span style="color: #495057;">Altitude (m)</span>
+            </label>
+        </div>
+        
+        <!-- Canvas do gráfico -->
+        <div class="chart-container" style="position: relative; height: 450px; background: #fafafa; border-radius: 8px; padding: 1rem;">
+            <canvas id="rpmTimelineChart" style="border-radius: 8px;"></canvas>
+            <div class="timeline-no-data text-center" style="display: none; padding: 3rem; color: #6c757d; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                <p style="margin: 0; font-size: 1.1rem; font-weight: 600;">Nenhum dado de timeline disponível</p>
+                <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">Esta unidade não possui dados detalhados de performance temporal.</p>
+            </div>
+        </div>
+        
+        <!-- Legenda removida pois agora está nos controles -->
+    </div>
+</section>
+
+    <!-- Seção de CheckPoints -->
+    <section class="checkpoints-section" style="background: rgba(255, 255, 255, 0.95); margin: 2rem auto; max-width: 1200px; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="text-align: center; color: #2c3e50; margin: 0; flex: 1;">
+          CheckPoints da Unidade
+        </h2>
+        <a href="{% url 'cercas_unidade' unidade.id %}" class="btn btn-primary" style="margin-left: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; transition: transform 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+          📋 Ver Todos os CheckPoints
+        </a>
+      </div>
+      
+      <!-- Estatísticas dos CheckPoints -->
+      <div class="stats-overview" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+          <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">{{ total_checkpoints_unidade|default:0 }}</div>
+            <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Total de Passagens</div>
+          </div>
+          <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">{{ cercas_utilizadas_unidade|default:0 }}</div>
+            <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Cercas Utilizadas</div>
+          </div>
+          <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">{{ duracao_media_checkpoints|default:0 }}</div>
+            <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Duração Média (min)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de CheckPoints -->
+      <div class="ranking-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+        <!-- Cercas Mais Utilizadas por esta Unidade -->
+        <div class="ranking-card" style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+          <div class="ranking-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+            <h3 style="color: #2c3e50; font-size: 1.5rem; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">Cercas Mais Utilizadas</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por número de passagens desta unidade</p>
+          </div>
+          
+          {% if cercas_unidade %}
+            <ul class="ranking-list" style="list-style: none; padding: 0; margin: 0;">
+              {% for cerca in cercas_unidade %}
+              <li class="ranking-item" style="display: flex; align-items: center; padding: 1rem; margin-bottom: 0.75rem; border-radius: 8px; transition: all 0.3s ease; border: 1px solid #e9ecef;">
+                <div class="ranking-position" style="font-size: 1.2rem; font-weight: 700; min-width: 40px; text-align: center; margin-right: 1rem; color: #6c757d;">
+                  {{ forloop.counter }}º
+                </div>
+                <div class="ranking-name" style="flex: 1; font-weight: 600; color: #495057; font-size: 1rem;">
+                  {{ cerca.cerca|truncatechars:30 }}
+                </div>
+                <div class="ranking-value" style="font-weight: 700; color: #28a745; font-size: 1.1rem; padding: 0.25rem 0.75rem; background: linear-gradient(135deg, #d4edda, #c3e6cb); border-radius: 20px; border: 1px solid #28a745;">
+                  {{ cerca.total_passagens }}
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>Nenhuma cerca encontrada</strong></p>
+              <p>Esta unidade não possui registros de checkpoints.</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Últimas Passagens -->
+        <div class="ranking-card" style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+          <div class="ranking-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+            <h3 style="color: #2c3e50; font-size: 1.5rem; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">Últimas Passagens</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Registros mais recentes</p>
+          </div>
+          
+          {% if checkpoints_recentes_unidade %}
+            <ul class="ranking-list" style="list-style: none; padding: 0; margin: 0;">
+              {% for checkpoint in checkpoints_recentes_unidade %}
+              <li class="ranking-item" style="display: flex; flex-direction: column; padding: 1rem; margin-bottom: 0.75rem; border-radius: 8px; transition: all 0.3s ease; border: 1px solid #e9ecef;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <strong style="color: #495057;">{{ checkpoint.cerca|truncatechars:25 }}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #6c757d;">
+                  <span>Entrada: {{ checkpoint.data_entrada|date:"d/m H:i"|default:"-" }}</span>
+                  {% if checkpoint.duracao %}
+                    <span>{{ checkpoint.duracao|default:"-" }}</span>
+                  {% endif %}
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>Nenhum checkpoint encontrado</strong></p>
+              <p>Esta unidade não possui registros recentes de checkpoints.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Histórico Detalhado de CheckPoints -->
+      {% if checkpoints_detalhados_unidade %}
+      <div class="ranking-card" style="margin-top: 2rem; background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+        <div class="ranking-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+          <h3 style="color: #2c3e50; font-size: 1.5rem; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">📋 Histórico Detalhado de Passagens</h3>
+          <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Todas as passagens registradas</p>
+        </div>
+        
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+            <thead>
+              <tr style="background: #f8f9fa;">
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Cerca</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Data Entrada</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Data Saída</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Duração</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for checkpoint in checkpoints_detalhados_unidade %}
+              <tr style="border-bottom: 1px solid #e9ecef;">
+                <td style="padding: 0.75rem; color: #495057;">{{ checkpoint.cerca|truncatechars:30 }}</td>
+                <td style="padding: 0.75rem; color: #6c757d;">{{ checkpoint.data_entrada|date:"d/m/Y H:i"|default:"-" }}</td>
+                <td style="padding: 0.75rem; color: #6c757d;">{{ checkpoint.data_saida|date:"d/m/Y H:i"|default:"-" }}</td>
+                <td style="padding: 0.75rem; color: #6c757d;">{{ checkpoint.duracao|default:"-" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        
+        {% if total_checkpoints_unidade > 20 %}
+        <div style="text-align: center; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+          <p style="margin: 0; color: #6c757d;">
+            <em>Mostrando apenas os 20 checkpoints mais recentes. Total de checkpoints: {{ total_checkpoints_unidade }}</em>
+          </p>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </section>
+    
+    <!-- Seção de Infrações -->
+    <section class="infracoes-section" style="background: rgba(255, 255, 255, 0.95); margin: 2rem auto; max-width: 1200px; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+      <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
+         Infrações de Velocidade da Unidade
+      </h2>
+      
+      <!-- Estatísticas das Infrações -->
+      <div class="stats-overview" style="background: linear-gradient(135deg, #ffebee, #ffcdd2); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+          <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">{{ total_infracoes_unidade|default:0 }}</div>
+            <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Total de Infrações</div>
+          </div>
+          <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">{{ velocidade_media_infracoes_unidade|floatformat:1 }} km/h</div>
+            <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Velocidade Média</div>
+          </div>
+          <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">{{ velocidade_maxima_infracoes_unidade|floatformat:0 }} km/h</div>
+            <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Velocidade Máxima</div>
+          </div>
+          <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0.5rem 0;">{{ limite_medio_infracoes_unidade|floatformat:1 }} km/h</div>
+            <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Limite Médio Infringido</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de Infrações -->
+      <div class="ranking-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+        <!-- Limites Mais Infringidos por esta Unidade -->
+        <div class="ranking-card" style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+          <div class="ranking-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+            <h3 style="color: #2c3e50; font-size: 1.5rem; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">Limites Mais Infringidos</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por número de ocorrências desta unidade</p>
+          </div>
+          
+          {% if limites_unidade %}
+            <ul class="ranking-list" style="list-style: none; padding: 0; margin: 0;">
+              {% for limite in limites_unidade %}
+              <li class="ranking-item" style="display: flex; align-items: center; padding: 1rem; margin-bottom: 0.75rem; border-radius: 8px; transition: all 0.3s ease; border: 1px solid #e9ecef;">
+                <div class="ranking-position" style="font-size: 1.2rem; font-weight: 700; min-width: 40px; text-align: center; margin-right: 1rem; color: #dc3545;">
+                  {{ forloop.counter }}º
+                </div>
+                <div class="ranking-name" style="flex: 1; font-weight: 600; color: #495057; font-size: 1rem;">
+                  Limite de {{ limite.limite|floatformat:0 }} km/h
+                </div>
+                <div class="ranking-value" style="font-weight: 700; color: #dc3545; font-size: 1.1rem; padding: 0.25rem 0.75rem; background: linear-gradient(135deg, #ffcccc, #ff9999); border-radius: 20px; border: 1px solid #dc3545;">
+                  {{ limite.total_ocorrencias }}
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>🎉 Nenhuma infração encontrada</strong></p>
+              <p>Esta unidade não possui registros de infrações de velocidade.</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Últimas Infrações -->
+        <div class="ranking-card" style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+          <div class="ranking-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+            <h3 style="color: #2c3e50; font-size: 1.5rem; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">Últimas Infrações</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Registros mais recentes</p>
+          </div>
+          
+          {% if infracoes_recentes_unidade %}
+            <ul class="ranking-list" style="list-style: none; padding: 0; margin: 0;">
+              {% for infracao in infracoes_recentes_unidade %}
+              <li class="ranking-item" style="display: flex; flex-direction: column; padding: 1rem; margin-bottom: 0.75rem; border-radius: 8px; transition: all 0.3s ease; border: 1px solid #e9ecef;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <strong style="color: #dc3545;">{{ infracao.velocidade|floatformat:0 }} km/h</strong>
+                  <span style="color: #6c757d; font-size: 0.9rem;">Limite: {{ infracao.limite|floatformat:0 }} km/h</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #6c757d;">
+                  <span>{{ infracao.data|date:"d/m/Y H:i"|default:"-" }}</span>
+                  {% if infracao.velocidade and infracao.limite %}
+                    <span style="color: #dc3545; font-weight: 600;">
+                      Excesso: +{{ infracao.velocidade|floatformat:0|add:"-"|add:infracao.limite|floatformat:0 }} km/h
+                    </span>
+                  {% endif %}
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>🎉 Nenhuma infração encontrada</strong></p>
+              <p>Esta unidade não possui registros recentes de infrações.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Histórico Detalhado de Infrações -->
+      {% if infracoes_detalhadas_unidade %}
+      <div class="ranking-card" style="margin-top: 2rem; background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+        <div class="ranking-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+          <h3 style="color: #2c3e50; font-size: 1.5rem; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">📋 Histórico Detalhado de Infrações</h3>
+          <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Todas as infrações registradas</p>
+        </div>
+        
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+            <thead>
+              <tr style="background: #f8f9fa;">
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Data/Hora</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Limite</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Velocidade</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6; color: #495057;">Localização</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for infracao in infracoes_detalhadas_unidade %}
+              <tr style="border-bottom: 1px solid #e9ecef;">
+                <td style="padding: 0.75rem; color: #495057;">{{ infracao.data|date:"d/m/Y H:i"|default:"-" }}</td>
+                <td style="padding: 0.75rem;">
+                  <span style="background: #e7f3ff; color: #0066cc; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; font-weight: 500;">
+                    {{ infracao.limite|floatformat:0 }} km/h
+                  </span>
+                </td>
+                <td style="padding: 0.75rem;">
+                  <span style="background: #ffebee; color: #c62828; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">
+                    {{ infracao.velocidade|floatformat:0 }} km/h
+                  </span>
+                </td>
+                <td style="padding: 0.75rem;">
+                  {% if infracao.localizacao %}
+                    <a href="{{ infracao.localizacao }}" target="_blank" style="color: #28a745; text-decoration: none; font-size: 0.875rem;">
+                      📍 Ver no Mapa
+                    </a>
+                  {% else %}
+                    <span style="color: #6c757d;">-</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        
+        {% if total_infracoes_unidade > 20 %}
+        <div style="text-align: center; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+          <p style="margin: 0; color: #6c757d;">
+            <em>Mostrando apenas as 20 infrações mais recentes. Total de infrações: {{ total_infracoes_unidade }}</em>
+          </p>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </section>
+    
+    <footer class="footer">
+      <p>&copy; 2025 Umbrella360. Transformando o Brasil através da logística inteligente.</p>
+      <p><em>"Nós enxergamos um mundo mais justo, mais humano e mais sustentável."</em></p>
+    </footer>
+
+    <style>
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    
+    .status-active {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+    
+    .status-inactive {
+        background: linear-gradient(135deg, #dc3545, #e83e8c);
+        color: white;
+    }
+    
+    .metric-card {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid #dee2e6;
+    }
+    
+    .metric-card h5 {
+        margin: 0 0 0.5rem 0;
+        color: #495057;
+        font-size: 0.9rem;
+    }
+    
+    .metric-card p {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    
+    .comparison-section {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+    }
+    
+    .comparison-item p:first-child {
+        margin: 0;
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .comparison-value {
+        margin: 0.5rem 0 0 0 !important;
+        font-size: 1.8rem !important;
+        font-weight: bold !important;
+    }
+    
+    .performance-indicator {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .indicator-good {
+        color: #d4edda;
+        font-weight: bold;
+    }
+    
+    .indicator-poor {
+        color: #f8d7da;
+        font-weight: bold;
+    }
+    
+    .indicator-average {
+        color: #fff3cd;
+        font-weight: bold;
+    }
+    
+    .kpi-eficiencia {
+        --bg-start: #6f42c1;
+        --bg-end: #e83e8c;
+    }
+    
+    .kpi-custos {
+        --bg-start: #fd7e14;
+        --bg-end: #dc3545;
+    }
+    
+    /* Estilos para seção de checkpoints */
+    .ranking-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+    
+    .ranking-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        border-color: #007bff !important;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    /* Estilos para os controles do gráfico */
+    .chart-control-item {
+        background: white;
+        border: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+    
+    .chart-control-item:hover {
+        background: #e8f4fd;
+        border-color: #007bff;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .chart-control-item input[type="checkbox"] {
+        margin: 0;
+    }
+    
+    .chart-control-item input[type="checkbox"]:checked + div + span {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+    
+    /* Responsividade para checkpoints */
+    @media (max-width: 768px) {
+        .ranking-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+        }
+        
+        .ranking-item {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.5rem;
+        }
+        
+        .ranking-position {
+            margin-right: 0 !important;
+        }
+        
+        table {
+            font-size: 0.85rem;
+        }
+        
+        th, td {
+            padding: 0.5rem !important;
+        }
+        
+        .checkpoints-section, .infracoes-section {
+            margin: 1rem !important;
+            padding: 1rem !important;
+        }
+        
+        .chart-controls {
+            flex-direction: column;
+            gap: 0.5rem !important;
+        }
+        
+        .chart-control-item {
+            justify-content: center;
+        }
+    }
+
+    /* Estilos adicionais para a seção timeline */
+    .timeline-section .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+
+    .chart-container {
+        background: linear-gradient(135deg, #fafafa, #f0f0f0);
+    }
+
+    /* Animação suave para os cards de estatísticas */
+    .timeline-section .stat-value {
+        transition: color 0.3s ease;
+    }
+
+    .timeline-section .stat-card:hover .stat-value {
+        transform: scale(1.05);
+        transition: transform 0.3s ease;
+    }
+
+    /* Estilo responsivo melhorado para timeline */
+    @media (max-width: 768px) {
+        .timeline-section {
+            margin: 1rem !important;
+            padding: 1rem !important;
+        }
+        
+        .chart-container {
+            height: 350px !important;
+            padding: 0.5rem !important;
+        }
+        
+        .timeline-section .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+            gap: 1rem !important;
+        }
+        
+        .timeline-section .stat-card {
+            padding: 1rem !important;
+        }
+        
+        .timeline-section .stat-value {
+            font-size: 1.5rem !important;
+        }
+        
+        .ranking-card {
+            padding: 1rem !important;
+        }
+    }
+
+    /* Tema escuro para o gráfico */
+    [data-theme="dark"] .chart-container {
+        background: linear-gradient(135deg, #2d3748, #1a202c);
+    }
+
+    [data-theme="dark"] .timeline-section {
+        background: rgba(45, 55, 72, 0.95) !important;
+    }
+
+    [data-theme="dark"] .timeline-section .stat-card {
+        background: #2d3748 !important;
+        border-color: #4a5568 !important;
+    }
+
+    [data-theme="dark"] .timeline-section .stat-value {
+        color: #e2e8f0 !important;
+    }
+
+    [data-theme="dark"] .timeline-section .stat-label {
+        color: #a0aec0 !important;
+    }
+    </style>
+    
+    <!-- Gráfico Timeline RPM vs Tempo -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Dados do gráfico vindos do Django
+        const timelineData = {{ timeline_data_json|safe }};
+        const timelineStats = {{ timeline_stats|safe }};
+        
+        let rpmChart = null; // Variável para armazenar a instância do gráfico
+        
+        if (timelineData && timelineData.length > 0) {
+            // Preparar dados para o Chart.js
+            const labels = timelineData.map(d => {
+                const date = new Date(d.timestamp);
+                return date.toLocaleString('pt-BR', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+            });
+            const rpmData = timelineData.map(d => d.rpm);
+            const velocidadeData = timelineData.map(d => d.velocidade);
+            const altitudeData = timelineData.map(d => d.altitude);
+            
+            // Configuração do gráfico com tema personalizado
+            const ctx = document.getElementById('rpmTimelineChart').getContext('2d');
+            rpmChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'RPM',
+                            data: rpmData,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            yAxisID: 'y',
+                            pointBackgroundColor: '#667eea',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            hidden: false
+                        },
+                        {
+                            label: 'Velocidade (km/h)',
+                            data: velocidadeData,
+                            borderColor: '#f093fb',
+                            backgroundColor: 'rgba(240, 147, 251, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            yAxisID: 'y1',
+                            pointBackgroundColor: '#f093fb',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            hidden: false
+                        },
+                        {
+                            label: 'Altitude (m)',
+                            data: altitudeData,
+                            borderColor: '#ffd89b',
+                            backgroundColor: 'rgba(255, 216, 155, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            yAxisID: 'y2',
+                            pointBackgroundColor: '#ffd89b',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            hidden: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        title: {
+                            display: false
+                        },
+                        legend: {
+                            display: false // Removemos a legenda padrão pois criamos uma customizada
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(45, 55, 72, 0.95)',
+                            titleColor: '#e2e8f0',
+                            bodyColor: '#e2e8f0',
+                            borderColor: '#667eea',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            filter: function(tooltipItem) {
+                                // Só mostra tooltip para datasets visíveis
+                                return !rpmChart.getDatasetMeta(tooltipItem.datasetIndex).hidden;
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Tempo',
+                                color: '#495057',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                maxTicksLimit: 8,
+                                color: '#6c757d',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)',
+                                lineWidth: 1
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'RPM',
+                                color: '#667eea',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                color: '#667eea',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Velocidade (km/h)',
+                                color: '#f093fb',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                color: '#f093fb',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        },
+                        y2: {
+                            type: 'linear',
+                            display: false,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Altitude (m)',
+                                color: '#ffd89b',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                color: '#ffd89b',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Função para atualizar a visibilidade dos eixos Y
+            function updateAxisVisibility() {
+                const rpmVisible = !rpmChart.getDatasetMeta(0).hidden;
+                const velocidadeVisible = !rpmChart.getDatasetMeta(1).hidden;
+                const altitudeVisible = !rpmChart.getDatasetMeta(2).hidden;
+                
+                // Atualizar visibilidade dos eixos Y
+                rpmChart.options.scales.y.display = rpmVisible;
+                rpmChart.options.scales.y1.display = velocidadeVisible;
+                rpmChart.options.scales.y2.display = altitudeVisible;
+                
+                // Se altitude estiver visível, posicionar y1 no centro e y2 à direita
+                if (altitudeVisible) {
+                    rpmChart.options.scales.y1.position = velocidadeVisible ? 'right' : 'right';
+                    rpmChart.options.scales.y2.position = 'right';
+                } else {
+                    rpmChart.options.scales.y1.position = 'right';
+                }
+                
+                rpmChart.update('none'); // Update sem animação para melhor performance
+            }
+            
+            // Event listeners para os checkboxes
+            document.getElementById('toggle-rpm').addEventListener('change', function() {
+                const meta = rpmChart.getDatasetMeta(0);
+                meta.hidden = !this.checked;
+                updateAxisVisibility();
+            });
+            
+            document.getElementById('toggle-velocidade').addEventListener('change', function() {
+                const meta = rpmChart.getDatasetMeta(1);
+                meta.hidden = !this.checked;
+                updateAxisVisibility();
+            });
+            
+            document.getElementById('toggle-altitude').addEventListener('change', function() {
+                const meta = rpmChart.getDatasetMeta(2);
+                meta.hidden = !this.checked;
+                updateAxisVisibility();
+            });
+            
+            // Atualizar estatísticas na página com animação
+            if (timelineStats) {
+                setTimeout(() => {
+                    document.getElementById('timeline-rpm-medio').textContent = (timelineStats.rpm_medio || 0).toFixed(0);
+                    document.getElementById('timeline-rpm-maximo').textContent = (timelineStats.rpm_maximo || 0).toFixed(0);
+                    document.getElementById('timeline-rpm-vermelha').textContent = timelineStats.faixas_rpm.vermelha ? `${(timelineStats.faixas_rpm.vermelha / timelineStats.total_pontos * 100).toFixed(2)}%` : '0%';
+                    document.getElementById('timeline-rpm-amarela').textContent = timelineStats.faixas_rpm.amarela ? `${(timelineStats.faixas_rpm.amarela / timelineStats.total_pontos * 100).toFixed(2)}%` : '0%';
+                    document.getElementById('timeline-rpm-verde').textContent = timelineStats.faixas_rpm.verde ? `${(timelineStats.faixas_rpm.verde / timelineStats.total_pontos * 100).toFixed(2)}%` : '0%';
+                    document.getElementById('timeline-rpm-azul').textContent = timelineStats.faixas_rpm.azul ? `${(timelineStats.faixas_rpm.azul / timelineStats.total_pontos * 100).toFixed(2)}%` : '0%';
+
+                    const periodoTexto = timelineStats.periodo_inicio && timelineStats.periodo_fim
+                        ? `${new Date(timelineStats.periodo_inicio).toLocaleDateString('pt-BR')} - ${new Date(timelineStats.periodo_fim).toLocaleDateString('pt-BR')}`
+                        : 'N/A';
+                    document.getElementById('timeline-periodo').textContent = periodoTexto;
+                }, 500);
+            }
+            
+            // Ocultar mensagem de "sem dados"
+            document.querySelector('.timeline-no-data').style.display = 'none';
+            
+        } else {
+            // Mostrar mensagem de "sem dados" e ocultar controles
+            document.getElementById('rpmTimelineChart').style.display = 'none';
+            document.querySelector('.timeline-no-data').style.display = 'flex';
+            document.querySelector('.chart-controls').style.display = 'none';
+        }
+    });
+    </script>
+  </body>
+</html>

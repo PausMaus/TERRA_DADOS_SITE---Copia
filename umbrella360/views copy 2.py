@@ -958,12 +958,12 @@ def ranking_empresa(request):
     # Top 10 Motoristas por eficiência
     top_motoristas = viagens_filtradas.filter(
         unidade__cls__icontains='motorista'
-    ).order_by('-Quilometragem_média')[:10]
+    ).order_by('-Quilometragem_média')
     
     # Top 10 Veículos por eficiência
     top_veiculos = viagens_filtradas.filter(
         unidade__cls__icontains='veículo'
-    ).order_by('-Quilometragem_média')[:10]
+    ).order_by('-Quilometragem_média')
     
     # Estatísticas gerais da empresa
     stats_empresa = viagens_filtradas.aggregate(
@@ -1577,12 +1577,12 @@ def viagem_diaria(request):
     )
     
     # Classificar unidades por eficiência (usar queryset completo)
-    unidades_eficientes = viagens_ontem.filter(Quilometragem_média__gte=2.0).count()
+    unidades_eficientes = viagens_ontem.filter(Quilometragem_média__gte=1.78).count()
     unidades_regulares = viagens_ontem.filter(
         Quilometragem_média__gte=1.5, 
         Quilometragem_média__lt=1.78
     ).count()
-    unidades_ineficientes = viagens_ontem.filter(Quilometragem_média__lt=1.5).count()
+    unidades_ineficientes = viagens_ontem.filter(Quilometragem_média__lt=1.0).count()
 
     # Calcular economia potencial (se todos tivessem ≥ 2.0 km/L)
     total_km = stats['total_km'] or 0
@@ -1606,6 +1606,210 @@ def viagem_diaria(request):
     }
     
     return render(request, 'umbrella360/Planilhas/viagem_diaria.html', context)
+
+
+def export_viagem_diaria_excel(request):
+    """
+    Exporta relatório de viagem diária para Excel
+    
+    Esta função gera um arquivo Excel com os dados de viagem diária,
+    seguindo o mesmo padrão da planilha de cercas, mas adaptado
+    para dados de eficiência de combustível das unidades.
+    """
+    from datetime import datetime, timedelta
+    
+    # Verificar se há empresa logada (mesmo filtro da view principal)
+    empresa_logada_id = request.session.get('empresa_logada')
+    empresa_logada = None
+    if empresa_logada_id:
+        try:
+            empresa_logada = Empresa.objects.get(id=empresa_logada_id)
+        except Empresa.DoesNotExist:
+            pass
+
+    # ========== OBTENÇÃO DOS DADOS ==========
+    # Usar a mesma lógica da função viagem_diaria para garantir consistência
+    hoje = timezone.now().date()
+    data_ontem = hoje - timedelta(days=1)
+    
+    # Buscar viagens dos motoristas
+    viagens_query = Viagem_Base.objects.select_related('unidade', 'unidade__empresa')
+    viagens_query = viagens_query.filter(unidade__cls__icontains='motorista')
+    
+    # Aplicar filtro de empresa se necessário
+    if empresa_logada:
+        viagens_query = viagens_query.filter(unidade__empresa=empresa_logada)
+
+    # Buscar dados de "ontem" usando a mesma estratégia da view principal
+    viagens_ontem = viagens_query.filter(
+        Q(período__icontains='Ontem') | 
+        Q(período__icontains='yesterday') |
+        Q(período__icontains='hoje') |
+        Q(período__icontains='today')
+    )
+    
+    # Fallback para dados mais recentes se não encontrar "ontem"
+    if not viagens_ontem.exists():
+        ultimo_periodo = viagens_query.values_list('período', flat=True).order_by('-período').first()
+        if ultimo_periodo:
+            viagens_ontem = viagens_query.filter(período=ultimo_periodo)
+    
+    if not viagens_ontem.exists():
+        viagens_ontem = viagens_query.all()
+    
+    # Aplicar filtros de qualidade dos dados
+    viagens_ontem = viagens_ontem.filter(
+        quilometragem__gt=0,
+        Consumido__gt=0,
+        Quilometragem_média__gte=1.0,
+        Quilometragem_média__lte=5.0
+    )
+    
+    # Obter todas as viagens para o Excel (sem limitação de 50 itens)
+    viagens = viagens_ontem.order_by('-Quilometragem_média')
+    
+    # Calcular estatísticas
+    stats = viagens_ontem.aggregate(
+        total_unidades=Count('unidade', distinct=True),
+        total_km=Sum('quilometragem'),
+        total_combustivel=Sum('Consumido'),
+        media_geral=Avg('Quilometragem_média')
+    )
+
+    # ========== CRIAÇÃO DO EXCEL ==========
+    # Criar workbook e planilha
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Viagem Diária"
+    
+    # ========== ESTILOS ==========
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="667eea", end_color="667eea", fill_type="solid")
+    title_font = Font(bold=True, size=16, color="2c3e50")
+    stats_font = Font(bold=True, color="2c3e50")
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # ========== CABEÇALHO PRINCIPAL ==========
+    ws.merge_cells('A1:F1')
+    ws['A1'] = f"📋 Relatório de Viagem Diária - {data_ontem.strftime('%d/%m/%Y')}"
+    ws['A1'].font = title_font
+    ws['A1'].alignment = Alignment(horizontal='center')
+    
+    # Informações gerais
+    ws.merge_cells('A2:F2')
+    ws['A2'] = f"Gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}"
+    ws['A2'].alignment = Alignment(horizontal='center')
+    
+    if empresa_logada:
+        ws.merge_cells('A3:F3')
+        ws['A3'] = f"Empresa: {empresa_logada.nome}"
+        ws['A3'].alignment = Alignment(horizontal='center')
+        start_row = 5
+    else:
+        start_row = 4
+    
+    # ========== ESTATÍSTICAS RESUMO ==========
+    ws.merge_cells(f'A{start_row}:F{start_row}')
+    ws[f'A{start_row}'] = "📊 RESUMO EXECUTIVO"
+    ws[f'A{start_row}'].font = stats_font
+    ws[f'A{start_row}'].alignment = Alignment(horizontal='center')
+    
+    stats_row = start_row + 1
+    
+    # Linha de estatísticas
+    ws[f'A{stats_row}'] = "Unidades Ativas:"
+    ws[f'B{stats_row}'] = stats['total_unidades'] or 0
+    ws[f'C{stats_row}'] = "KM Total:"
+    ws[f'D{stats_row}'] = round(stats['total_km'] or 0, 2)
+    ws[f'E{stats_row}'] = "Combustível Total:"
+    ws[f'F{stats_row}'] = f"{round(stats['total_combustivel'] or 0, 2)} L"
+    
+    stats_row += 1
+    ws[f'A{stats_row}'] = "Média Geral:"
+    ws[f'B{stats_row}'] = f"{round(stats['media_geral'] or 0, 2)} km/L"
+    
+    # ========== CABEÇALHOS DA TABELA ==========
+    table_start = stats_row + 3
+    
+    headers = ['Motorista/Unidade', 'KM Rodado', 'Consumo (L)', 'Média (km/L)', 'Eficiência', 'Observações']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=table_start, column=col)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = border
+        cell.alignment = Alignment(horizontal='center')
+    
+    # ========== DADOS DA TABELA ==========
+    current_row = table_start + 1
+    
+    for viagem in viagens:
+        # Nome da unidade/motorista
+        ws.cell(row=current_row, column=1).value = viagem.unidade.nm or viagem.unidade.id
+        
+        # KM Rodado
+        ws.cell(row=current_row, column=2).value = round(viagem.quilometragem, 2)
+        
+        # Consumo em litros
+        ws.cell(row=current_row, column=3).value = round(viagem.Consumido, 1)
+        
+        # Média km/L
+        ws.cell(row=current_row, column=4).value = round(viagem.Quilometragem_média, 2)
+        
+        # Classificação de eficiência
+        media = viagem.Quilometragem_média
+        if media >= 2.0:
+            eficiencia = "Excelente"
+        elif media >= 1.78:
+            eficiencia = "Boa"
+        elif media >= 1.5:
+            eficiencia = "Regular"
+        else:
+            eficiencia = "Ruim"
+        
+        ws.cell(row=current_row, column=5).value = eficiencia
+        
+        # Observações baseadas na eficiência
+        if media >= 2.0:
+            obs = "Eficiência acima da meta"
+        elif media < 1.5:
+            obs = "Requer atenção - consumo alto"
+        else:
+            obs = "Dentro da faixa esperada"
+            
+        ws.cell(row=current_row, column=6).value = obs
+        
+        # Aplicar bordas em todas as células da linha
+        for col in range(1, 7):
+            ws.cell(row=current_row, column=col).border = border
+            
+        current_row += 1
+    
+    # ========== CONFIGURAÇÕES FINAIS ==========
+    # Ajustar largura das colunas automaticamente
+    column_widths = [25, 12, 12, 12, 15, 30]  # Larguras otimizadas
+    for i, width in enumerate(column_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+    
+    # ========== RESPOSTA HTTP ==========
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    
+    # Nome do arquivo com timestamp para evitar conflitos
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"viagem_diaria_{data_ontem.strftime('%Y%m%d')}_{timestamp}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    # Salvar workbook na resposta
+    wb.save(response)
+    
+    return response
 
 
 def export_cercas_pdf(request, unidade_id):
