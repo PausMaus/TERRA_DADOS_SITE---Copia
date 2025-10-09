@@ -187,6 +187,109 @@
  
 
     </main>
+        <!-- Seção do Gráfico Timeline -->
+    <section class="timeline-section" style="background: rgba(255, 255, 255, 0.95); margin: 2rem auto; max-width: 1200px; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+    <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
+    Timeline de Performance
+    </h2>
+    
+    <!-- Estatísticas do gráfico -->
+    <div class="stats-overview" style="background: linear-gradient(135deg, #e8f5e8, #d4edda); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.2rem; font-weight: 600; color: #2c3e50; margin: 0.5rem 0; line-height: 1.2;" id="timeline-periodo">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Período dos Dados</div>
+            </div>
+            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #667eea; margin: 0.5rem 0;" id="timeline-rpm-medio">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">RPM Médio</div>
+            </div>
+            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.8rem; font-weight: 700; color: #f093fb; margin: 0.5rem 0;" id="timeline-rpm-maximo">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">RPM Máximo</div>
+            </div>
+
+            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.2rem; font-weight: 600; color: #1785eb; margin: 0.5rem 0; line-height: 1.2;" id="timeline-rpm-azul">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Azul</div>
+                <div class="stat-description" style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">(350 - 799 RPM)</div>
+            </div>
+            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.2rem; font-weight: 600; color: #0db04b; margin: 0.5rem 0; line-height: 1.2;" id="timeline-rpm-verde">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Verde</div>
+                <div class="stat-description" style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">(800 - 1300 RPM)</div>
+              </div>
+              <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.2rem; font-weight: 600; color: #e6ea00; margin: 0.5rem 0; line-height: 1.2;" id="timeline-rpm-amarela">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Amarela</div>
+                <div class="stat-description" style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">(1301 - 2300 RPM)</div>
+            </div>
+            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e9ecef; transition: transform 0.3s ease;">
+                <div class="stat-value" style="font-size: 1.2rem; font-weight: 600; color: #fe0303; margin: 0.5rem 0; line-height: 1.2;" id="timeline-rpm-vermelha">-</div>
+                <div class="stat-label" style="color: #6c757d; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Vermelha</div>
+                <div class="stat-description" style="font-size: 0.75rem; color: #6c757d; margin-top: 0.25rem;">(2301 + RPM)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container do gráfico -->
+    <div class="ranking-card" style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+        <div class="ranking-header" style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
+            <h3 style="color: #2c3e50; font-size: 1.5rem; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+              Gráfico de Performance Temporal
+            </h3>
+        </div>
+        
+        <!-- Controles de Visualização -->
+        <div class="chart-controls" style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; flex-wrap: wrap;">
+            <label class="chart-control-item" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 20px; transition: all 0.3s ease;">
+                <input type="checkbox" id="toggle-rpm" checked style="transform: scale(1.2); accent-color: #667eea;">
+                <div style="width: 16px; height: 3px; background: #667eea; border-radius: 2px; margin: 0 0.25rem;"></div>
+                <span style="color: #495057;">RPM do Motor</span>
+            </label>
+            
+            <label class="chart-control-item" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 20px; transition: all 0.3s ease;">
+                <input type="checkbox" id="toggle-velocidade" checked style="transform: scale(1.2); accent-color: #f093fb;">
+                <div style="width: 16px; height: 3px; background: #f093fb; border-radius: 2px; margin: 0 0.25rem;"></div>
+                <span style="color: #495057;">Velocidade (km/h)</span>
+            </label>
+            
+            <label class="chart-control-item" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 20px; transition: all 0.3s ease;">
+                <input type="checkbox" id="toggle-altitude" checked style="transform: scale(1.2); accent-color: #ffd89b;">
+                <div style="width: 16px; height: 3px; background: #ffd89b; border-radius: 2px; margin: 0 0.25rem;"></div>
+                <span style="color: #495057;">Altitude (m)</span>
+            </label>
+        </div>
+
+                <!-- Instruções de Zoom -->
+        <div class="zoom-instructions" style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 1rem; padding: 0.75rem; background: #e8f4fd; border-radius: 8px; border: 1px solid #b3d9ff; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #495057;">
+                <span style="background: #667eea; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">Ctrl + Scroll</span>
+                <span>Zoom</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #495057;">
+                <span style="background: #667eea; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">Ctrl + Drag</span>
+                <span>Pan</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #495057;">
+                <span style="background: #667eea; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">Shift + Drag</span>
+                <span>Zoom Área</span>
+            </div>
+        </div>
+        
+        <!-- Canvas do gráfico -->
+        <div class="chart-container" style="position: relative; height: 450px; background: #fafafa; border-radius: 8px; padding: 1rem;">
+            <canvas id="rpmTimelineChart" style="border-radius: 8px;"></canvas>
+            <div class="timeline-no-data text-center" style="display: none; padding: 3rem; color: #6c757d; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                <p style="margin: 0; font-size: 1.1rem; font-weight: 600;">Nenhum dado de timeline disponível</p>
+                <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">Esta unidade não possui dados detalhados de performance temporal.</p>
+            </div>
+        </div>
+        
+        <!-- Legenda removida pois agora está nos controles -->
+    </div>
+</section>
 
     <!-- Seção de CheckPoints -->
     <section class="checkpoints-section" style="background: rgba(255, 255, 255, 0.95); margin: 2rem auto; max-width: 1200px; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
@@ -595,6 +698,29 @@
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
     
+    /* Estilos para os controles do gráfico */
+    .chart-control-item {
+        background: white;
+        border: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+    
+    .chart-control-item:hover {
+        background: #e8f4fd;
+        border-color: #007bff;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .chart-control-item input[type="checkbox"] {
+        margin: 0;
+    }
+    
+    .chart-control-item input[type="checkbox"]:checked + div + span {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+    
     /* Responsividade para checkpoints */
     @media (max-width: 768px) {
         .ranking-grid {
@@ -627,7 +753,457 @@
             margin: 1rem !important;
             padding: 1rem !important;
         }
+        
+        .chart-controls {
+            flex-direction: column;
+            gap: 0.5rem !important;
+        }
+        
+        .chart-control-item {
+            justify-content: center;
+        }
+    }
+
+    /* Estilos adicionais para a seção timeline */
+    .timeline-section .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+
+    .chart-container {
+        background: linear-gradient(135deg, #fafafa, #f0f0f0);
+    }
+
+    /* Animação suave para os cards de estatísticas */
+    .timeline-section .stat-value {
+        transition: color 0.3s ease;
+    }
+
+    .timeline-section .stat-card:hover .stat-value {
+        transform: scale(1.05);
+        transition: transform 0.3s ease;
+    }
+
+    /* Estilo responsivo melhorado para timeline */
+    @media (max-width: 768px) {
+        .timeline-section {
+            margin: 1rem !important;
+            padding: 1rem !important;
+        }
+        
+        .chart-container {
+            height: 350px !important;
+            padding: 0.5rem !important;
+        }
+        
+        .timeline-section .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+            gap: 1rem !important;
+        }
+        
+        .timeline-section .stat-card {
+            padding: 1rem !important;
+        }
+        
+        .timeline-section .stat-value {
+            font-size: 1.5rem !important;
+        }
+        
+        .ranking-card {
+            padding: 1rem !important;
+        }
+    }
+
+    /* Tema escuro para o gráfico */
+    [data-theme="dark"] .chart-container {
+        background: linear-gradient(135deg, #2d3748, #1a202c);
+    }
+
+    [data-theme="dark"] .timeline-section {
+        background: rgba(45, 55, 72, 0.95) !important;
+    }
+
+    [data-theme="dark"] .timeline-section .stat-card {
+        background: #2d3748 !important;
+        border-color: #4a5568 !important;
+    }
+
+    [data-theme="dark"] .timeline-section .stat-value {
+        color: #e2e8f0 !important;
+    }
+
+    [data-theme="dark"] .timeline-section .stat-label {
+        color: #a0aec0 !important;
     }
     </style>
+    
+    <!-- Gráfico Timeline RPM vs Tempo -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Dados do gráfico vindos do Django
+        const timelineData = {{ timeline_data_json|safe }};
+        const timelineStats = {{ timeline_stats|safe }};
+        
+        let rpmChart = null; // Variável para armazenar a instância do gráfico
+        
+        if (timelineData && timelineData.length > 0) {
+            // Preparar dados para o Chart.js
+            const labels = timelineData.map(d => {
+                const date = new Date(d.timestamp);
+                return date.toLocaleString('pt-BR', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+            });
+            const rpmData = timelineData.map(d => d.rpm);
+            const velocidadeData = timelineData.map(d => d.velocidade);
+            const altitudeData = timelineData.map(d => d.altitude);
+            
+            // Configuração do gráfico com tema personalizado
+            const ctx = document.getElementById('rpmTimelineChart').getContext('2d');
+            rpmChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'RPM',
+                            data: rpmData,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            yAxisID: 'y',
+                            pointBackgroundColor: '#667eea',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            hidden: false
+                        },
+                        {
+                            label: 'Velocidade (km/h)',
+                            data: velocidadeData,
+                            borderColor: '#f093fb',
+                            backgroundColor: 'rgba(240, 147, 251, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            yAxisID: 'y1',
+                            pointBackgroundColor: '#f093fb',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            hidden: false
+                        },
+                        {
+                            label: 'Altitude (m)',
+                            data: altitudeData,
+                            borderColor: '#ffd89b',
+                            backgroundColor: 'rgba(255, 216, 155, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            yAxisID: 'y2',
+                            pointBackgroundColor: '#ffd89b',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            hidden: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        title: {
+                            display: false
+                        },
+                        legend: {
+                            display: false // Removemos a legenda padrão pois criamos uma customizada
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(45, 55, 72, 0.95)',
+                            titleColor: '#e2e8f0',
+                            bodyColor: '#e2e8f0',
+                            borderColor: '#667eea',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            filter: function(tooltipItem) {
+                                // Só mostra tooltip para datasets visíveis
+                                return !rpmChart.getDatasetMeta(tooltipItem.datasetIndex).hidden;
+                            }
+                        },
+                        zoom: {
+                            limits: {
+                                x: {min: 'original', max: 'original'},
+                                y: {min: 'original', max: 'original'},
+                                y1: {min: 'original', max: 'original'},
+                                y2: {min: 'original', max: 'original'}
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                                modifierKey: 'ctrl',
+                                onPan: function({chart}) {
+                                    // Callback opcional para quando o usuário faz pan
+                                },
+                                onPanComplete: function({chart}) {
+                                    // Callback opcional para quando o pan é completado
+                                }
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                    speed: 0.1,
+                                    modifierKey: 'ctrl'
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                drag: {
+                                    enabled: true,
+                                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                                    borderColor: '#667eea',
+                                    borderWidth: 1,
+                                    modifierKey: 'shift'
+                                },
+                                mode: 'x',
+                                onZoom: function({chart}) {
+                                    // Callback opcional para quando o usuário faz zoom
+                                },
+                                onZoomComplete: function({chart}) {
+                                    // Callback opcional para quando o zoom é completado
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Tempo',
+                                color: '#495057',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                maxTicksLimit: 8,
+                                color: '#6c757d',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)',
+                                lineWidth: 1
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'RPM',
+                                color: '#667eea',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                color: '#667eea',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Velocidade (km/h)',
+                                color: '#f093fb',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                color: '#f093fb',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        },
+                        y2: {
+                            type: 'linear',
+                            display: false,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Altitude (m)',
+                                color: '#ffd89b',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                color: '#ffd89b',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Função para resetar zoom
+            function resetZoom() {
+                rpmChart.resetZoom();
+            }
+            
+            // Adicionar botão de reset zoom após o gráfico ser criado
+            const resetButton = document.createElement('button');
+            resetButton.innerHTML = '🔍 Resetar Zoom';
+            resetButton.className = 'btn-reset-zoom';
+            resetButton.style.cssText = `
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                transition: all 0.3s ease;
+                z-index: 1000;
+            `;
+            resetButton.addEventListener('click', resetZoom);
+            resetButton.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+            });
+            resetButton.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+            });
+            
+            // Adicionar o botão ao container do gráfico
+            const chartContainer = document.querySelector('.chart-container');
+            chartContainer.style.position = 'relative';
+            chartContainer.appendChild(resetButton);
+            
+            // Função para atualizar a visibilidade dos eixos Y
+            function updateAxisVisibility() {
+                const rpmVisible = !rpmChart.getDatasetMeta(0).hidden;
+                const velocidadeVisible = !rpmChart.getDatasetMeta(1).hidden;
+                const altitudeVisible = !rpmChart.getDatasetMeta(2).hidden;
+                
+                // Atualizar visibilidade dos eixos Y
+                rpmChart.options.scales.y.display = rpmVisible;
+                rpmChart.options.scales.y1.display = velocidadeVisible;
+                rpmChart.options.scales.y2.display = altitudeVisible;
+                
+                // Se altitude estiver visível, posicionar y1 no centro e y2 à direita
+                if (altitudeVisible) {
+                    rpmChart.options.scales.y1.position = velocidadeVisible ? 'right' : 'right';
+                    rpmChart.options.scales.y2.position = 'right';
+                } else {
+                    rpmChart.options.scales.y1.position = 'right';
+                }
+                
+                rpmChart.update('none'); // Update sem animação para melhor performance
+            }
+            
+            // Event listeners para os checkboxes
+            document.getElementById('toggle-rpm').addEventListener('change', function() {
+                const meta = rpmChart.getDatasetMeta(0);
+                meta.hidden = !this.checked;
+                updateAxisVisibility();
+            });
+            
+            document.getElementById('toggle-velocidade').addEventListener('change', function() {
+                const meta = rpmChart.getDatasetMeta(1);
+                meta.hidden = !this.checked;
+                updateAxisVisibility();
+            });
+            
+            document.getElementById('toggle-altitude').addEventListener('change', function() {
+                const meta = rpmChart.getDatasetMeta(2);
+                meta.hidden = !this.checked;
+                updateAxisVisibility();
+            });
+            
+            // Atualizar estatísticas na página com animação
+            if (timelineStats) {
+                setTimeout(() => {
+                    document.getElementById('timeline-rpm-medio').textContent = (timelineStats.rpm_medio || 0).toFixed(0);
+                    document.getElementById('timeline-rpm-maximo').textContent = (timelineStats.rpm_maximo || 0).toFixed(0);
+                    document.getElementById('timeline-rpm-vermelha').textContent = timelineStats.faixas_rpm.vermelha ? `${(timelineStats.faixas_rpm.vermelha / timelineStats.total_pontos * 100).toFixed(2)}%` : '0%';
+                    document.getElementById('timeline-rpm-amarela').textContent = timelineStats.faixas_rpm.amarela ? `${(timelineStats.faixas_rpm.amarela / timelineStats.total_pontos * 100).toFixed(2)}%` : '0%';
+                    document.getElementById('timeline-rpm-verde').textContent = timelineStats.faixas_rpm.verde ? `${(timelineStats.faixas_rpm.verde / timelineStats.total_pontos * 100).toFixed(2)}%` : '0%';
+                    document.getElementById('timeline-rpm-azul').textContent = timelineStats.faixas_rpm.azul ? `${(timelineStats.faixas_rpm.azul / timelineStats.total_pontos * 100).toFixed(2)}%` : '0%';
+
+                    const periodoTexto = timelineStats.periodo_inicio && timelineStats.periodo_fim
+                        ? `${new Date(timelineStats.periodo_inicio).toLocaleDateString('pt-BR')} - ${new Date(timelineStats.periodo_fim).toLocaleDateString('pt-BR')}`
+                        : 'N/A';
+                    document.getElementById('timeline-periodo').textContent = periodoTexto;
+                }, 500);
+            }
+            
+            // Ocultar mensagem de "sem dados"
+            document.querySelector('.timeline-no-data').style.display = 'none';
+            
+        } else {
+            // Mostrar mensagem de "sem dados" e ocultar controles
+            document.getElementById('rpmTimelineChart').style.display = 'none';
+            document.querySelector('.timeline-no-data').style.display = 'flex';
+            document.querySelector('.chart-controls').style.display = 'none';
+        }
+    });
+    </script>
   </body>
 </html>

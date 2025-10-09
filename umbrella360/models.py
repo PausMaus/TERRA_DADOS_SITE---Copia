@@ -137,6 +137,7 @@ class Empresa(models.Model):
     id_recurso = models.CharField(max_length=50, unique=True, verbose_name="ID do Recurso Wialon", blank=True, null=True)
     #exemplo de ID de frota:401914599
     frota = models.CharField(max_length=50, verbose_name="ID da Frota Wialon", blank=True, null=True)
+    id_criador = models.CharField(max_length=50, verbose_name="ID do Criador no Wialon", blank=True, null=True)
 
     def __str__(self):
         return self.nome
@@ -159,7 +160,7 @@ class Unidade(models.Model):
     placa = models.CharField(max_length=20, verbose_name="Placa da Unidade", blank=True, null=True)
     id_wialon = models.CharField(max_length=50, unique=True, verbose_name="ID Wialon", blank=True, null=True)
     odometro = models.DecimalField(max_digits=15, decimal_places=2, default=0.00, verbose_name="Odômetro (km)", blank=True, null=True)
-
+    id_criador = models.CharField(max_length=50, verbose_name="ID do Criador no Wialon", blank=True, null=True)
     def __str__(self):
         return f"{self.id} - {self.nm} ({self.cls})"
     
@@ -222,6 +223,23 @@ class Viagem_Base(models.Model):
         verbose_name = "Viagem Base"
         verbose_name_plural = "Viagens"
         ordering = ['-período']
+
+class Viagem_eco(models.Model):
+    #várias viagens ecológicas por unidade
+
+    unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE, related_name='viagens_eco')
+    #timestamp em numérico
+    timestamp = models.PositiveIntegerField(verbose_name="Timestamp", blank=True, null=True)
+    rpm = models.PositiveIntegerField(verbose_name="RPM do Motor", blank=True, null=True)
+    velocidade = models.FloatField(verbose_name="Velocidade (km/h)", blank=True, null=True)
+    altitude = models.FloatField(verbose_name="Altitude (m)", blank=True, null=True)
+    
+    def __str__(self):
+        return f"{self.unidade.nm} - {self.timestamp}"
+
+    class Meta:
+        verbose_name = "Viagem Ecológica"
+        verbose_name_plural = "Viagens Ecológicas"
 
 
 class CheckPoint(models.Model):

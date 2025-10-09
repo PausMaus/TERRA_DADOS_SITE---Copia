@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Motorista,  ConfiguracaoSistema, Empresa, Unidade, Viagem_Base, CheckPoint, Infrações
+from .models import Motorista,  ConfiguracaoSistema, Empresa, Unidade, Viagem_Base, CheckPoint, Infrações, Viagem_eco
 from .models import Veiculo
 # Register your models here.
 
@@ -106,7 +106,11 @@ class InfracoesAdmin(admin.ModelAdmin):
 
 @admin.register(Veiculo)
 class VeiculoAdmin(admin.ModelAdmin):
-    list_display = ('placa', 'marca', 'modelo', 'ano', 'empresa')
+    list_display = ('nm','placa', 'marca', 'modelo', 'ano', 'empresa')
     list_filter = ('marca', 'modelo', 'ano', 'empresa')
     search_fields = ('placa', 'marca', 'modelo')
     ordering = ('placa',)
+
+@admin.register(Viagem_eco)
+class ViagemEcoAdmin(admin.ModelAdmin):
+    list_display = ('unidade', 'timestamp', 'rpm')
