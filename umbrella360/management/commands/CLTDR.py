@@ -19,7 +19,7 @@ import pytz
 
 
 
-deposito = rf"C:\TERRA DADOS\laboratorium\Site\Deposito\mensagens"
+deposito = rf"C:\TERRA DADOS\laboratorium\Site\Deposito\estudos"
 
 # frotas
 #+-------------------------------------------------------------+
@@ -2460,6 +2460,8 @@ class Command(BaseCommand):
         
         #################################################
         for unidade_id in lista_unidades:
+
+
             unidade_nome = Veiculo.objects.filter(id_wialon=unidade_id).first().nm
             print(f"\nProcessando unidade ID: {colored(unidade_id, 'cyan')} - Nome: {colored(unidade_nome, 'yellow')}")
 
@@ -2570,7 +2572,6 @@ class Command(BaseCommand):
                     print(df_messages.head())
                     
 
-
                     # Mostra algumas estatísticas
                     print(f"\nEstatísticas das mensagens:")
                     print(f"Período: {df_messages['datetime'].min()} até {df_messages['datetime'].max()}")
@@ -2596,6 +2597,216 @@ class Command(BaseCommand):
         print("Total de unidades processadas com sucesso:", colored(counter, 'blue'), "/", colored(n_unidades, 'green'))
 
         Wialon.wialon_logout(sid)
+
+
+    def TESTE_MENSAGENS_03(self, tempo):
+        import threading
+        import time
+        
+        counter = 0
+        # procura apenas unidade com nome que inclua "PRO"
+        #lista_unidades = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+        lista_unidades = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+        #lista_unidades = Veiculo.objects.filter(nm__icontains="1023").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+        #lista todos os veículos
+        #lista_unidades = Veiculo.objects.all().values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+
+        n_unidades = len(lista_unidades)
+        print(f"lista_unidades: {n_unidades} unidades.")
+        print(lista_unidades)
+
+        current_time = int(time.time())
+        timeFrom = current_time - (tempo * 24 * 3600)  
+        timeTo = current_time  # Agora
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+            self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+            return
+        
+        # Variável de controle para parar o keep-alive
+        keep_alive_active = True
+        
+        def keep_session_alive():
+            """Thread function para manter a sessão ativa"""
+            while keep_alive_active:
+                try:
+                    # Aguarda 3 minutos (180 segundos)
+                    time.sleep(180)
+                    
+                    if not keep_alive_active:
+                        break
+                    
+                    # Faz requisição para manter a sessão
+                    payload = {
+                        "svc": "avl_evts",
+                        "sid": sid
+                    }
+                    
+                    response = requests.post(Wialon.API_URL, data=payload, timeout=30)
+                    response.raise_for_status()
+                    
+                    print(f"🔄 {colored('Keep-alive enviado', 'blue')} - {colored(datetime.now().strftime('%H:%M:%S'), 'cyan')}")
+                    
+                except requests.RequestException as e:
+                    print(f"⚠️ Erro no keep-alive: {e}")
+                except Exception as e:
+                    print(f"⚠️ Erro inesperado no keep-alive: {e}")
+        
+        # Inicia thread do keep-alive
+        keep_alive_thread = threading.Thread(target=keep_session_alive, daemon=True)
+        keep_alive_thread.start()
+        
+        try:
+            #################################################
+            for unidade_id in lista_unidades:
+
+                unidade_nome = Veiculo.objects.filter(id_wialon=unidade_id).first().nm
+                print(f"\nProcessando unidade ID: {colored(unidade_id, 'cyan')} - Nome: {colored(unidade_nome, 'yellow')}")
+
+                payload = {
+                    "svc": "render/remove_layer",
+                    "params": json.dumps({
+                        "layerName":"messages"
+                    }),
+                    "sid": sid
+                }
+                try:
+                    response = requests.post(Wialon.API_URL, data=payload)
+                    response.raise_for_status()
+                    result = response.json()
+                    print("Response 01:", result)
+                except requests.RequestException as e:
+                    print("Error:", e)
+                    continue
+
+                ##################################################
+                
+                payload = {
+                    "svc": "item/update_custom_property",
+                    "params": json.dumps({
+                        "itemId": unidade_id, "name": "lastmsgl", "value": f'{{"u":{unidade_id},"t":"data","s":0}}'
+                    }),
+                    "sid": sid
+                }
+                try:
+                    response = requests.post(Wialon.API_URL, data=payload)
+                    response.raise_for_status()
+                    result = response.json()
+                    print("Response 02:", result)
+                except requests.RequestException as e:
+                    print("Error:", e)
+                    continue
+
+                ##################################################
+
+                payload = {
+                    "svc": "render/create_messages_layer",
+                    "params": json.dumps({
+                        "layerName":"messages","itemId":unidade_id,"timeFrom":timeFrom,"timeTo":timeTo,"tripDetector":0,"flags":0,"trackWidth":4,"trackColor":"speed","annotations":0,"points":1,"pointColor":"cc0000ff","arrows":1
+                    }),
+                    "sid": sid
+                }
+                try:
+                    response = requests.post(Wialon.API_URL, data=payload)
+                    response.raise_for_status()
+                    result = response.json()
+                    print("Response 03:", result)
+                    contagem_mensagens = result.get('units', [])[0].get('msgs', {}).get('count', 0) if result.get('units') else 0
+                    print(f"Contagem de mensagens para a unidade {unidade_id}:", colored(contagem_mensagens, 'green'))
+                except requests.RequestException as e:
+                    print("Error:", e)
+                    continue
+
+                ###################################################
+                # Requisição que retorna as mensagens
+                payload = {
+                    "svc": "render/get_messages",
+                    "params": json.dumps({
+                        "indexFrom":0,"indexTo":contagem_mensagens,"layerName":"messages","unitId":unidade_id
+                    }),
+                    "sid": sid
+                }
+                try:
+                    response = requests.post(Wialon.API_URL, data=payload)
+                    response.raise_for_status()
+                    result = response.json()
+
+                    #print("Response 04:", result)
+                    # salva como json
+                    with open(f'{deposito}/messages_{unidade_nome}_{unidade_id}.json', 'w') as f:
+                        json.dump(result, f, indent=4)
+
+                    
+                    # Processa as mensagens e cria o DataFrame
+                    if result and isinstance(result, list):
+                        df_messages = self.processar_mensagens_wialon(result)
+
+                        # CORREÇÃO: Atualiza o model Viagem_eco com TODOS os registros
+                        unidade_obj = Veiculo.objects.get(id_wialon=unidade_id)
+                        if unidade_obj and not df_messages.empty:
+                            registros_criados = 0
+                            registros_atualizados = 0
+                            
+                            for index, row in df_messages.iterrows():
+                                timestamp = str(row['timestamp'])
+                                #can_rpm_readable = float(row['can_rpm_readable']) if 'can_rpm_readable' in row and pd.notna(row['can_rpm_readable']) else 0.0
+                                
+
+                                # Atualiza ou cria usando timestamp como chave única também
+                                viagem_eco, created = Viagem_eco.objects.update_or_create(
+                                    unidade_id=unidade_obj.id,
+                                    timestamp=timestamp,  # IMPORTANTE: Incluir timestamp na busca
+                                    defaults={
+                                        'rpm': float(row['can_rpm']) if 'can_rpm' in row and pd.notna(row['can_rpm']) else 0.0,
+                                        'velocidade': float(row['speed']) if 'speed' in row and pd.notna(row['speed']) else 0.0,
+                                        'altitude': float(row['altitude']) if 'altitude' in row and pd.notna(row['altitude']) else 0.0,
+                                    }
+                                )
+                                
+                                if created:
+                                    registros_criados += 1
+                                else:
+                                    registros_atualizados += 1
+                            
+                            print(f"✅ Unidade {unidade_nome}: {colored(registros_criados, 'green')} novos registros, {colored(registros_atualizados, 'yellow')} atualizados")
+
+                        print(f"\nDataFrame criado com {len(df_messages)} mensagens:")
+                        print(df_messages.head())
+                        
+
+                        # Mostra algumas estatísticas
+                        print(f"\nEstatísticas das mensagens:")
+                        print(f"Período: {df_messages['datetime'].min()} até {df_messages['datetime'].max()}")
+                        print(f"Velocidade média: {df_messages['speed'].mean():.2f} km/h")
+                        print(f"RPM médio: {df_messages['can_rpm'].mean():.0f}" if 'can_rpm' in df_messages.columns else "RPM não disponível")
+                        print(f"Consumo médio de combustível: {df_messages['can_fuel_rate'].mean():.2f} l/h" if 'can_fuel_rate' in df_messages.columns else "Consumo não disponível")
+                        print(f"Temperatura média do motor: {df_messages['can_coolant_temp'].mean():.2f} °C" if 'can_coolant_temp' in df_messages.columns else "Temperatura não disponível")
+                        print(f"Distância percorrida (odômetro): {df_messages['odometer_km'].iloc[-1] - df_messages['odometer_km'].iloc[0]:.2f} km" if 'odometer_km' in df_messages.columns else "Odômetro não disponível")
+                        print(f"Tempo médio entre mensagens: {((df_messages['timestamp'].iloc[-1] - df_messages['timestamp'].iloc[0]) / len(df_messages)):.2f} segundos")
+                        
+                        counter += 1
+                        print("Unidades processadas com sucesso até agora:", colored(counter, 'yellow'), "/", colored(n_unidades, 'green'))
+                    else:
+                        print("Nenhuma mensagem para processar")
+
+                except requests.RequestException as e:
+                    print("Error:", e)
+                    continue
+                except Exception as e:
+                    print(f"Erro ao processar unidade {unidade_id}: {e}")
+                    continue
+
+            print("Total de unidades processadas com sucesso:", colored(counter, 'blue'), "/", colored(n_unidades, 'green'))
+
+        finally:
+            # Para o keep-alive e aguarda a thread finalizar
+            keep_alive_active = False
+            if keep_alive_thread.is_alive():
+                keep_alive_thread.join(timeout=5)
+            
+            print(f"🔄 {colored('Keep-alive finalizado', 'blue')}")
+            
+            Wialon.wialon_logout(sid)
 
 
 
