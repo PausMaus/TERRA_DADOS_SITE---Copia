@@ -19,7 +19,7 @@ import pytz
 
 
 
-deposito = rf"C:\TERRA DADOS\laboratorium\Site\Deposito\mensagens"
+deposito = rf"C:\TERRA DADOS\laboratorium\Site\Deposito\estudos"
 
 # frotas
 #+-------------------------------------------------------------+
@@ -46,9 +46,18 @@ class Command(BaseCommand):
         self.PRINCIPAL()
         ##################################################
         # TESTE #
+        
 
         #self.TESTE_MENSAGENS(1)
-        self.TESTE_MENSAGENS_02(1)
+        #self.TESTE_MENSAGENS_02(7)
+        self.TESTE_MENSAGENS_03(3)
+
+        ##################################################
+        # ESTUDO #
+
+        #self.ESTUDO_01()
+        #self.ESTUDO_02()
+        #self.ESTUDO_03()
         ##################################################
         # End timing and display results
         end_time = datetime.now()
@@ -2476,6 +2485,8 @@ class Command(BaseCommand):
         
         #################################################
         for unidade_id in lista_unidades:
+
+
             unidade_nome = Veiculo.objects.filter(id_wialon=unidade_id).first().nm
             print(f"\nProcessando unidade ID: {colored(unidade_id, 'cyan')} - Nome: {colored(unidade_nome, 'yellow')}")
 
@@ -2620,6 +2631,2403 @@ class Command(BaseCommand):
         Wialon.wialon_logout(sid)
 
 
+    def TESTE_MENSAGENS_03(self, tempo):
+        import threading
+        import time
+        
+        counter = 0
+        # procura apenas unidade com nome que inclua "PRO"
+        #lista_unidades = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+        lista_unidades = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+        #lista_unidades = Veiculo.objects.filter(nm__icontains="1023").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+        #lista todos os veículos
+        #lista_unidades = Veiculo.objects.all().values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+
+        n_unidades = len(lista_unidades)
+        print(f"lista_unidades: {n_unidades} unidades.")
+        print(lista_unidades)
+
+        current_time = int(time.time())
+        timeFrom = current_time - (tempo * 24 * 3600)  
+        timeTo = current_time  # Agora
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+            self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+            return
+        
+        # Variável de controle para parar o keep-alive
+        keep_alive_active = True
+        
+        def keep_session_alive():
+            """Thread function para manter a sessão ativa"""
+            while keep_alive_active:
+                try:
+                    # Aguarda 3 minutos (180 segundos)
+                    time.sleep(180)
+                    
+                    if not keep_alive_active:
+                        break
+                    
+                    # Faz requisição para manter a sessão
+                    payload = {
+                        "svc": "avl_evts",
+                        "sid": sid
+                    }
+                    
+                    response = requests.post(Wialon.API_URL, data=payload, timeout=30)
+                    response.raise_for_status()
+                    
+                    print(f"🔄 {colored('Keep-alive enviado', 'blue')} - {colored(datetime.now().strftime('%H:%M:%S'), 'cyan')}")
+                    
+                except requests.RequestException as e:
+                    print(f"⚠️ Erro no keep-alive: {e}")
+                except Exception as e:
+                    print(f"⚠️ Erro inesperado no keep-alive: {e}")
+        
+        # Inicia thread do keep-alive
+        keep_alive_thread = threading.Thread(target=keep_session_alive, daemon=True)
+        keep_alive_thread.start()
+        
+        try:
+            #################################################
+            for unidade_id in lista_unidades:
+
+                unidade_nome = Veiculo.objects.filter(id_wialon=unidade_id).first().nm
+                print(f"\nProcessando unidade ID: {colored(unidade_id, 'cyan')} - Nome: {colored(unidade_nome, 'yellow')}")
+
+                payload = {
+                    "svc": "render/remove_layer",
+                    "params": json.dumps({
+                        "layerName":"messages"
+                    }),
+                    "sid": sid
+                }
+                try:
+                    response = requests.post(Wialon.API_URL, data=payload)
+                    response.raise_for_status()
+                    result = response.json()
+                    print("Response 01:", result)
+                except requests.RequestException as e:
+                    print("Error:", e)
+                    continue
+
+                ##################################################
+                
+                payload = {
+                    "svc": "item/update_custom_property",
+                    "params": json.dumps({
+                        "itemId": unidade_id, "name": "lastmsgl", "value": f'{{"u":{unidade_id},"t":"data","s":0}}'
+                    }),
+                    "sid": sid
+                }
+                try:
+                    response = requests.post(Wialon.API_URL, data=payload)
+                    response.raise_for_status()
+                    result = response.json()
+                    print("Response 02:", result)
+                except requests.RequestException as e:
+                    print("Error:", e)
+                    continue
+
+                ##################################################
+
+                payload = {
+                    "svc": "render/create_messages_layer",
+                    "params": json.dumps({
+                        "layerName":"messages","itemId":unidade_id,"timeFrom":timeFrom,"timeTo":timeTo,"tripDetector":0,"flags":0,"trackWidth":4,"trackColor":"speed","annotations":0,"points":1,"pointColor":"cc0000ff","arrows":1
+                    }),
+                    "sid": sid
+                }
+                try:
+                    response = requests.post(Wialon.API_URL, data=payload)
+                    response.raise_for_status()
+                    result = response.json()
+                    print("Response 03:", result)
+                    contagem_mensagens = result.get('units', [])[0].get('msgs', {}).get('count', 0) if result.get('units') else 0
+                    print(f"Contagem de mensagens para a unidade {unidade_id}:", colored(contagem_mensagens, 'green'))
+                except requests.RequestException as e:
+                    print("Error:", e)
+                    continue
+
+                ###################################################
+                # Requisição que retorna as mensagens
+                payload = {
+                    "svc": "render/get_messages",
+                    "params": json.dumps({
+                        "indexFrom":0,"indexTo":contagem_mensagens,"layerName":"messages","unitId":unidade_id
+                    }),
+                    "sid": sid
+                }
+                try:
+                    response = requests.post(Wialon.API_URL, data=payload)
+                    response.raise_for_status()
+                    result = response.json()
+
+                    #print("Response 04:", result)
+                    # salva como json
+                    with open(f'{deposito}/messages_{unidade_nome}_{unidade_id}.json', 'w') as f:
+                        json.dump(result, f, indent=4)
+
+                    
+                    # Processa as mensagens e cria o DataFrame
+                    if result and isinstance(result, list):
+                        df_messages = self.processar_mensagens_wialon(result)
+
+                        # CORREÇÃO: Atualiza o model Viagem_eco com TODOS os registros
+                        unidade_obj = Veiculo.objects.get(id_wialon=unidade_id)
+                        if unidade_obj and not df_messages.empty:
+                            registros_criados = 0
+                            registros_atualizados = 0
+                            
+                            for index, row in df_messages.iterrows():
+                                timestamp = str(row['timestamp'])
+                                #can_rpm_readable = float(row['can_rpm_readable']) if 'can_rpm_readable' in row and pd.notna(row['can_rpm_readable']) else 0.0
+                                
+
+                                # Atualiza ou cria usando timestamp como chave única também
+                                viagem_eco, created = Viagem_eco.objects.update_or_create(
+                                    unidade_id=unidade_obj.id,
+                                    timestamp=timestamp,  # IMPORTANTE: Incluir timestamp na busca
+                                    defaults={
+                                        'rpm': float(row['can_rpm']) if 'can_rpm' in row and pd.notna(row['can_rpm']) else 0.0,
+                                        'velocidade': float(row['speed']) if 'speed' in row and pd.notna(row['speed']) else 0.0,
+                                        'altitude': float(row['altitude']) if 'altitude' in row and pd.notna(row['altitude']) else 0.0,
+                                    }
+                                )
+                                
+                                if created:
+                                    registros_criados += 1
+                                else:
+                                    registros_atualizados += 1
+                            
+                            print(f"✅ Unidade {unidade_nome}: {colored(registros_criados, 'green')} novos registros, {colored(registros_atualizados, 'yellow')} atualizados")
+
+                        print(f"\nDataFrame criado com {len(df_messages)} mensagens:")
+                        print(df_messages.head())
+                        
+                        # Salva em Excel para análise
+                        df_messages.to_excel(f'{deposito}/{unidade_nome}_{unidade_id}.xlsx', index=False)
+                        print(f"DataFrame salvo em {deposito}/{unidade_nome}_{unidade_id}.xlsx")
+
+                        # Mostra algumas estatísticas
+                        print(f"\nEstatísticas das mensagens:")
+                        print(f"Período: {df_messages['datetime'].min()} até {df_messages['datetime'].max()}")
+                        print(f"Velocidade média: {df_messages['speed'].mean():.2f} km/h")
+                        print(f"RPM médio: {df_messages['can_rpm'].mean():.0f}" if 'can_rpm' in df_messages.columns else "RPM não disponível")
+                        print(f"Consumo médio de combustível: {df_messages['can_fuel_rate'].mean():.2f} l/h" if 'can_fuel_rate' in df_messages.columns else "Consumo não disponível")
+                        print(f"Temperatura média do motor: {df_messages['can_coolant_temp'].mean():.2f} °C" if 'can_coolant_temp' in df_messages.columns else "Temperatura não disponível")
+                        print(f"Distância percorrida (odômetro): {df_messages['odometer_km'].iloc[-1] - df_messages['odometer_km'].iloc[0]:.2f} km" if 'odometer_km' in df_messages.columns else "Odômetro não disponível")
+                        print(f"Tempo médio entre mensagens: {((df_messages['timestamp'].iloc[-1] - df_messages['timestamp'].iloc[0]) / len(df_messages)):.2f} segundos")
+                        
+                        counter += 1
+                        print("Unidades processadas com sucesso até agora:", colored(counter, 'yellow'), "/", colored(n_unidades, 'green'))
+                    else:
+                        print("Nenhuma mensagem para processar")
+
+                except requests.RequestException as e:
+                    print("Error:", e)
+                    continue
+                except Exception as e:
+                    print(f"Erro ao processar unidade {unidade_id}: {e}")
+                    continue
+
+            print("Total de unidades processadas com sucesso:", colored(counter, 'blue'), "/", colored(n_unidades, 'green'))
+
+        finally:
+            # Para o keep-alive e aguarda a thread finalizar
+            keep_alive_active = False
+            if keep_alive_thread.is_alive():
+                keep_alive_thread.join(timeout=5)
+            
+            print(f"🔄 {colored('Keep-alive finalizado', 'blue')}")
+            
+            Wialon.wialon_logout(sid)
+
+
+
+
+    def ESTUDO_01(self):
+        """
+        Análise estatística completa dos dados de Viagem_eco
+        - Detecção de outliers
+        - Análise de padrões
+        - Estatísticas descritivas
+        - Correlações entre variáveis
+        - Análise temporal
+        """
+        print(colored("="*50, 'cyan'))
+        print(colored("INICIANDO ESTUDO ESTATÍSTICO COMPLETO", 'yellow'))
+        print(colored("="*50, 'cyan'))
+        
+        # Importações necessárias
+        import numpy as np
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        from scipy import stats
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.cluster import KMeans
+        from sklearn.ensemble import IsolationForest
+        import warnings
+        warnings.filterwarnings('ignore')
+        
+        # Configurar matplotlib para não mostrar gráficos
+        plt.ioff()
+        
+        try:
+            # ============= COLETA DE DADOS =============
+            print(f"📊 {colored('Coletando dados do banco...', 'blue')}")
+            
+            # Buscar todos os dados de Viagem_eco
+            viagens_eco = Viagem_eco.objects.all().select_related('unidade')
+            
+            if not viagens_eco.exists():
+                print(f"❌ {colored('Nenhum dado encontrado na tabela Viagem_eco', 'red')}")
+                return
+            
+            # Converter para DataFrame
+            data_list = []
+            for viagem in viagens_eco:
+                try:
+                    # Converter timestamp unix para datetime
+                    timestamp_int = int(viagem.timestamp)
+                    dt = datetime.fromtimestamp(timestamp_int)
+                    
+                    # Filtrar apenas dados com RPM válidos (acima de 300)
+                    if viagem.rpm and float(viagem.rpm) >= 300:
+                        data_list.append({
+                            'timestamp': timestamp_int,
+                            'datetime': dt,
+                            'unidade_id': viagem.unidade.id,
+                            'unidade_nome': viagem.unidade.nm,
+                            'empresa': viagem.unidade.empresa.nome if viagem.unidade.empresa else 'N/A',
+                            'rpm': float(viagem.rpm),
+                            'velocidade': float(viagem.velocidade) if viagem.velocidade else 0.0,
+                            'altitude': float(viagem.altitude) if viagem.altitude else 0.0,
+                            'hora': dt.hour,
+                            'dia_semana': dt.weekday(),
+                            'mes': dt.month,
+                            'ano': dt.year,
+                        })
+                except (ValueError, TypeError, OSError):
+                    continue
+            
+            if not data_list:
+                print(f"❌ {colored('Nenhum dado válido encontrado', 'red')}")
+                return
+            
+            df = pd.DataFrame(data_list)
+            print(f"✅ {colored(f'Dados coletados: {len(df)} registros de {df.unidade_id.nunique()} unidades', 'green')}")
+            
+            # ============= ANÁLISE DESCRITIVA BÁSICA =============
+            print(f"\n📈 {colored('Gerando estatísticas descritivas...', 'blue')}")
+            
+            stats_desc = df[['rpm', 'velocidade', 'altitude']].describe()
+            
+            # Função para calcular MAD (Mean Absolute Deviation) manualmente
+            def calculate_mad(series):
+                """Calcula o desvio absoluto mediano"""
+                median = series.median()
+                return (series - median).abs().median()
+            
+            # Adicionar estatísticas extras
+            stats_extras = pd.DataFrame({
+                'rpm': [
+                    df['rpm'].var(),
+                    df['rpm'].skew(),
+                    df['rpm'].kurtosis(),
+                    calculate_mad(df['rpm'])  # CORREÇÃO: Usar função personalizada
+                ],
+                'velocidade': [
+                    df['velocidade'].var(),
+                    df['velocidade'].skew(),
+                    df['velocidade'].kurtosis(),
+                    calculate_mad(df['velocidade'])  # CORREÇÃO: Usar função personalizada
+                ],
+                'altitude': [
+                    df['altitude'].var(),
+                    df['altitude'].skew(),
+                    df['altitude'].kurtosis(),
+                    calculate_mad(df['altitude'])  # CORREÇÃO: Usar função personalizada
+                ]
+            }, index=['variancia', 'assimetria', 'curtose', 'desvio_abs_mediano'])
+            
+            stats_completas = pd.concat([stats_desc, stats_extras])
+            
+            # Salvar estatísticas descritivas
+            stats_completas.to_excel(f'{deposito}/estudo_01_estatisticas_descritivas.xlsx')
+            print(f"💾 Estatísticas descritivas salvas em: estudo_01_estatisticas_descritivas.xlsx")
+            
+            # ============= DETECÇÃO DE OUTLIERS =============
+            print(f"\n🔍 {colored('Detectando outliers...', 'blue')}")
+            
+            # Método 1: Z-Score
+            z_scores = np.abs(stats.zscore(df[['rpm', 'velocidade', 'altitude']]))
+            outliers_zscore = df[(z_scores > 3).any(axis=1)].copy()
+            
+            # Método 2: IQR (Interquartile Range)
+            outliers_iqr = pd.DataFrame()
+            for coluna in ['rpm', 'velocidade', 'altitude']:
+                Q1 = df[coluna].quantile(0.25)
+                Q3 = df[coluna].quantile(0.75)
+                IQR = Q3 - Q1
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+                
+                outliers_col = df[(df[coluna] < lower_bound) | (df[coluna] > upper_bound)]
+                outliers_iqr = pd.concat([outliers_iqr, outliers_col]).drop_duplicates()
+            
+            # Método 3: Isolation Forest
+            iso_forest = IsolationForest(contamination=0.1, random_state=42)
+            outliers_iso = iso_forest.fit_predict(df[['rpm', 'velocidade', 'altitude']])
+            outliers_isolation = df[outliers_iso == -1].copy()
+            
+            # Combinar todos os outliers
+            all_outliers = pd.concat([outliers_zscore, outliers_iqr, outliers_isolation]).drop_duplicates()
+            all_outliers['metodo_deteccao'] = 'Múltiplos'
+            
+            print(f"🎯 Outliers detectados:")
+            print(f"   - Z-Score (>3): {len(outliers_zscore)} registros")
+            print(f"   - IQR: {len(outliers_iqr)} registros")
+            print(f"   - Isolation Forest: {len(outliers_isolation)} registros")
+            print(f"   - Total únicos: {len(all_outliers)} registros")
+            
+            # Salvar outliers
+            all_outliers.to_excel(f'{deposito}/estudo_01_outliers_detectados.xlsx', index=False)
+            print(f"💾 Outliers salvos em: estudo_01_outliers_detectados.xlsx")
+            
+            # ============= ANÁLISE POR UNIDADE =============
+            print(f"\n🚛 {colored('Analisando padrões por unidade...', 'blue')}")
+            
+            stats_por_unidade = df.groupby(['unidade_nome', 'empresa']).agg({
+                'rpm': ['count', 'mean', 'std', 'min', 'max'],
+                'velocidade': ['mean', 'std', 'min', 'max'],
+                'altitude': ['mean', 'std', 'min', 'max'],
+            }).round(2)
+            
+            # Achatar colunas multi-nível
+            stats_por_unidade.columns = ['_'.join(col).strip() for col in stats_por_unidade.columns]
+            stats_por_unidade = stats_por_unidade.reset_index()
+            
+            # Adicionar classificações
+            stats_por_unidade['rpm_categoria'] = pd.cut(
+                stats_por_unidade['rpm_mean'], 
+                bins=[0, 800, 1300, 2000, float('inf')], 
+                labels=['Baixo', 'Econômico', 'Normal', 'Alto']
+            )
+            
+            stats_por_unidade['velocidade_categoria'] = pd.cut(
+                stats_por_unidade['velocidade_mean'], 
+                bins=[0, 40, 60, 80, float('inf')], 
+                labels=['Baixa', 'Moderada', 'Alta', 'Muito Alta']
+            )
+            
+            # Salvar análise por unidade
+            stats_por_unidade.to_excel(f'{deposito}/estudo_01_analise_por_unidade.xlsx', index=False)
+            print(f"💾 Análise por unidade salva em: estudo_01_analise_por_unidade.xlsx")
+            
+            # ============= ANÁLISE TEMPORAL =============
+            print(f"\n⏰ {colored('Analisando padrões temporais...', 'blue')}")
+            
+            # Por hora do dia
+            analise_hora = df.groupby('hora').agg({
+                'rpm': ['mean', 'std', 'count'],
+                'velocidade': ['mean', 'std'],
+                'altitude': ['mean', 'std']
+            }).round(2)
+            analise_hora.columns = ['_'.join(col).strip() for col in analise_hora.columns]
+            analise_hora = analise_hora.reset_index()
+            
+            # Por dia da semana
+            dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
+            analise_dia_semana = df.groupby('dia_semana').agg({
+                'rpm': ['mean', 'std', 'count'],
+                'velocidade': ['mean', 'std'],
+                'altitude': ['mean', 'std']
+            }).round(2)
+            analise_dia_semana.columns = ['_'.join(col).strip() for col in analise_dia_semana.columns]
+            analise_dia_semana = analise_dia_semana.reset_index()
+            analise_dia_semana['dia_nome'] = analise_dia_semana['dia_semana'].map(lambda x: dias_semana[x])
+            
+            # Por mês
+            analise_mes = df.groupby('mes').agg({
+                'rpm': ['mean', 'std', 'count'],
+                'velocidade': ['mean', 'std'],
+                'altitude': ['mean', 'std']
+            }).round(2)
+            analise_mes.columns = ['_'.join(col).strip() for col in analise_mes.columns]
+            analise_mes = analise_mes.reset_index()
+            
+            # Salvar análises temporais
+            with pd.ExcelWriter(f'{deposito}/estudo_01_analise_temporal.xlsx') as writer:
+                analise_hora.to_excel(writer, sheet_name='Por_Hora', index=False)
+                analise_dia_semana.to_excel(writer, sheet_name='Por_Dia_Semana', index=False)
+                analise_mes.to_excel(writer, sheet_name='Por_Mes', index=False)
+            
+            print(f"💾 Análise temporal salva em: estudo_01_analise_temporal.xlsx")
+            
+            # ============= ANÁLISE DE CORRELAÇÕES =============
+            print(f"\n🔗 {colored('Analisando correlações...', 'blue')}")
+            
+            # Matriz de correlação
+            correlation_matrix = df[['rpm', 'velocidade', 'altitude', 'hora', 'dia_semana']].corr()
+            
+            # Salvar matriz de correlação
+            correlation_matrix.to_excel(f'{deposito}/estudo_01_matriz_correlacao.xlsx')
+            print(f"💾 Matriz de correlação salva em: estudo_01_matriz_correlacao.xlsx")
+            
+            # ============= CLUSTERING ANÁLISE =============
+            print(f"\n🎯 {colored('Realizando análise de clusters...', 'blue')}")
+            
+            # Preparar dados para clustering
+            features_clustering = df[['rpm', 'velocidade', 'altitude']].copy()
+            
+            # Normalizar dados
+            scaler = StandardScaler()
+            features_normalized = scaler.fit_transform(features_clustering)
+            
+            # K-Means com diferentes números de clusters
+            inertias = []
+            K_range = range(2, 11)
+            
+            for k in K_range:
+                kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+                kmeans.fit(features_normalized)
+                inertias.append(kmeans.inertia_)
+            
+            # Escolher k=5 para análise detalhada
+            kmeans = KMeans(n_clusters=5, random_state=42, n_init=10)
+            clusters = kmeans.fit_predict(features_normalized)
+            
+            # Adicionar clusters ao DataFrame
+            df_clusters = df.copy()
+            df_clusters['cluster'] = clusters
+            
+            # Analisar características de cada cluster
+            cluster_analysis = df_clusters.groupby('cluster').agg({
+                'rpm': ['mean', 'std', 'min', 'max', 'count'],
+                'velocidade': ['mean', 'std', 'min', 'max'],
+                'altitude': ['mean', 'std', 'min', 'max'],
+                'unidade_id': 'nunique'
+            }).round(2)
+            
+            cluster_analysis.columns = ['_'.join(col).strip() for col in cluster_analysis.columns]
+            cluster_analysis = cluster_analysis.reset_index()
+            
+            # Adicionar interpretação dos clusters
+            def interpretar_cluster(row):
+                rpm_mean = row['rpm_mean']
+                vel_mean = row['velocidade_mean']
+                
+                if rpm_mean < 800:
+                    rpm_cat = "Marcha Lenta"
+                elif rpm_mean < 1300:
+                    rpm_cat = "Econômico"
+                elif rpm_mean < 2000:
+                    rpm_cat = "Normal"
+                else:
+                    rpm_cat = "Alto"
+                
+                if vel_mean < 20:
+                    vel_cat = "Parado/Lento"
+                elif vel_mean < 50:
+                    vel_cat = "Urbano"
+                elif vel_mean < 80:
+                    vel_cat = "Rodoviário"
+                else:
+                    vel_cat = "Alto"
+                
+                return f"{rpm_cat} + {vel_cat}"
+            
+            cluster_analysis['interpretacao'] = cluster_analysis.apply(interpretar_cluster, axis=1)
+            
+            # Salvar análise de clusters
+            cluster_analysis.to_excel(f'{deposito}/estudo_01_analise_clusters.xlsx', index=False)
+            print(f"💾 Análise de clusters salva em: estudo_01_analise_clusters.xlsx")
+            
+            # ============= DETECÇÃO DE PADRÕES ESPECÍFICOS =============
+            print(f"\n🔍 {colored('Detectando padrões específicos...', 'blue')}")
+            
+            padroes_especificos = {}
+            
+            # 1. Padrão de marcha lenta excessiva
+            marcha_lenta = df[df['rpm'] < 500]
+            padroes_especificos['marcha_lenta_excessiva'] = {
+                'total_registros': len(marcha_lenta),
+                'unidades_afetadas': marcha_lenta['unidade_nome'].nunique(),
+                'percentual_total': round(len(marcha_lenta) / len(df) * 100, 2)
+            }
+            
+            # 2. Padrão de RPM muito alto (zona vermelha)
+            rpm_alto = df[df['rpm'] > 2300]
+            padroes_especificos['rpm_zona_vermelha'] = {
+                'total_registros': len(rpm_alto),
+                'unidades_afetadas': rpm_alto['unidade_nome'].nunique(),
+                'percentual_total': round(len(rpm_alto) / len(df) * 100, 2)
+            }
+            
+            # 3. Padrão de velocidade alta com RPM baixo (possível descida)
+            vel_alta_rpm_baixo = df[(df['velocidade'] > 60) & (df['rpm'] < 1000)]
+            padroes_especificos['velocidade_alta_rpm_baixo'] = {
+                'total_registros': len(vel_alta_rpm_baixo),
+                'unidades_afetadas': vel_alta_rpm_baixo['unidade_nome'].nunique(),
+                'percentual_total': round(len(vel_alta_rpm_baixo) / len(df) * 100, 2)
+            }
+            
+            # 4. Padrão noturno (22h às 6h)
+            periodo_noturno = df[(df['hora'] >= 22) | (df['hora'] <= 6)]
+            padroes_especificos['atividade_noturna'] = {
+                'total_registros': len(periodo_noturno),
+                'unidades_afetadas': periodo_noturno['unidade_nome'].nunique(),
+                'percentual_total': round(len(periodo_noturno) / len(df) * 100, 2)
+            }
+            
+            # 5. Eficiência por faixa de RPM
+            df['faixa_rpm'] = pd.cut(
+                df['rpm'], 
+                bins=[0, 799, 1300, 2300, float('inf')], 
+                labels=['Azul (350-799)', 'Verde (800-1300)', 'Amarela (1301-2300)', 'Vermelha (2301+)']
+            )
+            
+            distribuicao_rpm = df['faixa_rpm'].value_counts().to_dict()
+            padroes_especificos['distribuicao_faixas_rpm'] = distribuicao_rpm
+            
+            # Converter para DataFrame e salvar
+            padroes_df = pd.DataFrame([padroes_especificos]).T
+            padroes_df.to_excel(f'{deposito}/estudo_01_padroes_especificos.xlsx')
+            print(f"💾 Padrões específicos salvos em: estudo_01_padroes_especificos.xlsx")
+            
+            # ============= GERAR GRÁFICOS =============
+            print(f"\n📊 {colored('Gerando gráficos de análise...', 'blue')}")
+            
+            # Configurar estilo dos gráficos
+            plt.style.use('default')
+            sns.set_palette("husl")
+            
+            # 1. Distribuições das variáveis principais
+            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+            fig.suptitle('Distribuições das Variáveis Principais', fontsize=16, fontweight='bold')
+            
+            # RPM
+            axes[0, 0].hist(df['rpm'], bins=50, alpha=0.7, color='blue')
+            axes[0, 0].set_title('Distribuição RPM')
+            axes[0, 0].set_xlabel('RPM')
+            axes[0, 0].set_ylabel('Frequência')
+            axes[0, 0].axvline(df['rpm'].mean(), color='red', linestyle='--', label=f'Média: {df["rpm"].mean():.0f}')
+            axes[0, 0].legend()
+            
+            # Velocidade
+            axes[0, 1].hist(df['velocidade'], bins=50, alpha=0.7, color='green')
+            axes[0, 1].set_title('Distribuição Velocidade')
+            axes[0, 1].set_xlabel('Velocidade (km/h)')
+            axes[0, 1].set_ylabel('Frequência')
+            axes[0, 1].axvline(df['velocidade'].mean(), color='red', linestyle='--', label=f'Média: {df["velocidade"].mean():.1f}')
+            axes[0, 1].legend()
+            
+            # Altitude
+            axes[1, 0].hist(df['altitude'], bins=50, alpha=0.7, color='orange')
+            axes[1, 0].set_title('Distribuição Altitude')
+            axes[1, 0].set_xlabel('Altitude (m)')
+            axes[1, 0].set_ylabel('Frequência')
+            axes[1, 0].axvline(df['altitude'].mean(), color='red', linestyle='--', label=f'Média: {df["altitude"].mean():.1f}')
+            axes[1, 0].legend()
+            
+            # Distribuição por faixa de RPM
+            faixa_counts = df['faixa_rpm'].value_counts()
+            axes[1, 1].pie(faixa_counts.values, labels=faixa_counts.index, autopct='%1.1f%%')
+            axes[1, 1].set_title('Distribuição por Faixa de RPM')
+            
+            plt.tight_layout()
+            plt.savefig(f'{deposito}/estudo_01_distribuicoes.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            # 2. Análise temporal
+            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+            fig.suptitle('Análise Temporal dos Dados', fontsize=16, fontweight='bold')
+            
+            # RPM por hora
+            hourly_rpm = df.groupby('hora')['rpm'].mean()
+            axes[0, 0].plot(hourly_rpm.index, hourly_rpm.values, marker='o', linewidth=2)
+            axes[0, 0].set_title('RPM Médio por Hora do Dia')
+            axes[0, 0].set_xlabel('Hora')
+            axes[0, 0].set_ylabel('RPM Médio')
+            axes[0, 0].grid(True, alpha=0.3)
+            
+            # Velocidade por hora
+            hourly_vel = df.groupby('hora')['velocidade'].mean()
+            axes[0, 1].plot(hourly_vel.index, hourly_vel.values, marker='s', color='green', linewidth=2)
+            axes[0, 1].set_title('Velocidade Média por Hora do Dia')
+            axes[0, 1].set_xlabel('Hora')
+            axes[0, 1].set_ylabel('Velocidade Média (km/h)')
+            axes[0, 1].grid(True, alpha=0.3)
+            
+            # RPM por dia da semana
+            daily_rpm = df.groupby('dia_semana')['rpm'].mean()
+            dias_nome = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+            axes[1, 0].bar(range(7), daily_rpm.values, color='purple', alpha=0.7)
+            axes[1, 0].set_title('RPM Médio por Dia da Semana')
+            axes[1, 0].set_xlabel('Dia da Semana')
+            axes[1, 0].set_ylabel('RPM Médio')
+            axes[1, 0].set_xticks(range(7))
+            axes[1, 0].set_xticklabels(dias_nome)
+            
+            # Atividade por mês
+            monthly_count = df.groupby('mes').size()
+            axes[1, 1].bar(monthly_count.index, monthly_count.values, color='red', alpha=0.7)
+            axes[1, 1].set_title('Atividade por Mês')
+            axes[1, 1].set_xlabel('Mês')
+            axes[1, 1].set_ylabel('Número de Registros')
+            
+            plt.tight_layout()
+            plt.savefig(f'{deposito}/estudo_01_analise_temporal.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            # 3. Scatter plots e correlações
+            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+            fig.suptitle('Análise de Correlações', fontsize=16, fontweight='bold')
+            
+            # RPM vs Velocidade
+            axes[0, 0].scatter(df['rpm'], df['velocidade'], alpha=0.1, s=1)
+            axes[0, 0].set_title('RPM vs Velocidade')
+            axes[0, 0].set_xlabel('RPM')
+            axes[0, 0].set_ylabel('Velocidade (km/h)')
+            
+            # RPM vs Altitude
+            axes[0, 1].scatter(df['rpm'], df['altitude'], alpha=0.1, s=1, color='green')
+            axes[0, 1].set_title('RPM vs Altitude')
+            axes[0, 1].set_xlabel('RPM')
+            axes[0, 1].set_ylabel('Altitude (m)')
+            
+            # Velocidade vs Altitude
+            axes[1, 0].scatter(df['velocidade'], df['altitude'], alpha=0.1, s=1, color='red')
+            axes[1, 0].set_title('Velocidade vs Altitude')
+            axes[1, 0].set_xlabel('Velocidade (km/h)')
+            axes[1, 0].set_ylabel('Altitude (m)')
+            
+            # Heatmap de correlação
+            corr_data = df[['rpm', 'velocidade', 'altitude', 'hora']].corr()
+            im = axes[1, 1].imshow(corr_data, cmap='coolwarm', aspect='auto')
+            axes[1, 1].set_title('Matriz de Correlação')
+            axes[1, 1].set_xticks(range(len(corr_data.columns)))
+            axes[1, 1].set_yticks(range(len(corr_data.columns)))
+            axes[1, 1].set_xticklabels(corr_data.columns)
+            axes[1, 1].set_yticklabels(corr_data.columns)
+            
+            plt.tight_layout()
+            plt.savefig(f'{deposito}/estudo_01_correlacoes.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            print(f"💾 Gráficos salvos em:")
+            print(f"   - estudo_01_distribuicoes.png")
+            print(f"   - estudo_01_analise_temporal.png")
+            print(f"   - estudo_01_correlacoes.png")
+            
+            # ============= RELATÓRIO RESUMO =============
+            print(f"\n📋 {colored('Gerando relatório resumo...', 'blue')}")
+            
+            resumo = {
+                'data_analise': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'total_registros': len(df),
+                'total_unidades': df['unidade_id'].nunique(),
+                'total_empresas': df['empresa'].nunique(),
+                'periodo_dados': f"{df['datetime'].min()} até {df['datetime'].max()}",
+                'rpm_medio_geral': round(df['rpm'].mean(), 2),
+                'rpm_desvio_padrao': round(df['rpm'].std(), 2),
+                'velocidade_media_geral': round(df['velocidade'].mean(), 2),
+                'altitude_media_geral': round(df['altitude'].mean(), 2),
+                'outliers_detectados': len(all_outliers),
+                'percentual_outliers': round(len(all_outliers) / len(df) * 100, 2),
+                'distribuicao_faixas_rpm': dict(df['faixa_rpm'].value_counts()),
+                'padroes_identificados': len(padroes_especificos),
+            }
+            
+            # Salvar resumo
+            resumo_df = pd.DataFrame([resumo]).T
+            resumo_df.columns = ['Valor']
+            resumo_df.to_excel(f'{deposito}/estudo_01_resumo_executivo.xlsx')
+            
+            # ============= RESULTADO FINAL =============
+            print(colored("="*50, 'cyan'))
+            print(colored("ESTUDO ESTATÍSTICO CONCLUÍDO COM SUCESSO!", 'green'))
+            print(colored("="*50, 'cyan'))
+            
+            print(f"📊 {colored('RESUMO DOS RESULTADOS:', 'yellow')}")
+            print(f"   • Total de registros analisados: {colored(f'{len(df):,}', 'green')}")
+            print(f"   • Unidades analisadas: {colored(df['unidade_id'].nunique(), 'green')}")
+            print(f"   • Empresas envolvidas: {colored(df['empresa'].nunique(), 'green')}")
+            print(f"   • Outliers detectados: {colored(f'{len(all_outliers):,}', 'red')} ({colored(f'{len(all_outliers)/len(df)*100:.1f}%', 'red')})")
+            print(f"   • RPM médio da frota: {colored(f'{df.rpm.mean():.0f}', 'blue')} RPM")
+            print(f"   • Velocidade média: {colored(f'{df.velocidade.mean():.1f}', 'blue')} km/h")
+            
+            print(f"\n📁 {colored('ARQUIVOS GERADOS:', 'yellow')}")
+            print(f"   • estudo_01_estatisticas_descritivas.xlsx")
+            print(f"   • estudo_01_outliers_detectados.xlsx")
+            print(f"   • estudo_01_analise_por_unidade.xlsx")
+            print(f"   • estudo_01_analise_temporal.xlsx")
+            print(f"   • estudo_01_matriz_correlacao.xlsx")
+            print(f"   • estudo_01_analise_clusters.xlsx")
+            print(f"   • estudo_01_padroes_especificos.xlsx")
+            print(f"   • estudo_01_resumo_executivo.xlsx")
+            print(f"   • estudo_01_distribuicoes.png")
+            print(f"   • estudo_01_analise_temporal.png")
+            print(f"   • estudo_01_correlacoes.png")
+            
+            print(f"\n🎯 {colored('PRINCIPAIS INSIGHTS:', 'yellow')}")
+            print(f"   • Faixa de RPM mais comum: {colored(df['faixa_rpm'].mode().iloc[0], 'green')}")
+            print(f"   • Horário de maior atividade: {colored(f'{hourly_rpm.idxmax()}h', 'green')}")
+            print(f"   • Correlação RPM-Velocidade: {colored(f'{df.rpm.corr(df.velocidade):.3f}', 'blue')}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ {colored(f'Erro durante a análise: {str(e)}', 'red')}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def ESTUDO_02(self):
+        """
+        Análise estatística completa dos dados de Viagem_eco
+        - Detecção de outliers
+        - Análise de padrões
+        - Estatísticas descritivas
+        - Correlações entre variáveis
+        - Análise temporal
+        - Análise por marca e modelo
+        """
+        print(colored("="*50, 'cyan'))
+        print(colored("INICIANDO ESTUDO ESTATÍSTICO COMPLETO", 'yellow'))
+        print(colored("="*50, 'cyan'))
+        
+        # Importações necessárias
+        import numpy as np
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        from scipy import stats
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.cluster import KMeans
+        from sklearn.ensemble import IsolationForest
+        import warnings
+        warnings.filterwarnings('ignore')
+        
+        # Configurar matplotlib para não mostrar gráficos
+        plt.ioff()
+        
+        try:
+            # ============= COLETA DE DADOS =============
+            print(f"📊 {colored('Coletando dados do banco...', 'blue')}")
+            
+            # Buscar todos os dados de Viagem_eco com informações dos veículos
+            viagens_eco = Viagem_eco.objects.all().select_related('unidade__empresa')
+            
+            if not viagens_eco.exists():
+                print(f"❌ {colored('Nenhum dado encontrado na tabela Viagem_eco', 'red')}")
+                return
+            
+            # Converter para DataFrame
+            data_list = []
+            for viagem in viagens_eco:
+                try:
+                    # Converter timestamp unix para datetime
+                    timestamp_int = int(viagem.timestamp)
+                    dt = datetime.fromtimestamp(timestamp_int)
+                    
+                    # Filtrar apenas dados com RPM válidos (acima de 300)
+                    if viagem.rpm and float(viagem.rpm) >= 300:
+                        data_list.append({
+                            'timestamp': timestamp_int,
+                            'datetime': dt,
+                            'unidade_id': viagem.unidade.id,
+                            'unidade_nome': viagem.unidade.nm,
+                            'empresa': viagem.unidade.empresa.nome if viagem.unidade.empresa else 'N/A',
+                            'marca': viagem.unidade.marca if hasattr(viagem.unidade, 'marca') and viagem.unidade.marca else 'N/I',
+                            'modelo': viagem.unidade.modelo if hasattr(viagem.unidade, 'modelo') and viagem.unidade.modelo else 'N/I',
+                            'cor': viagem.unidade.cor if hasattr(viagem.unidade, 'cor') and viagem.unidade.cor else 'N/I',
+                            'placa': viagem.unidade.placa if hasattr(viagem.unidade, 'placa') and viagem.unidade.placa else 'N/I',
+                            'rpm': float(viagem.rpm),
+                            'velocidade': float(viagem.velocidade) if viagem.velocidade else 0.0,
+                            'altitude': float(viagem.altitude) if viagem.altitude else 0.0,
+                            'hora': dt.hour,
+                            'dia_semana': dt.weekday(),
+                            'mes': dt.month,
+                            'ano': dt.year,
+                        })
+                except (ValueError, TypeError, OSError):
+                    continue
+            
+            if not data_list:
+                print(f"❌ {colored('Nenhum dado válido encontrado', 'red')}")
+                return
+            
+            df = pd.DataFrame(data_list)
+            print(f"✅ {colored(f'Dados coletados: {len(df)} registros de {df.unidade_id.nunique()} unidades', 'green')}")
+            print(f"📋 {colored(f'Marcas encontradas: {df.marca.nunique()} ({list(df.marca.unique())})', 'blue')}")
+            print(f"🚗 {colored(f'Modelos encontrados: {df.modelo.nunique()}', 'blue')}")
+            
+            # ============= ANÁLISE DESCRITIVA BÁSICA =============
+            print(f"\n📈 {colored('Gerando estatísticas descritivas...', 'blue')}")
+            
+            stats_desc = df[['rpm', 'velocidade', 'altitude']].describe()
+            
+            # Função para calcular MAD (Mean Absolute Deviation) manualmente
+            def calculate_mad(series):
+                """Calcula o desvio absoluto mediano"""
+                median = series.median()
+                return (series - median).abs().median()
+            
+            # Adicionar estatísticas extras
+            stats_extras = pd.DataFrame({
+                'rpm': [
+                    df['rpm'].var(),
+                    df['rpm'].skew(),
+                    df['rpm'].kurtosis(),
+                    calculate_mad(df['rpm'])
+                ],
+                'velocidade': [
+                    df['velocidade'].var(),
+                    df['velocidade'].skew(),
+                    df['velocidade'].kurtosis(),
+                    calculate_mad(df['velocidade'])
+                ],
+                'altitude': [
+                    df['altitude'].var(),
+                    df['altitude'].skew(),
+                    df['altitude'].kurtosis(),
+                    calculate_mad(df['altitude'])
+                ]
+            }, index=['variancia', 'assimetria', 'curtose', 'desvio_abs_mediano'])
+            
+            stats_completas = pd.concat([stats_desc, stats_extras])
+            
+            # Salvar estatísticas descritivas
+            stats_completas.to_excel(f'{deposito}/estudo_01_estatisticas_descritivas.xlsx')
+            print(f"💾 Estatísticas descritivas salvas em: estudo_01_estatisticas_descritivas.xlsx")
+            
+            # ============= DETECÇÃO DE OUTLIERS =============
+            print(f"\n🔍 {colored('Detectando outliers...', 'blue')}")
+            
+            # Método 1: Z-Score
+            z_scores = np.abs(stats.zscore(df[['rpm', 'velocidade', 'altitude']]))
+            outliers_zscore = df[(z_scores > 3).any(axis=1)].copy()
+            
+            # Método 2: IQR (Interquartile Range)
+            outliers_iqr = pd.DataFrame()
+            for coluna in ['rpm', 'velocidade', 'altitude']:
+                Q1 = df[coluna].quantile(0.25)
+                Q3 = df[coluna].quantile(0.75)
+                IQR = Q3 - Q1
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+                
+                outliers_col = df[(df[coluna] < lower_bound) | (df[coluna] > upper_bound)]
+                outliers_iqr = pd.concat([outliers_iqr, outliers_col]).drop_duplicates()
+            
+            # Método 3: Isolation Forest
+            iso_forest = IsolationForest(contamination=0.1, random_state=42)
+            outliers_iso = iso_forest.fit_predict(df[['rpm', 'velocidade', 'altitude']])
+            outliers_isolation = df[outliers_iso == -1].copy()
+            
+            # Combinar todos os outliers
+            all_outliers = pd.concat([outliers_zscore, outliers_iqr, outliers_isolation]).drop_duplicates()
+            all_outliers['metodo_deteccao'] = 'Múltiplos'
+            
+            print(f"🎯 Outliers detectados:")
+            print(f"   - Z-Score (>3): {len(outliers_zscore)} registros")
+            print(f"   - IQR: {len(outliers_iqr)} registros")
+            print(f"   - Isolation Forest: {len(outliers_isolation)} registros")
+            print(f"   - Total únicos: {len(all_outliers)} registros")
+            
+            # Salvar outliers
+            all_outliers.to_excel(f'{deposito}/estudo_01_outliers_detectados.xlsx', index=False)
+            print(f"💾 Outliers salvos em: estudo_01_outliers_detectados.xlsx")
+            
+            # ============= ANÁLISE POR UNIDADE =============
+            print(f"\n🚛 {colored('Analisando padrões por unidade...', 'blue')}")
+            
+            stats_por_unidade = df.groupby(['unidade_nome', 'empresa', 'marca', 'modelo', 'placa']).agg({
+                'rpm': ['count', 'mean', 'std', 'min', 'max'],
+                'velocidade': ['mean', 'std', 'min', 'max'],
+                'altitude': ['mean', 'std', 'min', 'max'],
+            }).round(2)
+            
+            # Achatar colunas multi-nível
+            stats_por_unidade.columns = ['_'.join(col).strip() for col in stats_por_unidade.columns]
+            stats_por_unidade = stats_por_unidade.reset_index()
+            
+            # Adicionar classificações
+            stats_por_unidade['rpm_categoria'] = pd.cut(
+                stats_por_unidade['rpm_mean'], 
+                bins=[0, 800, 1300, 2000, float('inf')], 
+                labels=['Baixo', 'Econômico', 'Normal', 'Alto']
+            )
+            
+            stats_por_unidade['velocidade_categoria'] = pd.cut(
+                stats_por_unidade['velocidade_mean'], 
+                bins=[0, 40, 60, 80, float('inf')], 
+                labels=['Baixa', 'Moderada', 'Alta', 'Muito Alta']
+            )
+            
+            # Salvar análise por unidade
+            stats_por_unidade.to_excel(f'{deposito}/estudo_01_analise_por_unidade.xlsx', index=False)
+            print(f"💾 Análise por unidade salva em: estudo_01_analise_por_unidade.xlsx")
+            
+            # ============= ANÁLISE POR MARCA =============
+            print(f"\n🏭 {colored('Analisando padrões por marca...', 'blue')}")
+            
+            stats_por_marca = df.groupby('marca').agg({
+                'rpm': ['count', 'mean', 'std', 'min', 'max'],
+                'velocidade': ['mean', 'std', 'min', 'max'],
+                'altitude': ['mean', 'std', 'min', 'max'],
+                'unidade_id': 'nunique'
+            }).round(2)
+            
+            stats_por_marca.columns = ['_'.join(col).strip() for col in stats_por_marca.columns]
+            stats_por_marca = stats_por_marca.reset_index()
+            
+            # Adicionar classificação de eficiência por marca
+            stats_por_marca['eficiencia_rpm'] = pd.cut(
+                stats_por_marca['rpm_mean'], 
+                bins=[0, 800, 1300, 2000, float('inf')], 
+                labels=['Muito Eficiente', 'Eficiente', 'Normal', 'Ineficiente']
+            )
+            
+            # Calcular ranking de eficiência
+            stats_por_marca['ranking_eficiencia'] = stats_por_marca['rpm_mean'].rank(ascending=True)
+            
+            # Salvar análise por marca
+            stats_por_marca.to_excel(f'{deposito}/estudo_01_analise_por_marca.xlsx', index=False)
+            print(f"💾 Análise por marca salva em: estudo_01_analise_por_marca.xlsx")
+            
+            # ============= ANÁLISE POR MODELO =============
+            print(f"\n🚗 {colored('Analisando padrões por modelo...', 'blue')}")
+            
+            stats_por_modelo = df.groupby(['marca', 'modelo']).agg({
+                'rpm': ['count', 'mean', 'std', 'min', 'max'],
+                'velocidade': ['mean', 'std', 'min', 'max'],
+                'altitude': ['mean', 'std', 'min', 'max'],
+                'unidade_id': 'nunique'
+            }).round(2)
+            
+            stats_por_modelo.columns = ['_'.join(col).strip() for col in stats_por_modelo.columns]
+            stats_por_modelo = stats_por_modelo.reset_index()
+            
+            # Adicionar classificação de performance
+            stats_por_modelo['performance_rpm'] = pd.cut(
+                stats_por_modelo['rpm_mean'], 
+                bins=[0, 800, 1300, 2000, float('inf')], 
+                labels=['Excelente', 'Boa', 'Regular', 'Ruim']
+            )
+            
+            stats_por_modelo['performance_velocidade'] = pd.cut(
+                stats_por_modelo['velocidade_mean'], 
+                bins=[0, 40, 60, 80, float('inf')], 
+                labels=['Urbano', 'Misto', 'Rodoviário', 'Alto']
+            )
+            
+            # Salvar análise por modelo
+            stats_por_modelo.to_excel(f'{deposito}/estudo_01_analise_por_modelo.xlsx', index=False)
+            print(f"💾 Análise por modelo salva em: estudo_01_analise_por_modelo.xlsx")
+            
+            # ============= COMPARATIVO ENTRE MARCAS =============
+            print(f"\n⚖️ {colored('Gerando comparativo entre marcas...', 'blue')}")
+            
+            comparativo_marcas = {}
+            
+            for marca in df['marca'].unique():
+                if marca != 'N/I':  # Ignora registros sem marca
+                    dados_marca = df[df['marca'] == marca]
+                    
+                    comparativo_marcas[marca] = {
+                        'total_registros': len(dados_marca),
+                        'total_unidades': dados_marca['unidade_id'].nunique(),
+                        'rpm_medio': dados_marca['rpm'].mean(),
+                        'rpm_desvio': dados_marca['rpm'].std(),
+                        'velocidade_media': dados_marca['velocidade'].mean(),
+                        'altitude_media': dados_marca['altitude'].mean(),
+                        'percentual_zona_verde': len(dados_marca[(dados_marca['rpm'] >= 800) & (dados_marca['rpm'] <= 1300)]) / len(dados_marca) * 100,
+                        'percentual_zona_vermelha': len(dados_marca[dados_marca['rpm'] > 2300]) / len(dados_marca) * 100,
+                        'empresas': list(dados_marca['empresa'].unique())
+                    }
+            
+            # Converter para DataFrame
+            comparativo_df = pd.DataFrame(comparativo_marcas).T
+            comparativo_df = comparativo_df.round(2)
+            comparativo_df = comparativo_df.sort_values('rpm_medio')  # Ordenar por eficiência
+            
+            # Salvar comparativo
+            comparativo_df.to_excel(f'{deposito}/estudo_01_comparativo_marcas.xlsx')
+            print(f"💾 Comparativo entre marcas salvo em: estudo_01_comparativo_marcas.xlsx")
+            
+            # ============= ANÁLISE TEMPORAL =============
+            print(f"\n⏰ {colored('Analisando padrões temporais...', 'blue')}")
+            
+            # Por hora do dia
+            analise_hora = df.groupby('hora').agg({
+                'rpm': ['mean', 'std', 'count'],
+                'velocidade': ['mean', 'std'],
+                'altitude': ['mean', 'std']
+            }).round(2)
+            analise_hora.columns = ['_'.join(col).strip() for col in analise_hora.columns]
+            analise_hora = analise_hora.reset_index()
+            
+            # Por dia da semana
+            dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
+            analise_dia_semana = df.groupby('dia_semana').agg({
+                'rpm': ['mean', 'std', 'count'],
+                'velocidade': ['mean', 'std'],
+                'altitude': ['mean', 'std']
+            }).round(2)
+            analise_dia_semana.columns = ['_'.join(col).strip() for col in analise_dia_semana.columns]
+            analise_dia_semana = analise_dia_semana.reset_index()
+            analise_dia_semana['dia_nome'] = analise_dia_semana['dia_semana'].map(lambda x: dias_semana[x])
+            
+            # Por mês
+            analise_mes = df.groupby('mes').agg({
+                'rpm': ['mean', 'std', 'count'],
+                'velocidade': ['mean', 'std'],
+                'altitude': ['mean', 'std']
+            }).round(2)
+            analise_mes.columns = ['_'.join(col).strip() for col in analise_mes.columns]
+            analise_mes = analise_mes.reset_index()
+            
+            # Análise temporal por marca
+            analise_temporal_marca = df.groupby(['marca', 'hora']).agg({
+                'rpm': 'mean',
+                'velocidade': 'mean'
+            }).round(2).reset_index()
+            
+            # Salvar análises temporais
+            with pd.ExcelWriter(f'{deposito}/estudo_01_analise_temporal.xlsx') as writer:
+                analise_hora.to_excel(writer, sheet_name='Por_Hora', index=False)
+                analise_dia_semana.to_excel(writer, sheet_name='Por_Dia_Semana', index=False)
+                analise_mes.to_excel(writer, sheet_name='Por_Mes', index=False)
+                analise_temporal_marca.to_excel(writer, sheet_name='Marca_por_Hora', index=False)
+            
+            print(f"💾 Análise temporal salva em: estudo_01_analise_temporal.xlsx")
+            
+            # ============= ANÁLISE DE CORRELAÇÕES =============
+            print(f"\n🔗 {colored('Analisando correlações...', 'blue')}")
+            
+            # Matriz de correlação geral
+            correlation_matrix = df[['rpm', 'velocidade', 'altitude', 'hora', 'dia_semana']].corr()
+            
+            # Correlações por marca (se houver dados suficientes)
+            correlacoes_por_marca = {}
+            for marca in df['marca'].unique():
+                if marca != 'N/I':
+                    dados_marca = df[df['marca'] == marca]
+                    if len(dados_marca) > 50:  # Só calcula se houver dados suficientes
+                        correlacoes_por_marca[marca] = dados_marca[['rpm', 'velocidade', 'altitude']].corr()
+            
+            # Salvar correlações
+            with pd.ExcelWriter(f'{deposito}/estudo_01_matriz_correlacao.xlsx') as writer:
+                correlation_matrix.to_excel(writer, sheet_name='Geral')
+                for marca, corr_matrix in correlacoes_por_marca.items():
+                    corr_matrix.to_excel(writer, sheet_name=f'Marca_{marca}')
+            
+            print(f"💾 Matriz de correlação salva em: estudo_01_matriz_correlacao.xlsx")
+            
+            # ============= CLUSTERING ANÁLISE =============
+            print(f"\n🎯 {colored('Realizando análise de clusters...', 'blue')}")
+            
+            # Preparar dados para clustering
+            features_clustering = df[['rpm', 'velocidade', 'altitude']].copy()
+            
+            # Normalizar dados
+            scaler = StandardScaler()
+            features_normalized = scaler.fit_transform(features_clustering)
+            
+            # K-Means com k=5
+            kmeans = KMeans(n_clusters=5, random_state=42, n_init=10)
+            clusters = kmeans.fit_predict(features_normalized)
+            
+            # Adicionar clusters ao DataFrame
+            df_clusters = df.copy()
+            df_clusters['cluster'] = clusters
+            
+            # Analisar características de cada cluster
+            cluster_analysis = df_clusters.groupby('cluster').agg({
+                'rpm': ['mean', 'std', 'min', 'max', 'count'],
+                'velocidade': ['mean', 'std', 'min', 'max'],
+                'altitude': ['mean', 'std', 'min', 'max'],
+                'unidade_id': 'nunique'
+            }).round(2)
+            
+            cluster_analysis.columns = ['_'.join(col).strip() for col in cluster_analysis.columns]
+            cluster_analysis = cluster_analysis.reset_index()
+            
+            # Análise de clusters por marca
+            cluster_por_marca = df_clusters.groupby(['marca', 'cluster']).size().reset_index(name='count')
+            cluster_por_marca_pivot = cluster_por_marca.pivot(index='marca', columns='cluster', values='count').fillna(0)
+            
+            # Adicionar interpretação dos clusters
+            def interpretar_cluster(row):
+                rpm_mean = row['rpm_mean']
+                vel_mean = row['velocidade_mean']
+                
+                if rpm_mean < 800:
+                    rpm_cat = "Marcha Lenta"
+                elif rpm_mean < 1300:
+                    rpm_cat = "Econômico"
+                elif rpm_mean < 2000:
+                    rpm_cat = "Normal"
+                else:
+                    rpm_cat = "Alto"
+                
+                if vel_mean < 20:
+                    vel_cat = "Parado/Lento"
+                elif vel_mean < 50:
+                    vel_cat = "Urbano"
+                elif vel_mean < 80:
+                    vel_cat = "Rodoviário"
+                else:
+                    vel_cat = "Alto"
+                
+                return f"{rpm_cat} + {vel_cat}"
+            
+            cluster_analysis['interpretacao'] = cluster_analysis.apply(interpretar_cluster, axis=1)
+            
+            # Salvar análise de clusters
+            with pd.ExcelWriter(f'{deposito}/estudo_01_analise_clusters.xlsx') as writer:
+                cluster_analysis.to_excel(writer, sheet_name='Clusters_Geral', index=False)
+                cluster_por_marca_pivot.to_excel(writer, sheet_name='Clusters_por_Marca')
+            
+            print(f"💾 Análise de clusters salva em: estudo_01_analise_clusters.xlsx")
+            
+            # ============= DETECÇÃO DE PADRÕES ESPECÍFICOS =============
+            print(f"\n🔍 {colored('Detectando padrões específicos...', 'blue')}")
+            
+            padroes_especificos = {}
+            
+            # 1. Padrão de marcha lenta excessiva
+            marcha_lenta = df[df['rpm'] < 500]
+            padroes_especificos['marcha_lenta_excessiva'] = {
+                'total_registros': len(marcha_lenta),
+                'unidades_afetadas': marcha_lenta['unidade_nome'].nunique(),
+                'percentual_total': round(len(marcha_lenta) / len(df) * 100, 2),
+                'por_marca': dict(marcha_lenta['marca'].value_counts())
+            }
+            
+            # 2. Padrão de RPM muito alto (zona vermelha)
+            rpm_alto = df[df['rpm'] > 2300]
+            padroes_especificos['rpm_zona_vermelha'] = {
+                'total_registros': len(rpm_alto),
+                'unidades_afetadas': rpm_alto['unidade_nome'].nunique(),
+                'percentual_total': round(len(rpm_alto) / len(df) * 100, 2),
+                'por_marca': dict(rpm_alto['marca'].value_counts())
+            }
+            
+            # 3. Padrão de velocidade alta com RPM baixo
+            vel_alta_rpm_baixo = df[(df['velocidade'] > 60) & (df['rpm'] < 1000)]
+            padroes_especificos['velocidade_alta_rpm_baixo'] = {
+                'total_registros': len(vel_alta_rpm_baixo),
+                'unidades_afetadas': vel_alta_rpm_baixo['unidade_nome'].nunique(),
+                'percentual_total': round(len(vel_alta_rpm_baixo) / len(df) * 100, 2),
+                'por_marca': dict(vel_alta_rpm_baixo['marca'].value_counts())
+            }
+            
+            # 4. Padrão noturno (22h às 6h)
+            periodo_noturno = df[(df['hora'] >= 22) | (df['hora'] <= 6)]
+            padroes_especificos['atividade_noturna'] = {
+                'total_registros': len(periodo_noturno),
+                'unidades_afetadas': periodo_noturno['unidade_nome'].nunique(),
+                'percentual_total': round(len(periodo_noturno) / len(df) * 100, 2),
+                'por_marca': dict(periodo_noturno['marca'].value_counts())
+            }
+            
+            # 5. Eficiência por faixa de RPM
+            df['faixa_rpm'] = pd.cut(
+                df['rpm'], 
+                bins=[0, 799, 1300, 2300, float('inf')], 
+                labels=['Azul (350-799)', 'Verde (800-1300)', 'Amarela (1301-2300)', 'Vermelha (2301+)']
+            )
+            
+            distribuicao_rpm = df['faixa_rpm'].value_counts().to_dict()
+            distribuicao_rpm_por_marca = df.groupby(['marca', 'faixa_rpm']).size().unstack(fill_value=0)
+            
+            padroes_especificos['distribuicao_faixas_rpm'] = distribuicao_rpm
+            
+            # Salvar padrões específicos
+            with pd.ExcelWriter(f'{deposito}/estudo_01_padroes_especificos.xlsx') as writer:
+                # Sheet com resumo dos padrões
+                padroes_resumo = pd.DataFrame([padroes_especificos]).T
+                padroes_resumo.to_excel(writer, sheet_name='Resumo_Padroes')
+                
+                # Sheet com distribuição RPM por marca
+                distribuicao_rpm_por_marca.to_excel(writer, sheet_name='RPM_por_Marca')
+            
+            print(f"💾 Padrões específicos salvos em: estudo_01_padroes_especificos.xlsx")
+            
+            # ============= GERAR GRÁFICOS =============
+            print(f"\n📊 {colored('Gerando gráficos de análise...', 'blue')}")
+            
+            # Configurar estilo dos gráficos
+            plt.style.use('default')
+            sns.set_palette("husl")
+            
+            # 1. Distribuições das variáveis principais
+            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+            fig.suptitle('Distribuições das Variáveis Principais', fontsize=16, fontweight='bold')
+            
+            # RPM
+            axes[0, 0].hist(df['rpm'], bins=50, alpha=0.7, color='blue')
+            axes[0, 0].set_title('Distribuição RPM')
+            axes[0, 0].set_xlabel('RPM')
+            axes[0, 0].set_ylabel('Frequência')
+            axes[0, 0].axvline(df['rpm'].mean(), color='red', linestyle='--', label=f'Média: {df["rpm"].mean():.0f}')
+            axes[0, 0].legend()
+            
+            # Velocidade
+            axes[0, 1].hist(df['velocidade'], bins=50, alpha=0.7, color='green')
+            axes[0, 1].set_title('Distribuição Velocidade')
+            axes[0, 1].set_xlabel('Velocidade (km/h)')
+            axes[0, 1].set_ylabel('Frequência')
+            axes[0, 1].axvline(df['velocidade'].mean(), color='red', linestyle='--', label=f'Média: {df["velocidade"].mean():.1f}')
+            axes[0, 1].legend()
+            
+            # Altitude
+            axes[1, 0].hist(df['altitude'], bins=50, alpha=0.7, color='orange')
+            axes[1, 0].set_title('Distribuição Altitude')
+            axes[1, 0].set_xlabel('Altitude (m)')
+            axes[1, 0].set_ylabel('Frequência')
+            axes[1, 0].axvline(df['altitude'].mean(), color='red', linestyle='--', label=f'Média: {df["altitude"].mean():.1f}')
+            axes[1, 0].legend()
+            
+            # Distribuição por faixa de RPM
+            faixa_counts = df['faixa_rpm'].value_counts()
+            axes[1, 1].pie(faixa_counts.values, labels=faixa_counts.index, autopct='%1.1f%%')
+            axes[1, 1].set_title('Distribuição por Faixa de RPM')
+            
+            plt.tight_layout()
+            plt.savefig(f'{deposito}/estudo_01_distribuicoes.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            # 2. Análise por marca
+            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+            fig.suptitle('Análise por Marca', fontsize=16, fontweight='bold')
+            
+            # RPM médio por marca
+            marca_rpm = df.groupby('marca')['rpm'].mean().sort_values()
+            axes[0, 0].bar(range(len(marca_rpm)), marca_rpm.values, color='skyblue')
+            axes[0, 0].set_title('RPM Médio por Marca')
+            axes[0, 0].set_xlabel('Marca')
+            axes[0, 0].set_ylabel('RPM Médio')
+            axes[0, 0].set_xticks(range(len(marca_rpm)))
+            axes[0, 0].set_xticklabels(marca_rpm.index, rotation=45)
+            
+            # Velocidade média por marca
+            marca_vel = df.groupby('marca')['velocidade'].mean().sort_values()
+            axes[0, 1].bar(range(len(marca_vel)), marca_vel.values, color='lightgreen')
+            axes[0, 1].set_title('Velocidade Média por Marca')
+            axes[0, 1].set_xlabel('Marca')
+            axes[0, 1].set_ylabel('Velocidade Média (km/h)')
+            axes[0, 1].set_xticks(range(len(marca_vel)))
+            axes[0, 1].set_xticklabels(marca_vel.index, rotation=45)
+            
+            # Distribuição de registros por marca
+            marca_count = df['marca'].value_counts()
+            axes[1, 0].pie(marca_count.values, labels=marca_count.index, autopct='%1.1f%%')
+            axes[1, 0].set_title('Distribuição de Registros por Marca')
+            
+            # Boxplot RPM por marca
+            marcas_com_dados = [marca for marca in df['marca'].unique() if len(df[df['marca'] == marca]) > 100]
+            if len(marcas_com_dados) > 1:
+                dados_boxplot = [df[df['marca'] == marca]['rpm'] for marca in marcas_com_dados]
+                axes[1, 1].boxplot(dados_boxplot, labels=marcas_com_dados)
+                axes[1, 1].set_title('Distribuição RPM por Marca')
+                axes[1, 1].set_xlabel('Marca')
+                axes[1, 1].set_ylabel('RPM')
+                axes[1, 1].tick_params(axis='x', rotation=45)
+            
+            plt.tight_layout()
+            plt.savefig(f'{deposito}/estudo_01_analise_marcas.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            # 3. Análise temporal
+            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+            fig.suptitle('Análise Temporal dos Dados', fontsize=16, fontweight='bold')
+            
+            # RPM por hora
+            hourly_rpm = df.groupby('hora')['rpm'].mean()
+            axes[0, 0].plot(hourly_rpm.index, hourly_rpm.values, marker='o', linewidth=2)
+            axes[0, 0].set_title('RPM Médio por Hora do Dia')
+            axes[0, 0].set_xlabel('Hora')
+            axes[0, 0].set_ylabel('RPM Médio')
+            axes[0, 0].grid(True, alpha=0.3)
+            
+            # Velocidade por hora
+            hourly_vel = df.groupby('hora')['velocidade'].mean()
+            axes[0, 1].plot(hourly_vel.index, hourly_vel.values, marker='s', color='green', linewidth=2)
+            axes[0, 1].set_title('Velocidade Média por Hora do Dia')
+            axes[0, 1].set_xlabel('Hora')
+            axes[0, 1].set_ylabel('Velocidade Média (km/h)')
+            axes[0, 1].grid(True, alpha=0.3)
+            
+            # RPM por dia da semana
+            daily_rpm = df.groupby('dia_semana')['rpm'].mean()
+            dias_nome = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+            axes[1, 0].bar(range(7), daily_rpm.values, color='purple', alpha=0.7)
+            axes[1, 0].set_title('RPM Médio por Dia da Semana')
+            axes[1, 0].set_xlabel('Dia da Semana')
+            axes[1, 0].set_ylabel('RPM Médio')
+            axes[1, 0].set_xticks(range(7))
+            axes[1, 0].set_xticklabels(dias_nome)
+            
+            # Atividade por mês
+            monthly_count = df.groupby('mes').size()
+            axes[1, 1].bar(monthly_count.index, monthly_count.values, color='red', alpha=0.7)
+            axes[1, 1].set_title('Atividade por Mês')
+            axes[1, 1].set_xlabel('Mês')
+            axes[1, 1].set_ylabel('Número de Registros')
+            
+            plt.tight_layout()
+            plt.savefig(f'{deposito}/estudo_01_analise_temporal.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            # 4. Scatter plots e correlações
+            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+            fig.suptitle('Análise de Correlações', fontsize=16, fontweight='bold')
+            
+            # RPM vs Velocidade
+            axes[0, 0].scatter(df['rpm'], df['velocidade'], alpha=0.1, s=1)
+            axes[0, 0].set_title('RPM vs Velocidade')
+            axes[0, 0].set_xlabel('RPM')
+            axes[0, 0].set_ylabel('Velocidade (km/h)')
+            
+            # RPM vs Altitude
+            axes[0, 1].scatter(df['rpm'], df['altitude'], alpha=0.1, s=1, color='green')
+            axes[0, 1].set_title('RPM vs Altitude')
+            axes[0, 1].set_xlabel('RPM')
+            axes[0, 1].set_ylabel('Altitude (m)')
+            
+            # Velocidade vs Altitude
+            axes[1, 0].scatter(df['velocidade'], df['altitude'], alpha=0.1, s=1, color='red')
+            axes[1, 0].set_title('Velocidade vs Altitude')
+            axes[1, 0].set_xlabel('Velocidade (km/h)')
+            axes[1, 0].set_ylabel('Altitude (m)')
+            
+            # Heatmap de correlação
+            corr_data = df[['rpm', 'velocidade', 'altitude', 'hora']].corr()
+            im = axes[1, 1].imshow(corr_data, cmap='coolwarm', aspect='auto')
+            axes[1, 1].set_title('Matriz de Correlação')
+            axes[1, 1].set_xticks(range(len(corr_data.columns)))
+            axes[1, 1].set_yticks(range(len(corr_data.columns)))
+            axes[1, 1].set_xticklabels(corr_data.columns)
+            axes[1, 1].set_yticklabels(corr_data.columns)
+            
+            plt.tight_layout()
+            plt.savefig(f'{deposito}/estudo_01_correlacoes.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            print(f"💾 Gráficos salvos em:")
+            print(f"   - estudo_01_distribuicoes.png")
+            print(f"   - estudo_01_analise_marcas.png")
+            print(f"   - estudo_01_analise_temporal.png")
+            print(f"   - estudo_01_correlacoes.png")
+            
+            # ============= RELATÓRIO RESUMO =============
+            print(f"\n📋 {colored('Gerando relatório resumo...', 'blue')}")
+            
+            resumo = {
+                'data_analise': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'total_registros': len(df),
+                'total_unidades': df['unidade_id'].nunique(),
+                'total_empresas': df['empresa'].nunique(),
+                'total_marcas': df['marca'].nunique(),
+                'total_modelos': df['modelo'].nunique(),
+                'periodo_dados': f"{df['datetime'].min()} até {df['datetime'].max()}",
+                'rpm_medio_geral': round(df['rpm'].mean(), 2),
+                'rpm_desvio_padrao': round(df['rpm'].std(), 2),
+                'velocidade_media_geral': round(df['velocidade'].mean(), 2),
+                'altitude_media_geral': round(df['altitude'].mean(), 2),
+                'outliers_detectados': len(all_outliers),
+                'percentual_outliers': round(len(all_outliers) / len(df) * 100, 2),
+                'distribuicao_faixas_rpm': dict(df['faixa_rpm'].value_counts()),
+                'marca_mais_eficiente': marca_rpm.index[0] if len(marca_rpm) > 0 else 'N/A',
+                'marca_menos_eficiente': marca_rpm.index[-1] if len(marca_rpm) > 0 else 'N/A',
+                'padroes_identificados': len(padroes_especificos),
+            }
+            
+            # Salvar resumo
+            resumo_df = pd.DataFrame([resumo]).T
+            resumo_df.columns = ['Valor']
+            resumo_df.to_excel(f'{deposito}/estudo_01_resumo_executivo.xlsx')
+            
+            # ============= RESULTADO FINAL =============
+            print(colored("="*50, 'cyan'))
+            print(colored("ESTUDO ESTATÍSTICO CONCLUÍDO COM SUCESSO!", 'green'))
+            print(colored("="*50, 'cyan'))
+            
+            print(f"📊 {colored('RESUMO DOS RESULTADOS:', 'yellow')}")
+            print(f"   • Total de registros analisados: {colored(f'{len(df):,}', 'green')}")
+            print(f"   • Unidades analisadas: {colored(df['unidade_id'].nunique(), 'green')}")
+            print(f"   • Empresas envolvidas: {colored(df['empresa'].nunique(), 'green')}")
+            print(f"   • Marcas analisadas: {colored(df['marca'].nunique(), 'blue')}")
+            print(f"   • Modelos analisados: {colored(df['modelo'].nunique(), 'blue')}")
+            print(f"   • Outliers detectados: {colored(f'{len(all_outliers):,}', 'red')} ({colored(f'{len(all_outliers)/len(df)*100:.1f}%', 'red')})")
+            print(f"   • RPM médio da frota: {colored(f'{df.rpm.mean():.0f}', 'blue')} RPM")
+            print(f"   • Velocidade média: {colored(f'{df.velocidade.mean():.1f}', 'blue')} km/h")
+            
+            print(f"\n🏭 {colored('ANÁLISE POR MARCA:', 'yellow')}")
+            if len(marca_rpm) > 0:
+                print(f"   • Marca mais eficiente: {colored(marca_rpm.index[0], 'green')} ({colored(f'{marca_rpm.iloc[0]:.0f}', 'green')} RPM)")
+                print(f"   • Marca menos eficiente: {colored(marca_rpm.index[-1], 'red')} ({colored(f'{marca_rpm.iloc[-1]:.0f}', 'red')} RPM)")
+            
+            print(f"\n📁 {colored('ARQUIVOS GERADOS:', 'yellow')}")
+            print(f"   • estudo_01_estatisticas_descritivas.xlsx")
+            print(f"   • estudo_01_outliers_detectados.xlsx") 
+            print(f"   • estudo_01_analise_por_unidade.xlsx")
+            print(f"   • estudo_01_analise_por_marca.xlsx")
+            print(f"   • estudo_01_analise_por_modelo.xlsx")
+            print(f"   • estudo_01_comparativo_marcas.xlsx")
+            print(f"   • estudo_01_analise_temporal.xlsx")
+            print(f"   • estudo_01_matriz_correlacao.xlsx")
+            print(f"   • estudo_01_analise_clusters.xlsx")
+            print(f"   • estudo_01_padroes_especificos.xlsx")
+            print(f"   • estudo_01_resumo_executivo.xlsx")
+            print(f"   • estudo_01_distribuicoes.png")
+            print(f"   • estudo_01_analise_marcas.png")
+            print(f"   • estudo_01_analise_temporal.png")
+            print(f"   • estudo_01_correlacoes.png")
+            
+            print(f"\n🎯 {colored('PRINCIPAIS INSIGHTS:', 'yellow')}")
+            print(f"   • Faixa de RPM mais comum: {colored(df['faixa_rpm'].mode().iloc[0], 'green')}")
+            print(f"   • Horário de maior atividade: {colored(f'{hourly_rpm.idxmax()}h', 'green')}")
+            print(f"   • Correlação RPM-Velocidade: {colored(f'{df.rpm.corr(df.velocidade):.3f}', 'blue')}")
+            if len(marca_rpm) > 1:
+                print(f"   • Diferença de eficiência entre marcas: {colored(f'{marca_rpm.iloc[-1] - marca_rpm.iloc[0]:.0f}', 'yellow')} RPM")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ {colored(f'Erro durante a análise: {str(e)}', 'red')}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+
+    def ESTUDO_03(self):
+        """
+        Análise estatística completa dos dados de Viagem_eco
+        - Detecção de outliers
+        - Análise de padrões
+        - Estatísticas descritivas
+        - Correlações entre variáveis
+        - Análise temporal
+        - Análise por marca e modelo
+        - NOVO: Análises de dispersão RPM detalhadas
+        """
+        print(colored("="*50, 'cyan'))
+        print(colored("INICIANDO ESTUDO ESTATÍSTICO COMPLETO V2", 'yellow'))
+        print(colored("="*50, 'cyan'))
+        
+        # Importações necessárias
+        import numpy as np
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        from scipy import stats
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.cluster import KMeans
+        from sklearn.ensemble import IsolationForest
+        import warnings
+        warnings.filterwarnings('ignore')
+        
+        # Configurar matplotlib para não mostrar gráficos
+        plt.ioff()
+        
+        try:
+            # ============= COLETA DE DADOS =============
+            print(f"📊 {colored('Coletando dados do banco...', 'blue')}")
+            
+            # Buscar todos os dados de Viagem_eco com informações dos veículos
+            viagens_eco = Viagem_eco.objects.all().select_related('unidade__empresa')
+            
+            if not viagens_eco.exists():
+                print(f"❌ {colored('Nenhum dado encontrado na tabela Viagem_eco', 'red')}")
+                return
+            
+            # Converter para DataFrame
+            data_list = []
+            for viagem in viagens_eco:
+                try:
+                    # Converter timestamp unix para datetime
+                    timestamp_int = int(viagem.timestamp)
+                    dt = datetime.fromtimestamp(timestamp_int)
+                    
+                    # Filtrar apenas dados com RPM válidos (acima de 300)
+                    if viagem.rpm and float(viagem.rpm) >= 300:
+                        data_list.append({
+                            'timestamp': timestamp_int,
+                            'datetime': dt,
+                            'unidade_id': viagem.unidade.id,
+                            'unidade_nome': viagem.unidade.nm,
+                            'empresa': viagem.unidade.empresa.nome if viagem.unidade.empresa else 'N/A',
+                            'marca': viagem.unidade.marca if hasattr(viagem.unidade, 'marca') and viagem.unidade.marca else 'N/I',
+                            'modelo': viagem.unidade.modelo if hasattr(viagem.unidade, 'modelo') and viagem.unidade.modelo else 'N/I',
+                            'cor': viagem.unidade.cor if hasattr(viagem.unidade, 'cor') and viagem.unidade.cor else 'N/I',
+                            'placa': viagem.unidade.placa if hasattr(viagem.unidade, 'placa') and viagem.unidade.placa else 'N/I',
+                            'rpm': float(viagem.rpm),
+                            'velocidade': float(viagem.velocidade) if viagem.velocidade else 0.0,
+                            'altitude': float(viagem.altitude) if viagem.altitude else 0.0,
+                            'hora': dt.hour,
+                            'dia_semana': dt.weekday(),
+                            'mes': dt.month,
+                            'ano': dt.year,
+                        })
+                except (ValueError, TypeError, OSError):
+                    continue
+            
+            if not data_list:
+                print(f"❌ {colored('Nenhum dado válido encontrado', 'red')}")
+                return
+            
+            df = pd.DataFrame(data_list)
+            print(f"✅ {colored(f'Dados coletados: {len(df)} registros de {df.unidade_id.nunique()} unidades', 'green')}")
+            print(f"📋 {colored(f'Marcas encontradas: {df.marca.nunique()} ({list(df.marca.unique())})', 'blue')}")
+            print(f"🚗 {colored(f'Modelos encontrados: {df.modelo.nunique()}', 'blue')}")
+            
+            # ============= ANÁLISE DESCRITIVA BÁSICA =============
+            print(f"\n📈 {colored('Gerando estatísticas descritivas...', 'blue')}")
+            
+            stats_desc = df[['rpm', 'velocidade', 'altitude']].describe()
+            
+            # Função para calcular MAD (Mean Absolute Deviation) manualmente
+            def calculate_mad(series):
+                """Calcula o desvio absoluto mediano"""
+                median = series.median()
+                return (series - median).abs().median()
+            
+            # Adicionar estatísticas extras
+            stats_extras = pd.DataFrame({
+                'rpm': [
+                    df['rpm'].var(),
+                    df['rpm'].skew(),
+                    df['rpm'].kurtosis(),
+                    calculate_mad(df['rpm'])
+                ],
+                'velocidade': [
+                    df['velocidade'].var(),
+                    df['velocidade'].skew(),
+                    df['velocidade'].kurtosis(),
+                    calculate_mad(df['velocidade'])
+                ],
+                'altitude': [
+                    df['altitude'].var(),
+                    df['altitude'].skew(),
+                    df['altitude'].kurtosis(),
+                    calculate_mad(df['altitude'])
+                ]
+            }, index=['variancia', 'assimetria', 'curtose', 'desvio_abs_mediano'])
+            
+            stats_completas = pd.concat([stats_desc, stats_extras])
+            
+            # Salvar estatísticas descritivas
+            stats_completas.to_excel(f'{deposito}/estudo_02_estatisticas_descritivas.xlsx')
+            print(f"💾 Estatísticas descritivas salvas em: estudo_02_estatisticas_descritivas.xlsx")
+            
+            # ============= DETECÇÃO DE OUTLIERS =============
+            print(f"\n🔍 {colored('Detectando outliers...', 'blue')}")
+            
+            # Método 1: Z-Score
+            z_scores = np.abs(stats.zscore(df[['rpm', 'velocidade', 'altitude']]))
+            outliers_zscore = df[(z_scores > 3).any(axis=1)].copy()
+            
+            # Método 2: IQR (Interquartile Range)
+            outliers_iqr = pd.DataFrame()
+            for coluna in ['rpm', 'velocidade', 'altitude']:
+                Q1 = df[coluna].quantile(0.25)
+                Q3 = df[coluna].quantile(0.75)
+                IQR = Q3 - Q1
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+                
+                outliers_col = df[(df[coluna] < lower_bound) | (df[coluna] > upper_bound)]
+                outliers_iqr = pd.concat([outliers_iqr, outliers_col]).drop_duplicates()
+            
+            # Método 3: Isolation Forest
+            iso_forest = IsolationForest(contamination=0.1, random_state=42)
+            outliers_iso = iso_forest.fit_predict(df[['rpm', 'velocidade', 'altitude']])
+            outliers_isolation = df[outliers_iso == -1].copy()
+            
+            # Combinar todos os outliers
+            all_outliers = pd.concat([outliers_zscore, outliers_iqr, outliers_isolation]).drop_duplicates()
+            all_outliers['metodo_deteccao'] = 'Múltiplos'
+            
+            print(f"🎯 Outliers detectados:")
+            print(f"   - Z-Score (>3): {len(outliers_zscore)} registros")
+            print(f"   - IQR: {len(outliers_iqr)} registros")
+            print(f"   - Isolation Forest: {len(outliers_isolation)} registros")
+            print(f"   - Total únicos: {len(all_outliers)} registros")
+            
+            # Salvar outliers
+            all_outliers.to_excel(f'{deposito}/estudo_02_outliers_detectados.xlsx', index=False)
+            print(f"💾 Outliers salvos em: estudo_02_outliers_detectados.xlsx")
+            
+            # ============= ANÁLISE POR UNIDADE =============
+            print(f"\n🚛 {colored('Analisando padrões por unidade...', 'blue')}")
+            
+            stats_por_unidade = df.groupby(['unidade_nome', 'empresa', 'marca', 'modelo', 'placa']).agg({
+                'rpm': ['count', 'mean', 'std', 'min', 'max'],
+                'velocidade': ['mean', 'std', 'min', 'max'],
+                'altitude': ['mean', 'std', 'min', 'max'],
+            }).round(2)
+            
+            # Achatar colunas multi-nível
+            stats_por_unidade.columns = ['_'.join(col).strip() for col in stats_por_unidade.columns]
+            stats_por_unidade = stats_por_unidade.reset_index()
+            
+            # Adicionar classificações
+            stats_por_unidade['rpm_categoria'] = pd.cut(
+                stats_por_unidade['rpm_mean'], 
+                bins=[0, 800, 1300, 2000, float('inf')], 
+                labels=['Baixo', 'Econômico', 'Normal', 'Alto']
+            )
+            
+            stats_por_unidade['velocidade_categoria'] = pd.cut(
+                stats_por_unidade['velocidade_mean'], 
+                bins=[0, 40, 60, 80, float('inf')], 
+                labels=['Baixa', 'Moderada', 'Alta', 'Muito Alta']
+            )
+            
+            # Salvar análise por unidade
+            stats_por_unidade.to_excel(f'{deposito}/estudo_02_analise_por_unidade.xlsx', index=False)
+            print(f"💾 Análise por unidade salva em: estudo_02_analise_por_unidade.xlsx")
+            
+            # ============= ANÁLISE POR MARCA =============
+            print(f"\n🏭 {colored('Analisando padrões por marca...', 'blue')}")
+            
+            stats_por_marca = df.groupby('marca').agg({
+                'rpm': ['count', 'mean', 'std', 'min', 'max'],
+                'velocidade': ['mean', 'std', 'min', 'max'],
+                'altitude': ['mean', 'std', 'min', 'max'],
+                'unidade_id': 'nunique'
+            }).round(2)
+            
+            stats_por_marca.columns = ['_'.join(col).strip() for col in stats_por_marca.columns]
+            stats_por_marca = stats_por_marca.reset_index()
+            
+            # Adicionar classificação de eficiência por marca
+            stats_por_marca['eficiencia_rpm'] = pd.cut(
+                stats_por_marca['rpm_mean'], 
+                bins=[0, 800, 1300, 2000, float('inf')], 
+                labels=['Muito Eficiente', 'Eficiente', 'Normal', 'Ineficiente']
+            )
+            
+            # Calcular ranking de eficiência
+            stats_por_marca['ranking_eficiencia'] = stats_por_marca['rpm_mean'].rank(ascending=True)
+            
+            # Salvar análise por marca
+            stats_por_marca.to_excel(f'{deposito}/estudo_02_analise_por_marca.xlsx', index=False)
+            print(f"💾 Análise por marca salva em: estudo_02_analise_por_marca.xlsx")
+            
+            # ============= ANÁLISE POR MODELO =============
+            print(f"\n🚗 {colored('Analisando padrões por modelo...', 'blue')}")
+            
+            stats_por_modelo = df.groupby(['marca', 'modelo']).agg({
+                'rpm': ['count', 'mean', 'std', 'min', 'max'],
+                'velocidade': ['mean', 'std', 'min', 'max'],
+                'altitude': ['mean', 'std', 'min', 'max'],
+                'unidade_id': 'nunique'
+            }).round(2)
+            
+            stats_por_modelo.columns = ['_'.join(col).strip() for col in stats_por_modelo.columns]
+            stats_por_modelo = stats_por_modelo.reset_index()
+            
+            # Adicionar classificação de performance
+            stats_por_modelo['performance_rpm'] = pd.cut(
+                stats_por_modelo['rpm_mean'], 
+                bins=[0, 800, 1300, 2000, float('inf')], 
+                labels=['Excelente', 'Boa', 'Regular', 'Ruim']
+            )
+            
+            stats_por_modelo['performance_velocidade'] = pd.cut(
+                stats_por_modelo['velocidade_mean'], 
+                bins=[0, 40, 60, 80, float('inf')], 
+                labels=['Urbano', 'Misto', 'Rodoviário', 'Alto']
+            )
+            
+            # Salvar análise por modelo
+            stats_por_modelo.to_excel(f'{deposito}/estudo_02_analise_por_modelo.xlsx', index=False)
+            print(f"💾 Análise por modelo salva em: estudo_02_analise_por_modelo.xlsx")
+            
+            # ============= ANÁLISE DE DISPERSÃO RPM AVANÇADA =============
+            print(f"\n📊 {colored('Analisando dispersão RPM por marca e modelo...', 'blue')}")
+            
+            # Análise de desvio por marca
+            desvios_por_marca = {}
+            
+            for marca in df['marca'].unique():
+                if marca != 'N/I':
+                    dados_marca = df[df['marca'] == marca]
+                    
+                    if len(dados_marca) > 50:  # Só analisa marcas com dados suficientes
+                        rpm_mean = dados_marca['rpm'].mean()
+                        rpm_std = dados_marca['rpm'].std()
+                        
+                        # Identificar unidades fora do padrão da marca (> 2 desvios padrão)
+                        unidades_fora_padrao = []
+                        
+                        for unidade in dados_marca['unidade_nome'].unique():
+                            dados_unidade = dados_marca[dados_marca['unidade_nome'] == unidade]
+                            rpm_unidade = dados_unidade['rpm'].mean()
+                            
+                            # Calcular z-score em relação à marca
+                            z_score = abs(rpm_unidade - rpm_mean) / rpm_std if rpm_std > 0 else 0
+                            
+                            if z_score > 2:  # Fora do padrão
+                                unidades_fora_padrao.append({
+                                    'unidade': unidade,
+                                    'rpm_unidade': rpm_unidade,
+                                    'z_score': z_score,
+                                    'desvio_absoluto': rpm_unidade - rpm_mean,
+                                    'status': 'Acima' if rpm_unidade > rpm_mean else 'Abaixo'
+                                })
+                        
+                        desvios_por_marca[marca] = {
+                            'rpm_medio_marca': rpm_mean,
+                            'rpm_desvio_marca': rpm_std,
+                            'total_unidades': dados_marca['unidade_nome'].nunique(),
+                            'unidades_fora_padrao': len(unidades_fora_padrao),
+                            'percentual_fora_padrao': (len(unidades_fora_padrao) / dados_marca['unidade_nome'].nunique()) * 100,
+                            'detalhes_unidades': unidades_fora_padrao
+                        }
+            
+            # Salvar análise de desvios
+            desvios_detalhados = []
+            for marca, dados in desvios_por_marca.items():
+                for unidade in dados['detalhes_unidades']:
+                    desvios_detalhados.append({
+                        'marca': marca,
+                        'unidade': unidade['unidade'],
+                        'rpm_unidade': unidade['rpm_unidade'],
+                        'rpm_medio_marca': dados['rpm_medio_marca'],
+                        'desvio_absoluto': unidade['desvio_absoluto'],
+                        'z_score': unidade['z_score'],
+                        'status': unidade['status']
+                    })
+            
+            df_desvios = pd.DataFrame(desvios_detalhados)
+            df_desvios.to_excel(f'{deposito}/estudo_02_unidades_fora_padrao.xlsx', index=False)
+            print(f"💾 Análise de unidades fora do padrão salva em: estudo_02_unidades_fora_padrao.xlsx")
+            
+            # Análise de dispersão por modelo dentro da marca
+            dispersao_modelo = []
+            
+            for marca in df['marca'].unique():
+                if marca != 'N/I':
+                    dados_marca = df[df['marca'] == marca]
+                    modelos_marca = dados_marca['modelo'].unique()
+                    
+                    if len(modelos_marca) > 1:  # Só analisa se há múltiplos modelos
+                        for modelo in modelos_marca:
+                            dados_modelo = dados_marca[dados_marca['modelo'] == modelo]
+                            
+                            if len(dados_modelo) > 20:  # Dados suficientes
+                                dispersao_modelo.append({
+                                    'marca': marca,
+                                    'modelo': modelo,
+                                    'rpm_medio': dados_modelo['rpm'].mean(),
+                                    'rpm_desvio': dados_modelo['rpm'].std(),
+                                    'rpm_min': dados_modelo['rpm'].min(),
+                                    'rpm_max': dados_modelo['rpm'].max(),
+                                    'coef_variacao': (dados_modelo['rpm'].std() / dados_modelo['rpm'].mean()) * 100,
+                                    'total_registros': len(dados_modelo),
+                                    'total_unidades': dados_modelo['unidade_nome'].nunique()
+                                })
+            
+            df_dispersao = pd.DataFrame(dispersao_modelo)
+            df_dispersao = df_dispersao.sort_values(['marca', 'coef_variacao'])
+            df_dispersao.to_excel(f'{deposito}/estudo_02_dispersao_por_modelo.xlsx', index=False)
+            print(f"💾 Análise de dispersão por modelo salva em: estudo_02_dispersao_por_modelo.xlsx")
+            
+            # ============= COMPARATIVO ENTRE MARCAS =============
+            print(f"\n⚖️ {colored('Gerando comparativo entre marcas...', 'blue')}")
+            
+            comparativo_marcas = {}
+            
+            for marca in df['marca'].unique():
+                if marca != 'N/I':  # Ignora registros sem marca
+                    dados_marca = df[df['marca'] == marca]
+                    
+                    comparativo_marcas[marca] = {
+                        'total_registros': len(dados_marca),
+                        'total_unidades': dados_marca['unidade_id'].nunique(),
+                        'rpm_medio': dados_marca['rpm'].mean(),
+                        'rpm_desvio': dados_marca['rpm'].std(),
+                        'velocidade_media': dados_marca['velocidade'].mean(),
+                        'altitude_media': dados_marca['altitude'].mean(),
+                        'percentual_zona_verde': len(dados_marca[(dados_marca['rpm'] >= 800) & (dados_marca['rpm'] <= 1300)]) / len(dados_marca) * 100,
+                        'percentual_zona_vermelha': len(dados_marca[dados_marca['rpm'] > 2300]) / len(dados_marca) * 100,
+                        'coef_variacao_rpm': (dados_marca['rpm'].std() / dados_marca['rpm'].mean()) * 100,
+                        'empresas': list(dados_marca['empresa'].unique())
+                    }
+            
+            # Converter para DataFrame
+            comparativo_df = pd.DataFrame(comparativo_marcas).T
+            comparativo_df = comparativo_df.round(2)
+            comparativo_df = comparativo_df.sort_values('rpm_medio')  # Ordenar por eficiência
+            
+            # Salvar comparativo
+            comparativo_df.to_excel(f'{deposito}/estudo_02_comparativo_marcas.xlsx')
+            print(f"💾 Comparativo entre marcas salvo em: estudo_02_comparativo_marcas.xlsx")
+            
+            # ============= ANÁLISE TEMPORAL =============
+            print(f"\n⏰ {colored('Analisando padrões temporais...', 'blue')}")
+            
+            # Por hora do dia
+            analise_hora = df.groupby('hora').agg({
+                'rpm': ['mean', 'std', 'count'],
+                'velocidade': ['mean', 'std'],
+                'altitude': ['mean', 'std']
+            }).round(2)
+            analise_hora.columns = ['_'.join(col).strip() for col in analise_hora.columns]
+            analise_hora = analise_hora.reset_index()
+            
+            # Por dia da semana
+            dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
+            analise_dia_semana = df.groupby('dia_semana').agg({
+                'rpm': ['mean', 'std', 'count'],
+                'velocidade': ['mean', 'std'],
+                'altitude': ['mean', 'std']
+            }).round(2)
+            analise_dia_semana.columns = ['_'.join(col).strip() for col in analise_dia_semana.columns]
+            analise_dia_semana = analise_dia_semana.reset_index()
+            analise_dia_semana['dia_nome'] = analise_dia_semana['dia_semana'].map(lambda x: dias_semana[x])
+            
+            # Por mês
+            analise_mes = df.groupby('mes').agg({
+                'rpm': ['mean', 'std', 'count'],
+                'velocidade': ['mean', 'std'],
+                'altitude': ['mean', 'std']
+            }).round(2)
+            analise_mes.columns = ['_'.join(col).strip() for col in analise_mes.columns]
+            analise_mes = analise_mes.reset_index()
+            
+            # Análise temporal por marca
+            analise_temporal_marca = df.groupby(['marca', 'hora']).agg({
+                'rpm': 'mean',
+                'velocidade': 'mean'
+            }).round(2).reset_index()
+            
+            # Salvar análises temporais
+            with pd.ExcelWriter(f'{deposito}/estudo_02_analise_temporal.xlsx') as writer:
+                analise_hora.to_excel(writer, sheet_name='Por_Hora', index=False)
+                analise_dia_semana.to_excel(writer, sheet_name='Por_Dia_Semana', index=False)
+                analise_mes.to_excel(writer, sheet_name='Por_Mes', index=False)
+                analise_temporal_marca.to_excel(writer, sheet_name='Marca_por_Hora', index=False)
+            
+            print(f"💾 Análise temporal salva em: estudo_02_analise_temporal.xlsx")
+            
+            # ============= ANÁLISE DE CORRELAÇÕES =============
+            print(f"\n🔗 {colored('Analisando correlações...', 'blue')}")
+            
+            # Matriz de correlação geral
+            correlation_matrix = df[['rpm', 'velocidade', 'altitude', 'hora', 'dia_semana']].corr()
+            
+            # Correlações por marca (se houver dados suficientes)
+            correlacoes_por_marca = {}
+            for marca in df['marca'].unique():
+                if marca != 'N/I':
+                    dados_marca = df[df['marca'] == marca]
+                    if len(dados_marca) > 50:  # Só calcula se houver dados suficientes
+                        correlacoes_por_marca[marca] = dados_marca[['rpm', 'velocidade', 'altitude']].corr()
+            
+            # Salvar correlações
+            with pd.ExcelWriter(f'{deposito}/estudo_02_matriz_correlacao.xlsx') as writer:
+                correlation_matrix.to_excel(writer, sheet_name='Geral')
+                for marca, corr_matrix in correlacoes_por_marca.items():
+                    corr_matrix.to_excel(writer, sheet_name=f'Marca_{marca}')
+            
+            print(f"💾 Matriz de correlação salva em: estudo_02_matriz_correlacao.xlsx")
+            
+            # ============= CLUSTERING ANÁLISE =============
+            print(f"\n🎯 {colored('Realizando análise de clusters...', 'blue')}")
+            
+            # Preparar dados para clustering
+            features_clustering = df[['rpm', 'velocidade', 'altitude']].copy()
+            
+            # Normalizar dados
+            scaler = StandardScaler()
+            features_normalized = scaler.fit_transform(features_clustering)
+            
+            # K-Means com k=5
+            kmeans = KMeans(n_clusters=5, random_state=42, n_init=10)
+            clusters = kmeans.fit_predict(features_normalized)
+            
+            # Adicionar clusters ao DataFrame
+            df_clusters = df.copy()
+            df_clusters['cluster'] = clusters
+            
+            # Analisar características de cada cluster
+            cluster_analysis = df_clusters.groupby('cluster').agg({
+                'rpm': ['mean', 'std', 'min', 'max', 'count'],
+                'velocidade': ['mean', 'std', 'min', 'max'],
+                'altitude': ['mean', 'std', 'min', 'max'],
+                'unidade_id': 'nunique'
+            }).round(2)
+            
+            cluster_analysis.columns = ['_'.join(col).strip() for col in cluster_analysis.columns]
+            cluster_analysis = cluster_analysis.reset_index()
+            
+            # Análise de clusters por marca
+            cluster_por_marca = df_clusters.groupby(['marca', 'cluster']).size().reset_index(name='count')
+            cluster_por_marca_pivot = cluster_por_marca.pivot(index='marca', columns='cluster', values='count').fillna(0)
+            
+            # Adicionar interpretação dos clusters
+            def interpretar_cluster(row):
+                rpm_mean = row['rpm_mean']
+                vel_mean = row['velocidade_mean']
+                
+                if rpm_mean < 800:
+                    rpm_cat = "Marcha Lenta"
+                elif rpm_mean < 1300:
+                    rpm_cat = "Econômico"
+                elif rpm_mean < 2000:
+                    rpm_cat = "Normal"
+                else:
+                    rpm_cat = "Alto"
+                
+                if vel_mean < 20:
+                    vel_cat = "Parado/Lento"
+                elif vel_mean < 50:
+                    vel_cat = "Urbano"
+                elif vel_mean < 80:
+                    vel_cat = "Rodoviário"
+                else:
+                    vel_cat = "Alto"
+                
+                return f"{rpm_cat} + {vel_cat}"
+            
+            cluster_analysis['interpretacao'] = cluster_analysis.apply(interpretar_cluster, axis=1)
+            
+            # Salvar análise de clusters
+            with pd.ExcelWriter(f'{deposito}/estudo_02_analise_clusters.xlsx') as writer:
+                cluster_analysis.to_excel(writer, sheet_name='Clusters_Geral', index=False)
+                cluster_por_marca_pivot.to_excel(writer, sheet_name='Clusters_por_Marca')
+            
+            print(f"💾 Análise de clusters salva em: estudo_02_analise_clusters.xlsx")
+            
+            # ============= DETECÇÃO DE PADRÕES ESPECÍFICOS =============
+            print(f"\n🔍 {colored('Detectando padrões específicos...', 'blue')}")
+            
+            padroes_especificos = {}
+            
+            # 1. Padrão de marcha lenta excessiva
+            marcha_lenta = df[df['rpm'] < 500]
+            padroes_especificos['marcha_lenta_excessiva'] = {
+                'total_registros': len(marcha_lenta),
+                'unidades_afetadas': marcha_lenta['unidade_nome'].nunique(),
+                'percentual_total': round(len(marcha_lenta) / len(df) * 100, 2),
+                'por_marca': dict(marcha_lenta['marca'].value_counts())
+            }
+            
+            # 2. Padrão de RPM muito alto (zona vermelha)
+            rpm_alto = df[df['rpm'] > 2300]
+            padroes_especificos['rpm_zona_vermelha'] = {
+                'total_registros': len(rpm_alto),
+                'unidades_afetadas': rpm_alto['unidade_nome'].nunique(),
+                'percentual_total': round(len(rpm_alto) / len(df) * 100, 2),
+                'por_marca': dict(rpm_alto['marca'].value_counts())
+            }
+            
+            # 3. Padrão de velocidade alta com RPM baixo
+            vel_alta_rpm_baixo = df[(df['velocidade'] > 60) & (df['rpm'] < 1000)]
+            padroes_especificos['velocidade_alta_rpm_baixo'] = {
+                'total_registros': len(vel_alta_rpm_baixo),
+                'unidades_afetadas': vel_alta_rpm_baixo['unidade_nome'].nunique(),
+                'percentual_total': round(len(vel_alta_rpm_baixo) / len(df) * 100, 2),
+                'por_marca': dict(vel_alta_rpm_baixo['marca'].value_counts())
+            }
+            
+            # 4. Padrão noturno (22h às 6h)
+            periodo_noturno = df[(df['hora'] >= 22) | (df['hora'] <= 6)]
+            padroes_especificos['atividade_noturna'] = {
+                'total_registros': len(periodo_noturno),
+                'unidades_afetadas': periodo_noturno['unidade_nome'].nunique(),
+                'percentual_total': round(len(periodo_noturno) / len(df) * 100, 2),
+                'por_marca': dict(periodo_noturno['marca'].value_counts())
+            }
+            
+            # 5. Eficiência por faixa de RPM
+            df['faixa_rpm'] = pd.cut(
+                df['rpm'], 
+                bins=[0, 799, 1300, 2300, float('inf')], 
+                labels=['Azul (350-799)', 'Verde (800-1300)', 'Amarela (1301-2300)', 'Vermelha (2301+)']
+            )
+            
+            distribuicao_rpm = df['faixa_rpm'].value_counts().to_dict()
+            distribuicao_rpm_por_marca = df.groupby(['marca', 'faixa_rpm']).size().unstack(fill_value=0)
+            
+            padroes_especificos['distribuicao_faixas_rpm'] = distribuicao_rpm
+            
+            # Salvar padrões específicos
+            with pd.ExcelWriter(f'{deposito}/estudo_02_padroes_especificos.xlsx') as writer:
+                # Sheet com resumo dos padrões
+                padroes_resumo = pd.DataFrame([padroes_especificos]).T
+                padroes_resumo.to_excel(writer, sheet_name='Resumo_Padroes')
+                
+                # Sheet com distribuição RPM por marca
+                distribuicao_rpm_por_marca.to_excel(writer, sheet_name='RPM_por_Marca')
+            
+            print(f"💾 Padrões específicos salvos em: estudo_02_padroes_especificos.xlsx")
+            
+            # ============= GERAR GRÁFICOS =============
+            print(f"\n📊 {colored('Gerando gráficos de análise...', 'blue')}")
+            
+            # Configurar estilo dos gráficos
+            plt.style.use('default')
+            sns.set_palette("husl")
+            
+            # 1. Distribuições das variáveis principais
+            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+            fig.suptitle('Distribuições das Variáveis Principais', fontsize=16, fontweight='bold')
+            
+            # RPM
+            axes[0, 0].hist(df['rpm'], bins=50, alpha=0.7, color='blue')
+            axes[0, 0].set_title('Distribuição RPM')
+            axes[0, 0].set_xlabel('RPM')
+            axes[0, 0].set_ylabel('Frequência')
+            axes[0, 0].axvline(df['rpm'].mean(), color='red', linestyle='--', label=f'Média: {df["rpm"].mean():.0f}')
+            axes[0, 0].legend()
+            
+            # Velocidade
+            axes[0, 1].hist(df['velocidade'], bins=50, alpha=0.7, color='green')
+            axes[0, 1].set_title('Distribuição Velocidade')
+            axes[0, 1].set_xlabel('Velocidade (km/h)')
+            axes[0, 1].set_ylabel('Frequência')
+            axes[0, 1].axvline(df['velocidade'].mean(), color='red', linestyle='--', label=f'Média: {df["velocidade"].mean():.1f}')
+            axes[0, 1].legend()
+            
+            # Altitude
+            axes[1, 0].hist(df['altitude'], bins=50, alpha=0.7, color='orange')
+            axes[1, 0].set_title('Distribuição Altitude')
+            axes[1, 0].set_xlabel('Altitude (m)')
+            axes[1, 0].set_ylabel('Frequência')
+            axes[1, 0].axvline(df['altitude'].mean(), color='red', linestyle='--', label=f'Média: {df["altitude"].mean():.1f}')
+            axes[1, 0].legend()
+            
+            # Distribuição por faixa de RPM
+            faixa_counts = df['faixa_rpm'].value_counts()
+            axes[1, 1].pie(faixa_counts.values, labels=faixa_counts.index, autopct='%1.1f%%')
+            axes[1, 1].set_title('Distribuição por Faixa de RPM')
+            
+            plt.tight_layout()
+            plt.savefig(f'{deposito}/estudo_02_distribuicoes.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            # ============= GRÁFICOS DE DISPERSÃO RPM AVANÇADOS =============
+            print(f"\n📈 {colored('Gerando gráficos de dispersão RPM avançados...', 'blue')}")
+            
+            # 2. Gráfico de dispersão RPM por marca (com identificação de outliers)
+            marcas_validas = [marca for marca in df['marca'].unique() if marca != 'N/I']
+            
+            if len(marcas_validas) > 1:
+                # Gráfico 1: Dispersão RPM por marca com boxplots
+                fig, axes = plt.subplots(2, 2, figsize=(20, 16))
+                fig.suptitle('Análise de Dispersão RPM por Marca', fontsize=16, fontweight='bold')
+                
+                # Subplot 1: Boxplot RPM por marca
+                dados_boxplot = [df[df['marca'] == marca]['rpm'] for marca in marcas_validas if len(df[df['marca'] == marca]) > 100]
+                marcas_boxplot = [marca for marca in marcas_validas if len(df[df['marca'] == marca]) > 100]
+                
+                if dados_boxplot:
+                    axes[0, 0].boxplot(dados_boxplot, labels=marcas_boxplot, patch_artist=True)
+                    axes[0, 0].set_title('Distribuição RPM por Marca (Boxplot)')
+                    axes[0, 0].set_xlabel('Marca')
+                    axes[0, 0].set_ylabel('RPM')
+                    axes[0, 0].tick_params(axis='x', rotation=45)
+                    axes[0, 0].grid(True, alpha=0.3)
+                    
+                    # Adicionar linhas de referência
+                    axes[0, 0].axhline(800, color='green', linestyle='--', alpha=0.7, label='Zona Verde (800)')
+                    axes[0, 0].axhline(1300, color='green', linestyle='--', alpha=0.7, label='Zona Verde (1300)')
+                    axes[0, 0].axhline(2300, color='red', linestyle='--', alpha=0.7, label='Zona Vermelha (2300)')
+                    axes[0, 0].legend()
+                
+                # Subplot 2: Violin plot para mostrar distribuição completa
+                df_plot = df[df['marca'].isin(marcas_boxplot)]
+                import seaborn as sns
+                sns.violinplot(data=df_plot, x='marca', y='rpm', ax=axes[0, 1])
+                axes[0, 1].set_title('Distribuição RPM por Marca (Violin Plot)')
+                axes[0, 1].set_xlabel('Marca')
+                axes[0, 1].set_ylabel('RPM')
+                axes[0, 1].tick_params(axis='x', rotation=45)
+                
+                # Subplot 3: Scatter plot RPM vs Velocidade colorido por marca
+                cores_marca = plt.cm.Set1(np.linspace(0, 1, len(marcas_validas)))
+                for i, marca in enumerate(marcas_validas):
+                    dados_marca = df[df['marca'] == marca]
+                    axes[1, 0].scatter(dados_marca['rpm'], dados_marca['velocidade'], 
+                                    alpha=0.3, s=1, label=marca, c=[cores_marca[i]])
+                
+                axes[1, 0].set_title('RPM vs Velocidade por Marca')
+                axes[1, 0].set_xlabel('RPM')
+                axes[1, 0].set_ylabel('Velocidade (km/h)')
+                axes[1, 0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+                axes[1, 0].grid(True, alpha=0.3)
+                
+                # Subplot 4: Média RPM por marca com barras de erro
+                marca_stats = []
+                for marca in marcas_validas:
+                    dados_marca = df[df['marca'] == marca]
+                    if len(dados_marca) > 50:
+                        marca_stats.append({
+                            'marca': marca,
+                            'rpm_mean': dados_marca['rpm'].mean(),
+                            'rpm_std': dados_marca['rpm'].std()
+                        })
+                
+                if marca_stats:
+                    df_stats = pd.DataFrame(marca_stats).sort_values('rpm_mean')
+                    axes[1, 1].bar(df_stats['marca'], df_stats['rpm_mean'], 
+                                yerr=df_stats['rpm_std'], capsize=5, alpha=0.7)
+                    axes[1, 1].set_title('RPM Médio por Marca (com Desvio Padrão)')
+                    axes[1, 1].set_xlabel('Marca')
+                    axes[1, 1].set_ylabel('RPM Médio')
+                    axes[1, 1].tick_params(axis='x', rotation=45)
+                    axes[1, 1].grid(True, alpha=0.3)
+                    
+                    # Adicionar linhas de referência
+                    axes[1, 1].axhline(1050, color='green', linestyle='-', alpha=0.7, label='Zona Verde Média')
+                    axes[1, 1].legend()
+                
+                plt.tight_layout()
+                plt.savefig(f'{deposito}/estudo_02_dispersao_rpm_marcas.png', dpi=300, bbox_inches='tight')
+                plt.close()
+            
+            # 3. Gráfico de unidades fora do padrão por marca
+            if desvios_detalhados:
+                fig, axes = plt.subplots(2, 2, figsize=(20, 16))
+                fig.suptitle('Análise de Unidades Fora do Padrão por Marca', fontsize=16, fontweight='bold')
+                
+                # Subplot 1: Número de unidades fora do padrão por marca
+                marca_desvios = {}
+                for marca, dados in desvios_por_marca.items():
+                    marca_desvios[marca] = dados['unidades_fora_padrao']
+                
+                marcas = list(marca_desvios.keys())
+                valores = list(marca_desvios.values())
+                
+                axes[0, 0].bar(marcas, valores, color='red', alpha=0.7)
+                axes[0, 0].set_title('Unidades Fora do Padrão por Marca')
+                axes[0, 0].set_xlabel('Marca')
+                axes[0, 0].set_ylabel('Número de Unidades Fora do Padrão')
+                axes[0, 0].tick_params(axis='x', rotation=45)
+                
+                # Subplot 2: Percentual de unidades fora do padrão
+                percentuais = [desvios_por_marca[marca]['percentual_fora_padrao'] for marca in marcas]
+                axes[0, 1].bar(marcas, percentuais, color='orange', alpha=0.7)
+                axes[0, 1].set_title('Percentual de Unidades Fora do Padrão')
+                axes[0, 1].set_xlabel('Marca')
+                axes[0, 1].set_ylabel('Percentual (%)')
+                axes[0, 1].tick_params(axis='x', rotation=45)
+                
+                # Subplot 3: Scatter plot dos desvios
+                if desvios_detalhados:
+                    df_desvios_plot = pd.DataFrame(desvios_detalhados)
+                    cores = ['red' if status == 'Acima' else 'blue' for status in df_desvios_plot['status']]
+                    
+                    axes[1, 0].scatter(df_desvios_plot['rpm_medio_marca'], df_desvios_plot['rpm_unidade'], 
+                                    c=cores, alpha=0.6, s=50)
+                    axes[1, 0].plot([400, 2500], [400, 2500], 'k--', alpha=0.5, label='Linha de Igualdade')
+                    axes[1, 0].set_title('RPM Unidade vs RPM Médio da Marca')
+                    axes[1, 0].set_xlabel('RPM Médio da Marca')
+                    axes[1, 0].set_ylabel('RPM da Unidade')
+                    axes[1, 0].legend()
+                    axes[1, 0].grid(True, alpha=0.3)
+                
+                # Subplot 4: Histograma dos Z-scores
+                if desvios_detalhados:
+                    z_scores = [item['z_score'] for item in desvios_detalhados]
+                    axes[1, 1].hist(z_scores, bins=20, alpha=0.7, color='purple')
+                    axes[1, 1].axvline(2, color='red', linestyle='--', label='Limite Z-Score = 2')
+                    axes[1, 1].set_title('Distribuição dos Z-Scores das Unidades Fora do Padrão')
+                    axes[1, 1].set_xlabel('Z-Score')
+                    axes[1, 1].set_ylabel('Frequência')
+                    axes[1, 1].legend()
+                    axes[1, 1].grid(True, alpha=0.3)
+                
+                plt.tight_layout()
+                plt.savefig(f'{deposito}/estudo_02_unidades_fora_padrao_graficos.png', dpi=300, bbox_inches='tight')
+                plt.close()
+            
+            # 4. Análise temporal de dispersão
+            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+            fig.suptitle('Análise Temporal dos Dados', fontsize=16, fontweight='bold')
+            
+            # RPM por hora
+            hourly_rpm = df.groupby('hora')['rpm'].mean()
+            axes[0, 0].plot(hourly_rpm.index, hourly_rpm.values, marker='o', linewidth=2)
+            axes[0, 0].set_title('RPM Médio por Hora do Dia')
+            axes[0, 0].set_xlabel('Hora')
+            axes[0, 0].set_ylabel('RPM Médio')
+            axes[0, 0].grid(True, alpha=0.3)
+            
+            # Velocidade por hora
+            hourly_vel = df.groupby('hora')['velocidade'].mean()
+            axes[0, 1].plot(hourly_vel.index, hourly_vel.values, marker='s', color='green', linewidth=2)
+            axes[0, 1].set_title('Velocidade Média por Hora do Dia')
+            axes[0, 1].set_xlabel('Hora')
+            axes[0, 1].set_ylabel('Velocidade Média (km/h)')
+            axes[0, 1].grid(True, alpha=0.3)
+            
+            # RPM por dia da semana
+            daily_rpm = df.groupby('dia_semana')['rpm'].mean()
+            dias_nome = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+            axes[1, 0].bar(range(7), daily_rpm.values, color='purple', alpha=0.7)
+            axes[1, 0].set_title('RPM Médio por Dia da Semana')
+            axes[1, 0].set_xlabel('Dia da Semana')
+            axes[1, 0].set_ylabel('RPM Médio')
+            axes[1, 0].set_xticks(range(7))
+            axes[1, 0].set_xticklabels(dias_nome)
+            
+            # Atividade por mês
+            monthly_count = df.groupby('mes').size()
+            axes[1, 1].bar(monthly_count.index, monthly_count.values, color='red', alpha=0.7)
+            axes[1, 1].set_title('Atividade por Mês')
+            axes[1, 1].set_xlabel('Mês')
+            axes[1, 1].set_ylabel('Número de Registros')
+            
+            plt.tight_layout()
+            plt.savefig(f'{deposito}/estudo_02_analise_temporal.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            # 5. Scatter plots e correlações
+            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+            fig.suptitle('Análise de Correlações', fontsize=16, fontweight='bold')
+            
+            # RPM vs Velocidade
+            axes[0, 0].scatter(df['rpm'], df['velocidade'], alpha=0.1, s=1)
+            axes[0, 0].set_title('RPM vs Velocidade')
+            axes[0, 0].set_xlabel('RPM')
+            axes[0, 0].set_ylabel('Velocidade (km/h)')
+            
+            # RPM vs Altitude
+            axes[0, 1].scatter(df['rpm'], df['altitude'], alpha=0.1, s=1, color='green')
+            axes[0, 1].set_title('RPM vs Altitude')
+            axes[0, 1].set_xlabel('RPM')
+            axes[0, 1].set_ylabel('Altitude (m)')
+            
+            # Velocidade vs Altitude
+            axes[1, 0].scatter(df['velocidade'], df['altitude'], alpha=0.1, s=1, color='red')
+            axes[1, 0].set_title('Velocidade vs Altitude')
+            axes[1, 0].set_xlabel('Velocidade (km/h)')
+            axes[1, 0].set_ylabel('Altitude (m)')
+            
+            # Heatmap de correlação
+            corr_data = df[['rpm', 'velocidade', 'altitude', 'hora']].corr()
+            im = axes[1, 1].imshow(corr_data, cmap='coolwarm', aspect='auto')
+            axes[1, 1].set_title('Matriz de Correlação')
+            axes[1, 1].set_xticks(range(len(corr_data.columns)))
+            axes[1, 1].set_yticks(range(len(corr_data.columns)))
+            axes[1, 1].set_xticklabels(corr_data.columns)
+            axes[1, 1].set_yticklabels(corr_data.columns)
+            
+            plt.tight_layout()
+            plt.savefig(f'{deposito}/estudo_02_correlacoes.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            print(f"💾 Gráficos salvos em:")
+            print(f"   - estudo_02_distribuicoes.png")
+            print(f"   - estudo_02_dispersao_rpm_marcas.png")
+            print(f"   - estudo_02_unidades_fora_padrao_graficos.png")
+            print(f"   - estudo_02_analise_temporal.png")
+            print(f"   - estudo_02_correlacoes.png")
+            
+            # ============= RELATÓRIO RESUMO =============
+            print(f"\n📋 {colored('Gerando relatório resumo...', 'blue')}")
+            
+            marca_rpm = df.groupby('marca')['rpm'].mean().sort_values()
+            
+            resumo = {
+                'data_analise': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'total_registros': len(df),
+                'total_unidades': df['unidade_id'].nunique(),
+                'total_empresas': df['empresa'].nunique(),
+                'total_marcas': df['marca'].nunique(),
+                'total_modelos': df['modelo'].nunique(),
+                'periodo_dados': f"{df['datetime'].min()} até {df['datetime'].max()}",
+                'rpm_medio_geral': round(df['rpm'].mean(), 2),
+                'rpm_desvio_padrao': round(df['rpm'].std(), 2),
+                'velocidade_media_geral': round(df['velocidade'].mean(), 2),
+                'altitude_media_geral': round(df['altitude'].mean(), 2),
+                'outliers_detectados': len(all_outliers),
+                'percentual_outliers': round(len(all_outliers) / len(df) * 100, 2),
+                'distribuicao_faixas_rpm': dict(df['faixa_rpm'].value_counts()),
+                'marca_mais_eficiente': marca_rpm.index[0] if len(marca_rpm) > 0 else 'N/A',
+                'marca_menos_eficiente': marca_rpm.index[-1] if len(marca_rpm) > 0 else 'N/A',
+                'padroes_identificados': len(padroes_especificos),
+                'unidades_fora_padrao_total': len(desvios_detalhados),
+                'marcas_analisadas_dispersao': len(desvios_por_marca),
+            }
+            
+            # Salvar resumo
+            resumo_df = pd.DataFrame([resumo]).T
+            resumo_df.columns = ['Valor']
+            resumo_df.to_excel(f'{deposito}/estudo_02_resumo_executivo.xlsx')
+            
+            # ============= RESULTADO FINAL =============
+            print(colored("="*50, 'cyan'))
+            print(colored("ESTUDO ESTATÍSTICO AVANÇADO CONCLUÍDO COM SUCESSO!", 'green'))
+            print(colored("="*50, 'cyan'))
+            
+            print(f"📊 {colored('RESUMO DOS RESULTADOS:', 'yellow')}")
+            print(f"   • Total de registros analisados: {colored(f'{len(df):,}', 'green')}")
+            print(f"   • Unidades analisadas: {colored(df['unidade_id'].nunique(), 'green')}")
+            print(f"   • Empresas envolvidas: {colored(df['empresa'].nunique(), 'green')}")
+            print(f"   • Marcas analisadas: {colored(df['marca'].nunique(), 'blue')}")
+            print(f"   • Modelos analisados: {colored(df['modelo'].nunique(), 'blue')}")
+            print(f"   • Outliers detectados: {colored(f'{len(all_outliers):,}', 'red')} ({colored(f'{len(all_outliers)/len(df)*100:.1f}%', 'red')})")
+            print(f"   • RPM médio da frota: {colored(f'{df.rpm.mean():.0f}', 'blue')} RPM")
+            print(f"   • Velocidade média: {colored(f'{df.velocidade.mean():.1f}', 'blue')} km/h")
+            
+            print(f"\n🏭 {colored('ANÁLISE POR MARCA:', 'yellow')}")
+            if len(marca_rpm) > 0:
+                print(f"   • Marca mais eficiente: {colored(marca_rpm.index[0], 'green')} ({colored(f'{marca_rpm.iloc[0]:.0f}', 'green')} RPM)")
+                print(f"   • Marca menos eficiente: {colored(marca_rpm.index[-1], 'red')} ({colored(f'{marca_rpm.iloc[-1]:.0f}', 'red')} RPM)")
+            
+            print(f"\n🎯 {colored('ANÁLISE DE DISPERSÃO:', 'yellow')}")
+            print(f"   • Unidades fora do padrão: {colored(len(desvios_detalhados), 'red')}")
+            print(f"   • Marcas com análise de dispersão: {colored(len(desvios_por_marca), 'blue')}")
+            
+            if desvios_por_marca:
+                marca_mais_problemas = max(desvios_por_marca, key=lambda x: desvios_por_marca[x]['percentual_fora_padrao'])
+                print(f"   • Marca com mais unidades fora do padrão: {colored(marca_mais_problemas, 'red')} ({colored(f'{desvios_por_marca[marca_mais_problemas]['percentual_fora_padrao']:.1f}%', 'red')})")
+            
+            print(f"\n📁 {colored('ARQUIVOS GERADOS:', 'yellow')}")
+            print(f"   • estudo_02_estatisticas_descritivas.xlsx")
+            print(f"   • estudo_02_outliers_detectados.xlsx") 
+            print(f"   • estudo_02_analise_por_unidade.xlsx")
+            print(f"   • estudo_02_analise_por_marca.xlsx")
+            print(f"   • estudo_02_analise_por_modelo.xlsx")
+            print(f"   • estudo_02_comparativo_marcas.xlsx")
+            print(f"   • estudo_02_unidades_fora_padrao.xlsx")
+            print(f"   • estudo_02_dispersao_por_modelo.xlsx")
+            print(f"   • estudo_02_analise_temporal.xlsx")
+            print(f"   • estudo_02_matriz_correlacao.xlsx")
+            print(f"   • estudo_02_analise_clusters.xlsx")
+            print(f"   • estudo_02_padroes_especificos.xlsx")
+            print(f"   • estudo_02_resumo_executivo.xlsx")
+            print(f"   • estudo_02_distribuicoes.png")
+            print(f"   • estudo_02_dispersao_rpm_marcas.png")
+            print(f"   • estudo_02_unidades_fora_padrao_graficos.png")
+            print(f"   • estudo_02_analise_temporal.png")
+            print(f"   • estudo_02_correlacoes.png")
+            
+            print(f"\n🎯 {colored('PRINCIPAIS INSIGHTS:', 'yellow')}")
+            print(f"   • Faixa de RPM mais comum: {colored(df['faixa_rpm'].mode().iloc[0], 'green')}")
+            print(f"   • Horário de maior atividade: {colored(f'{hourly_rpm.idxmax()}h', 'green')}")
+            print(f"   • Correlação RPM-Velocidade: {colored(f'{df.rpm.corr(df.velocidade):.3f}', 'blue')}")
+            if len(marca_rpm) > 1:
+                print(f"   • Diferença de eficiência entre marcas: {colored(f'{marca_rpm.iloc[-1] - marca_rpm.iloc[0]:.0f}', 'yellow')} RPM")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ {colored(f'Erro durante a análise: {str(e)}', 'red')}")
+            import traceback
+            traceback.print_exc()
+            return False
+
 
     ############################################################################################
     ###+---------------------------------------------------------------------------------------------+
@@ -2630,7 +5038,7 @@ class Command(BaseCommand):
             print(colored("CLTDR_UMBRELLA:","green"))
             print(f"{msg}")
             print(colored("="*30, "blue"))
-         
+        
         comm("Iniciando processamento global...")
         sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
         if not sid:

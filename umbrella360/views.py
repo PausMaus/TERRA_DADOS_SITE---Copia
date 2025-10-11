@@ -476,13 +476,15 @@ def detalhes_unidade(request, unidade_id):
     import json
     
     # Buscar dados dos últimos 7 dias ou últimos 1000 registros (o que for menor)
-    data_limite = timezone.now() - timedelta(days=7)
+    #data_limite = timezone.now() - timedelta(days=7)
     
     viagens_eco = Viagem_eco.objects.filter(
         unidade_id=unidade.id
     ).order_by('-timestamp')  # Limitar para performance
     
-    # Preparar dados para o gráfico
+    # Preparar dados para o gráfico, remove rpm acima de 3500
+
+
     timeline_data = []
     if viagens_eco.exists():
         for viagem_eco in reversed(viagens_eco):  # Reverter para ordem cronológica
@@ -492,11 +494,12 @@ def detalhes_unidade(request, unidade_id):
                 dt = datetime.fromtimestamp(timestamp_int)
 
 
-                #filtra as viagens por rpm acima de 350 rpm
-                if float(viagem_eco.rpm) > 350:
+                # Filtrar valores de RPM muito altos (acima de 3500)
+
+                if float(viagem_eco.rpm) and float(viagem_eco.rpm/8) <= 3500:
                     timeline_data.append({
                         'timestamp': dt.strftime('%Y-%m-%d %H:%M:%S'),
-                        'rpm': float(viagem_eco.rpm) if viagem_eco.rpm else 0,
+                        'rpm': float(viagem_eco.rpm/8) if viagem_eco.rpm else 0,
                         'velocidade': float(viagem_eco.velocidade) if hasattr(viagem_eco, 'velocidade') and viagem_eco.velocidade else 0,
                     'altitude': float(viagem_eco.altitude) if hasattr(viagem_eco, 'altitude') and viagem_eco.altitude else 0,
                     'temperatura': float(viagem_eco.temperatura_motor) if hasattr(viagem_eco, 'temperatura_motor') and viagem_eco.temperatura_motor else 0,

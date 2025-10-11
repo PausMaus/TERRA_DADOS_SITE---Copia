@@ -2531,10 +2531,6 @@ class Command(BaseCommand):
                 response.raise_for_status()
                 result = response.json()
 
-                #print("Response 04:", result)
-                # salva como json
-                with open(f'{deposito}/messages_{unidade_nome}_{unidade_id}.json', 'w') as f:
-                    json.dump(result, f, indent=4)
 
                 
                 # Processa as mensagens e cria o DataFrame
@@ -2573,9 +2569,7 @@ class Command(BaseCommand):
                     print(f"\nDataFrame criado com {len(df_messages)} mensagens:")
                     print(df_messages.head())
                     
-                    # Salva em Excel para análise
-                    df_messages.to_excel(f'{deposito}/{unidade_nome}_{unidade_id}.xlsx', index=False)
-                    print(f"DataFrame salvo em {deposito}/{unidade_nome}_{unidade_id}.xlsx")
+
 
                     # Mostra algumas estatísticas
                     print(f"\nEstatísticas das mensagens:")
