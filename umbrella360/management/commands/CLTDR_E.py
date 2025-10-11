@@ -19,7 +19,7 @@ import pytz
 
 
 
-deposito = rf"C:\TERRA DADOS\laboratorium\Site\Deposito\estudos"
+deposito = rf"C:\TERRA DADOS\laboratorium\Site\Deposito"
 
 # frotas
 #+-------------------------------------------------------------+
