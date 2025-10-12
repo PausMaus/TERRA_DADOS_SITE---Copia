@@ -19,7 +19,7 @@ import pytz
 
 
 
-deposito = rf"C:\TERRA DADOS\laboratorium\Site\Deposito\estudos"
+deposito = rf"C:\TERRA DADOS\laboratorium\Site\Deposito"
 
 # frotas
 #+-------------------------------------------------------------+
@@ -46,9 +46,18 @@ class Command(BaseCommand):
         self.PRINCIPAL()
         ##################################################
         # TESTE #
+        
 
         #self.TESTE_MENSAGENS(1)
-        self.TESTE_MENSAGENS_02(1)
+        #self.TESTE_MENSAGENS_02(7)
+        self.TESTE_MENSAGENS_03(3)
+
+        ##################################################
+        # ESTUDO #
+
+        #self.ESTUDO_01()
+        #self.ESTUDO_02()
+        #self.ESTUDO_03()
         ##################################################
         # End timing and display results
         end_time = datetime.now()
@@ -1171,283 +1180,6 @@ class Command(BaseCommand):
 
 
 
-########################################################################################
-###+---
-
-    def principal(self, token, empresa_nome):
-        self.stdout.write(self.style.SUCCESS(f'Iniciando importação de dados para a empresa: {empresa_nome}'))
-
-
-        # Inicia a sessão Wialon
-        self.stdout.write(self.style.SUCCESS(f'Iniciando sessão Wialon para {empresa_nome}...'))
-
-        sid = Wialon.authenticate_with_wialon(token)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        self.atualiza_unidades(sid, empresa_nome)
-
-        #busca os relatorios
-        print(Wialon.buscadora_reports(sid))
-
-        if empresa_nome == 'CPBRACELL':
-            self.process_units_CP(sid)
-            #self.process_motoristas_CP_2(sid)
-
-        if empresa_nome == 'PLACIDO':
-            self.process_units_PLAC(sid)
-
-        elif empresa_nome == 'São Francisco Resgate':
-            self.process_units_SF(sid)
-
-        # Encerra a sessão Wialon
-        Wialon.wialon_logout(sid)
-
-        self.stdout.write(self.style.SUCCESS(f'Sessão Wialon encerrada para {empresa_nome}.'))
-
-        ###+---
-
-########################################################################################
-
-
-        #######################################################################################
-
-    def localizzare(self, token):
-        sid = Wialon.authenticate_with_wialon(token)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        #busca os relatorios
-        relatórios = Wialon.buscadora_reports(sid)
-        #salva os relatorios em .txt no deposito
-        with open(f'{deposito}/localizzare_relatorios.txt', 'w') as f:
-            f.write(json.dumps(relatórios, indent=4))
-
-        unidades = unidades_simples(sid)
-        if not unidades:
-            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-            return
-        
-        #coloca os dados em um dataframe
-        df_unidades = pd.DataFrame(unidades)
-        print(f'Unidades encontradas:' , colored(f'{len(df_unidades)}', 'green'))
-        print(f'Unidades: {df_unidades}')
-        #salva as unidades em um excel
-        df_unidades.to_excel(f'{deposito}/localizzare_unidades.xlsx', index=False)
-        #
-        motoristas = Wialon.motoristas_simples2(sid)
-        df_motoristas = pd.DataFrame(motoristas)
-        print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
-        print(f'Motoristas: {df_motoristas}')
-        df_motoristas.to_excel(f'{deposito}/localizzare_motoristas.xlsx', index=False)
-
-        #####
-
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
-
-        processamento_df = pd.DataFrame()
-        unidades_db = unidades_db
-        unidades_db = unidades_db[:5]# Limita a 5 veículos para teste
-        # Coleta dados de relatório para 1 dia
-        
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-
-        processamento_df.to_excel(f'{deposito}/localizzare_veiculos.xlsx', index=False)
-#######
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
-            unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')  # Filtra por empresa CPBRACELL
-        processamento_df = pd.DataFrame()
-        unidades_db = unidades_db
-        unidades_db = unidades_db[:5]  # Limita a 5 motoristas para teste
-        # Coleta dados de relatório para 1 dia
-        
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=1, periodo='Ontem')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-
-        processamento_df.to_excel(f'{deposito}/localizzare_motoristas.xlsx', index=False)
-
-        motoristas = Wialon.motoristas_simples2(sid)
-        df_motoristas = pd.DataFrame(motoristas)
-        print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
-        print(f'Motoristas: {df_motoristas}')
-        #seleciona os 10 primeiros motoristas do dataframe
-        df_motoristas = df_motoristas.head(10)
-        for motorista in df_motoristas.itertuples(index=False):
-            motorista_id = motorista.driver_id
-
-            relatorio = Wialon.Colheitadeira_JSON_02(sid, 401756219, motorista_id, 5, tempo_dias=1, periodo="teste")
-            print(relatorio)
-            Wialon.clean_up_result(sid)
-            relatorio = Wialon.Colheitadeira_JSON_02(sid, 401756219, motorista_id, 58, tempo_dias=1, periodo="teste")
-            print(relatorio)
-            Wialon.clean_up_result(sid)
-
-
-
-
-
-        Wialon.wialon_logout(sid)
-
-    def localizzare2(self, token):
-        sid = Wialon.authenticate_with_wialon(token)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        Wialon.set_locale()
-
-        ###__UNIDADES__TODAS__###
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=1, periodo="Ontem")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_ontem.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=7, periodo="Semana")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_semana.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=30, periodo="Mês")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_mes.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        ###__MOTORISTAS__CPBrascell__###
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=1, periodo="Ontem")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_ontem.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=7, periodo="Semana")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_semana.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-        
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=30, periodo="Mês")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_mes.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        ###__MOTORISTAS__PLACIDO__###
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=1, periodo="Ontem")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_ontem.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=7, periodo="Semana")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_semana.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-        
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=30, periodo="Mês")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_mes.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-
-        Wialon.wialon_logout(sid)
-
-    
-    def localizzare3(self, token):
-        sid = Wialon.authenticate_with_wialon(token)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        Wialon.set_locale()
-        processamento_df = pd.DataFrame()
-
-        ###__UNIDADES__TODAS__###
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=1, periodo="Ontem")
-        print(f'Relatório coletado: {relatorio}')
-
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_ontem.xlsx', index=False)
-            processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
-            print("RESULTADO:")
-            print(processamento_df)
-
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=7, periodo="Semana")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_semana.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=30, periodo="Mês")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_mes.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        ###__MOTORISTAS__CPBrascell__###
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=1, periodo="Ontem")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_ontem.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=7, periodo="Semana")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_semana.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-        
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=30, periodo="Mês")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_mes.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        ###__MOTORISTAS__PLACIDO__###
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=1, periodo="Ontem")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_ontem.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=7, periodo="Semana")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_semana.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-        
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=30, periodo="Mês")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_mes.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-
-        Wialon.wialon_logout(sid)
-
         #######################################################################################
 
     def atualiza_unidades(self, sid, empresa_nome):
@@ -1535,137 +1267,6 @@ class Command(BaseCommand):
 
 
 
-
-    def process_units_CP(self, sid):
-        # CAMINHOES BRASCELL#######################
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='CPBRASCELL')
-            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
-
-        processamento_df = pd.DataFrame()
-        unidades_db = unidades_db
-        # Coleta dados de relatório para 1 dia
-        
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        
-
-
-
-
-        # Atualiza ou cria as viagens no model Viagem_Base
-
-        self.update_or_create_trip(processamento_df)
-
-
-
-    def process_units_PLAC(self, sid):
-        # CAMINHOES PLACIDO#######################
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='PLACIDO')
-            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
-
-        processamento_df = pd.DataFrame()
-
-        # Coleta dados de relatório para 1 dia
-        processamento_df = self.retrieve_unit_data(sid, 401768999, unidades_db, 45, processamento_df, tempo_dias=1, periodo='Ontem')
-        processamento_df = self.retrieve_unit_data(sid, 401768999, unidades_db, 45, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        processamento_df = self.retrieve_unit_data(sid, 401768999, unidades_db, 45, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-
-        # Atualiza ou cria as viagens no model Viagem_Base
-        self.update_or_create_trip(processamento_df)
-        print(processamento_df)
-
-    def process_units_SF(self, sid):
-        # CAMINHOES SÃO FRANCISCO#######################
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='São Francisco Resgate')
-            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
-
-        processamento_df = pd.DataFrame()
-        unidades_db = unidades_db
-        # Coleta dados de relatório para 1 dia
-        
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        
-
-
-
-
-        # Atualiza ou cria as viagens no model Viagem_Base
-
-        self.update_or_create_trip(processamento_df)
-
-
-
-    def process_motoristas_CP(self, sid):
-        #MOTORISTAS BRASCELL####################################################################################
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')
-            unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
-
-        processamento_df = pd.DataFrame()
-        #pega as primmeiras 5 unidades
-        unidades_db = unidades_db[:5]
-        print(f"ids_motoristas: {unidades_db}")
-        # Coleta dados de relatório para 7 dias
-        processamento_df = self.retrieve_unit_data_motorista(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=7, periodo='Ultimos 7 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} motoristas.')
-        print(processamento_df)
-
-    def process_motoristas_CP_2(self, sid):
-        # motoristas BRASCELL#######################
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')
-            unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
-
-        processamento_df = pd.DataFrame()
-        unidades_db = unidades_db
-        # Coleta dados de relatório para 1 dia
-        
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=1, periodo='Ontem')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        #print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        #print(processamento_df)
-        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-        #print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        #print(processamento_df)
-        
-
-
-
-
-        # Atualiza ou cria as viagens no model Viagem_Base
-
-        self.update_or_create_trip(processamento_df)
 
     def update_or_create_trip(self, processamento_df):
         if not processamento_df.empty:
@@ -2731,12 +2332,7 @@ class Command(BaseCommand):
                     response.raise_for_status()
                     result = response.json()
 
-                    #print("Response 04:", result)
-                    # salva como json
-                    with open(f'{deposito}/messages_{unidade_nome}_{unidade_id}.json', 'w') as f:
-                        json.dump(result, f, indent=4)
 
-                    
                     # Processa as mensagens e cria o DataFrame
                     if result and isinstance(result, list):
                         df_messages = self.processar_mensagens_wialon(result)
@@ -2813,95 +2409,10 @@ class Command(BaseCommand):
     ############################################################################################
     ###+---------------------------------------------------------------------------------------------+
     # DEMOLIÇÃO #
-    def CLTDR_UMBRELLA(self):
-        def comm(msg):
-            print(colored("="*30, "blue"))
-            print(colored("CLTDR_UMBRELLA:","green"))
-            print(f"{msg}")
-            print(colored("="*30, "blue"))
-         
-        comm("Iniciando processamento global...")
-        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        #Wialon.set_locale()
-
-        ###__UNIDADES__TODAS__###
-        comm("Processando Unidades...")
-        processamento_df = pd.DataFrame()
-
-        ###
+    
 
 
-        ###__CARGO__POLO__###
-        # VEÍCULOS
-        self.CARGO_POLO_veiculos(sid, processamento_df)
-        processamento_df = pd.DataFrame()
-
-        #motoristas
-        self.CARGO_POLO_motoristas(sid, processamento_df)
-        processamento_df = pd.DataFrame()
-
-        self.CARGO_POLO(sid)
-
-        ###__PLACIDO__###
-        # VEÍCULOS
-        self.PLACIDO_veiculos(sid, processamento_df)
-        processamento_df = pd.DataFrame()
-
-        #Motoristas
-        self.PLACIDO_motoristas(sid, processamento_df)
-        processamento_df = pd.DataFrame()
-
-        ###__SFRESGATE__###
-        # VEÍCULOS
-        self.SFRESGATE_veiculos(sid, processamento_df)
-        processamento_df = pd.DataFrame()
-        
-        #motoristas 
-        self.SFRESGATE_motoristas(sid, processamento_df)
-        processamento_df = pd.DataFrame()
-
-        ###__checkpoints e infrações__###
-        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
-        processamento_df = pd.DataFrame()   
-
-        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
-        processamento_df = pd.DataFrame()
-
-        Wialon.wialon_logout(sid)
-
-    def SFRESGATE_motoristas(self, sid, processamento_df):
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-    def SFRESGATE_veiculos(self, sid, processamento_df):
-        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=1, periodo="Ontem")
-        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=7, periodo="Últimos 7 dias")
-        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=30, periodo="Últimos 30 dias")
-
-    def PLACIDO_motoristas(self, sid, processamento_df):
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-    def PLACIDO_veiculos(self, sid, processamento_df):
-        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=1, periodo="Ontem")
-        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=7, periodo="Últimos 7 dias")
-        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=30, periodo="Últimos 30 dias")
-
-    def CARGO_POLO_motoristas(self, sid, processamento_df):
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-    def CARGO_POLO_veiculos(self, sid, processamento_df):
-        self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=1, periodo="Ontem")
-        self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=7, periodo="Últimos 7 dias")
-        self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=30, periodo="Últimos 30 dias")
+    
     # DEMOLIÇÃO #
     ###+---------------------------------------------------------------------------------------------+
     ############################################################################################
