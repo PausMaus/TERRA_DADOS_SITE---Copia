@@ -268,6 +268,96 @@
         background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
       }
       
+      /* Estilos para navegação de datas */
+      .date-navigation {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        text-align: center;
+      }
+      
+      .date-controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      
+      .date-arrow {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        font-size: 1.2rem;
+        font-weight: bold;
+      }
+      
+      .date-arrow:hover:not(.disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+        color: white;
+        text-decoration: none;
+      }
+      
+      .date-arrow.disabled {
+        background: #dee2e6;
+        color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+      
+      .current-date {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        min-width: 200px;
+      }
+      
+      .date-selector {
+        margin-top: 1rem;
+      }
+      
+      .date-selector select {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #495057;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+      
+      .date-selector select:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+      }
+      
+      .date-info {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+      }
+      
+      .date-stat {
+        color: #6c757d;
+        font-size: 0.85rem;
+      }
+      
       @media (max-width: 768px) {
         .planilha-container {
           padding: 1rem;
@@ -295,6 +385,16 @@
           flex-direction: column;
           align-items: center;
         }
+        
+        .date-controls {
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        
+        .date-info {
+          flex-direction: column;
+          gap: 0.5rem;
+        }
       }
     </style>
   </head>
@@ -317,8 +417,54 @@
       
       <!-- Cabeçalho da Planilha -->
       <div class="planilha-header">
-        <h1>📋 Viagem Diária - <span class="gradient-text">Ontem</span></h1>
-        <p>Relatório detalhado das viagens realizadas na data de {{ data_ontem|date:"d/m/Y" }}</p>
+        <h1>📋 Viagem Diária - <span class="gradient-text">{{ data_selecionada|date:"d/m/Y" }}</span></h1>
+        <p>Relatório detalhado das viagens realizadas na data de {{ data_selecionada|date:"d/m/Y" }}</p>
+      </div>
+
+      <!-- Navegação de Datas -->
+      <div class="date-navigation">
+        <div class="date-controls">
+          {% if data_anterior %}
+            <a href="?data={{ data_anterior|date:'Y-m-d' }}" class="date-arrow" title="Data anterior: {{ data_anterior|date:'d/m/Y' }}">
+              ←
+            </a>
+          {% else %}
+            <span class="date-arrow disabled">←</span>
+          {% endif %}
+          
+          <div class="current-date">
+            {{ data_selecionada|date:"d/m/Y" }}
+          </div>
+          
+          {% if data_proxima %}
+            <a href="?data={{ data_proxima|date:'Y-m-d' }}" class="date-arrow" title="Data seguinte: {{ data_proxima|date:'d/m/Y' }}">
+              →
+            </a>
+          {% else %}
+            <span class="date-arrow disabled">→</span>
+          {% endif %}
+        </div>
+        
+        <!-- Seletor rápido de datas -->
+        <div class="date-selector">
+          <label for="date-select" style="margin-right: 0.5rem; font-weight: 500;">Ir para data:</label>
+          <select id="date-select" onchange="navigateToDate(this.value)">
+            <option value="">Selecione uma data</option>
+            {% for data in datas_disponiveis %}
+              <option value="{{ data|date:'Y-m-d' }}" {% if data == data_selecionada %}selected{% endif %}>
+                {{ data|date:"d/m/Y" }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="date-info">
+          <span class="date-stat">📅 {{ datas_disponiveis|length }} dias disponíveis</span>
+          <span class="date-stat">📊 {{ total_unidades }} unidades ativas neste dia</span>
+          {% if empresa_logada %}
+            <span class="date-stat">🏢 {{ empresa_logada.nome }}</span>
+          {% endif %}
+        </div>
       </div>
 
       <!-- Estatísticas Gerais -->
@@ -347,7 +493,7 @@
       <div class="export-buttons">
         <h4>📥 Exportar Planilha</h4>
         <div class="export-buttons-grid">
-          <a href="{% url 'export_viagem_diaria_excel' %}" 
+          <a href="{% url 'export_viagem_diaria_excel' %}?data={{ data_selecionada|date:'Y-m-d' }}" 
              class="btn-export excel" 
              style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;"
              title="Exportar relatório de viagem diária para Excel">
@@ -355,7 +501,7 @@
           </a>
         </div>
         <p style="margin-top: 0.75rem; color: #6c757d; font-size: 0.85rem;">
-          Exporte os dados para análise externa ou arquivamento
+          Exporte os dados de {{ data_selecionada|date:"d/m/Y" }} para análise externa ou arquivamento
         </p>
       </div>
 
@@ -405,8 +551,8 @@
         {% else %}
           <div class="no-data">
             <h3>📭 Nenhum dado encontrado</h3>
-            <p>Não há registros de viagens para a data de ontem.</p>
-            <p>Verifique se os dados foram sincronizados corretamente.</p>
+            <p>Não há registros de viagens para {{ data_selecionada|date:"d/m/Y" }}.</p>
+            <p>Verifique se os dados foram sincronizados corretamente ou selecione outra data.</p>
           </div>
         {% endif %}
       </div>
@@ -428,7 +574,7 @@
           <div class="stat-card">
             <div class="stat-value">{{ unidades_ineficientes }}</div>
             <div class="stat-label">Motoristas Ineficientes</div>
-            <small style="color: #dc3545;">< 1.0 km/L</small>
+            <small style="color: #dc3545;">< 1.5 km/L</small>
           </div>
           <div class="stat-card">
             <div class="stat-value">{{ economia_potencial|floatformat:0 }} L</div>
@@ -441,13 +587,20 @@
     </main>
 
     <footer class="footer">
-      <p>&copy; 2025 Umbrella360. Viagem Diária - Relatório de {{ data_ontem|date:"d/m/Y" }}</p>
+      <p>&copy; 2025 Umbrella360. Viagem Diária - Relatório de {{ data_selecionada|date:"d/m/Y" }}</p>
       <p><em>"Controle total sobre sua frota, dia após dia"</em></p>
       <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
     </footer>
 
     <script>
-      // Funcionalidade adicional pode ser adicionada aqui
+      // Navegação para data selecionada
+      function navigateToDate(dateValue) {
+        if (dateValue) {
+          window.location.href = `?data=${dateValue}`;
+        }
+      }
+
+      // Funcionalidade adicional
       document.addEventListener('DOMContentLoaded', function() {
         console.log('Planilha de Viagem Diária carregada');
         
@@ -460,6 +613,21 @@
           row.addEventListener('mouseleave', function() {
             this.style.backgroundColor = '';
           });
+        });
+
+        // Navegação por teclado
+        document.addEventListener('keydown', function(event) {
+          if (event.key === 'ArrowLeft') {
+            const btnAnterior = document.querySelector('a[href*="data="]:first-of-type');
+            if (btnAnterior && !btnAnterior.classList.contains('disabled')) {
+              window.location.href = btnAnterior.href;
+            }
+          } else if (event.key === 'ArrowRight') {
+            const btnProximo = document.querySelector('a[href*="data="]:last-of-type');
+            if (btnProximo && !btnProximo.classList.contains('disabled')) {
+              window.location.href = btnProximo.href;
+            }
+          }
         });
       });
     </script>

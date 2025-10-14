@@ -778,12 +778,6 @@ class Command(BaseCommand):
     ############################################################################################
 
     def CARGO_POLO(self, sid,  recurso, template, flag, Objeto,  empresa='CPBRACELL'):
-        #self.teste(sid, recurso, template, flag, Objeto)
-        #+---
-        #self.atualizador_02(sid, nome="atualizador_unidades", empresa=empresa.nome, flags=8388609)
-        #self.atualizador_03(sid, id_criador=id_criador, flags=8388613)
-        #+---
-
         #
         self.prsr_vcl(sid, recurso, template, flag, Objeto)
         #
@@ -1099,7 +1093,7 @@ class Command(BaseCommand):
     def CLTDR_MOT_01(self, sid, processamento_df, Objeto, flag, dias, periodo):
         print(f'Coletando dados de relatório para ({periodo})')
 
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag, reportResourceId=401756219, reportTemplateId=58, reportObjectId=Objeto, reportObjectSecId=2, unit_id="teste",  tempo_dias=dias, periodo=periodo)
+        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag, reportResourceId=401756219, reportTemplateId=58, reportObjectId=Objeto, reportObjectSecId=2, unit_id="CLTDR_MOT_01",  tempo_dias=dias, periodo=periodo)
 
         if relatorio is not None:
             #----

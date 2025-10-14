@@ -347,9 +347,12 @@
       <div class="export-buttons">
         <h4>📥 Exportar Planilha</h4>
         <div class="export-buttons-grid">
-          <a href="#" class="btn-export excel">📊 Exportar Excel</a>
-          <a href="#" class="btn-export pdf">📄 Exportar PDF</a>
-          <a href="#" class="btn-export csv">📋 Exportar CSV</a>
+          <a href="{% url 'export_viagem_diaria_excel' %}" 
+             class="btn-export excel" 
+             style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;"
+             title="Exportar relatório de viagem diária para Excel">
+            📊 Exportar Excel
+          </a>
         </div>
         <p style="margin-top: 0.75rem; color: #6c757d; font-size: 0.85rem;">
           Exporte os dados para análise externa ou arquivamento
@@ -418,18 +421,18 @@
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-value">{{ unidades_eficientes }}</div>
-            <div class="stat-label">Unidades Eficientes</div>
-            <small style="color: #28a745;">≥ 2.0 km/L</small>
+            <div class="stat-label">Motoristas Eficientes</div>
+            <small style="color: #28a745;">≥ 1.78 km/L</small>
           </div>
           <div class="stat-card">
             <div class="stat-value">{{ unidades_regulares }}</div>
-            <div class="stat-label">Unidades Regulares</div>
-            <small style="color: #ffc107;">1.5 - 2.0 km/L</small>
+            <div class="stat-label">Motoristas Regulares</div>
+            <small style="color: #ffc107;">1.5 - 1.78 km/L</small>
           </div>
           <div class="stat-card">
             <div class="stat-value">{{ unidades_ineficientes }}</div>
-            <div class="stat-label">Unidades Ineficientes</div>
-            <small style="color: #dc3545;">< 1.5 km/L</small>
+            <div class="stat-label">Motoristas Ineficientes</div>
+            <small style="color: #dc3545;">< 1.0 km/L</small>
           </div>
           <div class="stat-card">
             <div class="stat-value">{{ economia_potencial|floatformat:0 }} L</div>

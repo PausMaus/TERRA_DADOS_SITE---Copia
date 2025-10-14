@@ -20,7 +20,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from .models import (
     Motorista, Caminhao, Viagem_MOT, Viagem_CAM,
-    Empresa, Unidade, Viagem_Base, CheckPoint
+    Empresa, Unidade, Viagem_Base, CheckPoint, Veiculo, Viagem_Detalhada
 )
 from .config import Config, ConfiguracaoManager
 import pandas as pd
@@ -434,6 +434,7 @@ def lista_unidades(request):
 def detalhes_unidade(request, unidade_id):
     """View para mostrar detalhes completos de uma unidade específica"""
     unidade = get_object_or_404(Unidade, id=unidade_id)
+
     
     # Obter todas as viagens da unidade
     viagens = Viagem_Base.objects.filter(unidade=unidade).order_by('-período')
