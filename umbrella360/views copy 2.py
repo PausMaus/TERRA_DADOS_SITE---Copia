@@ -20,7 +20,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from .models import (
     Motorista, Caminhao, Viagem_MOT, Viagem_CAM,
-    Empresa, Unidade, Viagem_Base, CheckPoint, Veiculo
+    Empresa, Unidade, Viagem_Base, CheckPoint, Veiculo, Viagem_Detalhada
 )
 from .config import Config, ConfiguracaoManager
 import pandas as pd
@@ -469,6 +469,65 @@ def detalhes_unidade(request, unidade_id):
         pior_eficiencia=Min('Quilometragem_média')
     )
 
+    # GRÁFICO TIMELINE RPM vs TEMPO
+    # Buscar dados do Viagem_eco para a unidade
+    from .models import Viagem_eco
+    from datetime import datetime, timedelta
+    import json
+    
+    # Buscar dados dos últimos 7 dias ou últimos 1000 registros (o que for menor)
+    #data_limite = timezone.now() - timedelta(days=7)
+    
+    viagens_eco = Viagem_eco.objects.filter(
+        unidade_id=unidade.id
+    ).order_by('-timestamp')  # Limitar para performance
+    
+    # Preparar dados para o gráfico, remove rpm acima de 3500
+
+
+    timeline_data = []
+    if viagens_eco.exists():
+        for viagem_eco in reversed(viagens_eco):  # Reverter para ordem cronológica
+            try:
+                # Converter timestamp unix para datetime
+                timestamp_int = int(viagem_eco.timestamp)
+                dt = datetime.fromtimestamp(timestamp_int)
+
+
+                # Filtrar valores de RPM muito altos (acima de 3500)
+
+                if float(viagem_eco.rpm) and float(viagem_eco.rpm/8) <= 3500:
+                    timeline_data.append({
+                        'timestamp': dt.strftime('%Y-%m-%d %H:%M:%S'),
+                        'rpm': float(viagem_eco.rpm/8) if viagem_eco.rpm else 0,
+                        'velocidade': float(viagem_eco.velocidade) if hasattr(viagem_eco, 'velocidade') and viagem_eco.velocidade else 0,
+                    'altitude': float(viagem_eco.altitude) if hasattr(viagem_eco, 'altitude') and viagem_eco.altitude else 0,
+                    'temperatura': float(viagem_eco.temperatura_motor) if hasattr(viagem_eco, 'temperatura_motor') and viagem_eco.temperatura_motor else 0,
+                    'odometro': float(viagem_eco.odometro) if hasattr(viagem_eco, 'odometro') and viagem_eco.odometro else 0,
+                })
+            except (ValueError, TypeError, OSError):
+                continue  # Pular timestamps inválidos
+    
+    # Converter dados para JSON para uso no template
+    timeline_data_json = json.dumps(timeline_data)
+    
+    # Estatísticas do gráfico
+    timeline_stats = {
+        'total_pontos': len(timeline_data),
+        'rpm_medio': sum(d['rpm'] for d in timeline_data) / len(timeline_data) if timeline_data else 0,
+        'rpm_maximo': max(d['rpm'] for d in timeline_data) if timeline_data else 0,
+        'rpm_minimo': min(d['rpm'] for d in timeline_data) if timeline_data else 0,
+        'velocidade_media': sum(d['velocidade'] for d in timeline_data) / len(timeline_data) if timeline_data else 0,
+        'periodo_inicio': timeline_data[0]['timestamp'] if timeline_data else None,
+        'periodo_fim': timeline_data[-1]['timestamp'] if timeline_data else None,
+        #faixas de RPM, excluidos valores abaixo de 500 rpm
+        'faixas_rpm': {
+            'azul': len([d for d in timeline_data if 350 <= d['rpm'] < 799]),
+            'verde': len([d for d in timeline_data if 800 <= d['rpm'] < 1300]),
+            'amarela': len([d for d in timeline_data if 1301 <= d['rpm'] < 2300]),
+            'vermelha': len([d for d in timeline_data if d['rpm'] >= 2301]),
+        }
+    }
 
     # Estatísticas por período
     stats_por_periodo = viagens.values('período').annotate(
@@ -574,7 +633,10 @@ def detalhes_unidade(request, unidade_id):
         'infracoes_detalhadas_unidade': infracoes_detalhadas_unidade,
         #
         'odometro_unidade': unidade.odometro,
-    }
+        # Dados do gráfico timeline
+        'timeline_data_json': timeline_data_json,
+        'timeline_stats': timeline_stats,
+}
     
     return render(request, 'umbrella360/detalhes_unidade.html', context)
 
@@ -1529,7 +1591,7 @@ def viagem_diaria(request):
     
     # Buscar viagens mais recentes (última data disponível ou período que contenha "ontem", "yesterday", etc.)
     #buscar viagens dos motoristas(cls__icontains='motorista') 
-    viagens_query = Viagem_Base.objects.select_related('unidade', 'unidade__empresa')
+    viagens_query = Viagem_Detalhada.objects.select_related('unidade', 'unidade__empresa')
     viagens_query = viagens_query.filter(unidade__cls__icontains='motorista')
     
     # Aplicar filtro de empresa primeiro (se necessário)

@@ -20,7 +20,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from .models import (
     Motorista, Caminhao, Viagem_MOT, Viagem_CAM,
-    Empresa, Unidade, Viagem_Base, CheckPoint, Veiculo
+    Empresa, Unidade, Viagem_Base, CheckPoint, Veiculo, Viagem_Detalhada
 )
 from .config import Config, ConfiguracaoManager
 import pandas as pd
@@ -481,10 +481,13 @@ def detalhes_unidade(request, unidade_id):
     viagens_eco = Viagem_eco.objects.filter(
         unidade_id=unidade.id
     ).order_by('-timestamp')  # Limitar para performance
+    viagens_detalhadas = Viagem_Detalhada.objects.filter(
+        unidade_id=unidade.id
+    ).order_by('-timestamp_final')
     
     # Preparar dados para o gráfico, remove rpm acima de 3500
 
-
+    
     timeline_data = []
     if viagens_eco.exists():
         for viagem_eco in reversed(viagens_eco):  # Reverter para ordem cronológica
@@ -504,12 +507,57 @@ def detalhes_unidade(request, unidade_id):
                     'altitude': float(viagem_eco.altitude) if hasattr(viagem_eco, 'altitude') and viagem_eco.altitude else 0,
                     'temperatura': float(viagem_eco.temperatura_motor) if hasattr(viagem_eco, 'temperatura_motor') and viagem_eco.temperatura_motor else 0,
                     'odometro': float(viagem_eco.odometro) if hasattr(viagem_eco, 'odometro') and viagem_eco.odometro else 0,
+                    'consumo': None,  # Não disponível em Viagem_eco
+                    'source': 'eco'
                 })
             except (ValueError, TypeError, OSError):
                 continue  # Pular timestamps inválidos
+
+            # Depois, processar dados do Viagem_Detalhada (dados de consumo)
+    consumo_data = []
+    if viagens_detalhadas.exists():
+        for viagem_det in viagens_detalhadas:
+            try:
+                if viagem_det.timestamp_inicial:
+                    # Converter timestamp inicial para datetime
+                    dt_inicial = datetime.fromtimestamp(viagem_det.timestamp_inicial)
+                    
+                    # Adicionar ponto inicial da viagem
+                    consumo_data.append({
+                        'timestamp': dt_inicial.strftime('%Y-%m-%d %H:%M:%S'),
+                        'consumo': 0,  # Início da viagem, consumo zero
+                        'consumo_acumulado': 0,
+                        'eficiencia': float(viagem_det.Quilometragem_média) if viagem_det.Quilometragem_média else 0,
+                        'source': 'detalhada'
+                    })
+                    
+                    # Se houver timestamp final, adicionar ponto final
+                    if viagem_det.timestamp_final:
+                        dt_final = datetime.fromtimestamp(viagem_det.timestamp_final)
+                        
+                        consumo_data.append({
+                            'timestamp': dt_final.strftime('%Y-%m-%d %H:%M:%S'),
+                            'consumo': float(viagem_det.Consumido) if viagem_det.Consumido else 0,
+                            'consumo_acumulado': float(viagem_det.Consumido) if viagem_det.Consumido else 0,
+                            'eficiencia': float(viagem_det.Quilometragem_média) if viagem_det.Quilometragem_média else 0,
+                            'source': 'detalhada'
+                        })
+                    else:
+                        # Se não houver timestamp final, usar o inicial + duração estimada
+                        # ou apenas marcar como ponto único
+                        consumo_data[-1]['consumo'] = float(viagem_det.Consumido) if viagem_det.Consumido else 0
+                        consumo_data[-1]['consumo_acumulado'] = float(viagem_det.Consumido) if viagem_det.Consumido else 0
+                        
+            except (ValueError, TypeError, OSError):
+                continue  # Pular timestamps inválidos
+    
+    # Combinar os dados (se necessário) ou manter separados
+    # Para o gráfico, vamos manter os dados de timeline_data para RPM/velocidade/altitude
+    # E criar um dataset separado para consumo
     
     # Converter dados para JSON para uso no template
     timeline_data_json = json.dumps(timeline_data)
+    consumo_data_json = json.dumps(consumo_data)
     
     # Estatísticas do gráfico
     timeline_stats = {
@@ -526,7 +574,10 @@ def detalhes_unidade(request, unidade_id):
             'verde': len([d for d in timeline_data if 800 <= d['rpm'] < 1300]),
             'amarela': len([d for d in timeline_data if 1301 <= d['rpm'] < 2300]),
             'vermelha': len([d for d in timeline_data if d['rpm'] >= 2301]),
-        }
+        },
+        'total_viagens_consumo': len(consumo_data),
+        'consumo_total': sum(d['consumo'] for d in consumo_data) if consumo_data else 0,
+        'eficiencia_media': sum(d['eficiencia'] for d in consumo_data) / len(consumo_data) if consumo_data else 0,
     }
 
     # Estatísticas por período
@@ -636,6 +687,8 @@ def detalhes_unidade(request, unidade_id):
         # Dados do gráfico timeline
         'timeline_data_json': timeline_data_json,
         'timeline_stats': timeline_stats,
+        'timeline_data_json': timeline_data_json,
+        'consumo_data_json': consumo_data_json,  # Novo
 }
     
     return render(request, 'umbrella360/detalhes_unidade.html', context)
@@ -1573,14 +1626,10 @@ def export_cercas_excel(request, unidade_id):
     return response
 
 def viagem_diaria(request):
-    """View para planilha de viagem diária - dados de ontem"""
+    """View para planilha de viagem diária - navegação entre dias disponíveis"""
     from datetime import datetime, timedelta
     
-    # Calcular data de ontem
-    hoje = timezone.now().date()
-    data_ontem = hoje - timedelta(days=1)
-    
-    # Verificar se há empresa logada (mesmo filtro usado em outras views)
+    # Verificar se há empresa logada
     empresa_logada_id = request.session.get('empresa_logada')
     empresa_logada = None
     if empresa_logada_id:
@@ -1589,74 +1638,109 @@ def viagem_diaria(request):
         except Empresa.DoesNotExist:
             pass
     
-    # Buscar viagens mais recentes (última data disponível ou período que contenha "ontem", "yesterday", etc.)
-    #buscar viagens dos motoristas(cls__icontains='motorista') 
-    viagens_query = Viagem_Base.objects.select_related('unidade', 'unidade__empresa')
+    # Obter parâmetro de data da URL (formato: YYYY-MM-DD)
+    data_param = request.GET.get('data')
+    
+    # Buscar viagens detalhadas dos motoristas
+    viagens_query = Viagem_Detalhada.objects.select_related('unidade', 'unidade__empresa')
     viagens_query = viagens_query.filter(unidade__cls__icontains='motorista')
     
-    # Aplicar filtro de empresa primeiro (se necessário)
+    # Aplicar filtro de empresa se necessário
     if empresa_logada:
         viagens_query = viagens_query.filter(unidade__empresa=empresa_logada)
-
-
-    # Tentar diferentes estratégias para encontrar dados de "ontem"
-    # 1. Buscar por período que contenha palavras relacionadas
-    viagens_ontem = viagens_query.filter(
-        Q(período__icontains='Ontem') | 
-        Q(período__icontains='yesterday') |
-        Q(período__icontains='hoje') |
-        Q(período__icontains='today')
+    
+    # Obter todas as datas disponíveis nos dados (convertendo timestamps para datas)
+    datas_disponiveis = set()
+    for viagem in viagens_query.filter(timestamp_inicial__isnull=False):
+        try:
+            data_viagem = datetime.fromtimestamp(viagem.timestamp_inicial).date()
+            datas_disponiveis.add(data_viagem)
+        except (ValueError, OSError):
+            continue
+    
+    datas_disponiveis = sorted(list(datas_disponiveis), reverse=True)  # Mais recente primeiro
+    
+    # Determinar qual data usar
+    if data_param:
+        try:
+            data_selecionada = datetime.strptime(data_param, '%Y-%m-%d').date()
+            # Verificar se a data está disponível
+            if data_selecionada not in datas_disponiveis:
+                data_selecionada = datas_disponiveis[0] if datas_disponiveis else timezone.now().date()
+        except (ValueError, IndexError):
+            data_selecionada = datas_disponiveis[0] if datas_disponiveis else timezone.now().date()
+    else:
+        # Usar a data mais recente disponível
+        data_selecionada = datas_disponiveis[0] if datas_disponiveis else timezone.now().date()
+    
+    # Calcular timestamps do dia selecionado (início e fim do dia)
+    inicio_dia = datetime.combine(data_selecionada, datetime.min.time())
+    fim_dia = datetime.combine(data_selecionada, datetime.max.time())
+    
+    timestamp_inicio = int(inicio_dia.timestamp())
+    timestamp_fim = int(fim_dia.timestamp())
+    
+    # Filtrar viagens do dia selecionado
+    viagens_do_dia = viagens_query.filter(
+        timestamp_inicial__gte=timestamp_inicio,
+        timestamp_inicial__lte=timestamp_fim
     )
-    
-    # 2. Se não encontrar, usar os dados mais recentes disponíveis
-    if not viagens_ontem.exists():
-        # Pegar o período mais recente
-        ultimo_periodo = viagens_query.values_list('período', flat=True).order_by('-período').first()
-        if ultimo_periodo:
-            viagens_ontem = viagens_query.filter(período=ultimo_periodo)
-    
-    # 3. Como fallback, usar qualquer dado disponível (sem slice ainda)
-    if not viagens_ontem.exists():
-        viagens_ontem = viagens_query.all()
     
     # Aplicar filtros de qualidade dos dados
-    viagens_ontem = viagens_ontem.filter(
+    viagens_do_dia = viagens_do_dia.filter(
         quilometragem__gt=0,
         Consumido__gt=0,
-        Quilometragem_média__gte=1.0,  # Eficiência mínima realista
-        Quilometragem_média__lte=5.0  # Eficiência máxima realista
+        Quilometragem_média__gte=1.0,
+        Quilometragem_média__lte=5.0
     )
     
-    # Ordenar por eficiência (melhor para pior) e limitar para performance
-    viagens = viagens_ontem.order_by('-Quilometragem_média')[:50]
+    # Ordenar por eficiência (melhor para pior)
+    viagens = viagens_do_dia.order_by('-Quilometragem_média')
     
-    # Calcular estatísticas gerais (usar queryset completo sem slice)
-    stats = viagens_ontem.aggregate(
+    # Calcular estatísticas do dia
+    stats = viagens_do_dia.aggregate(
         total_unidades=Count('unidade', distinct=True),
         total_km=Sum('quilometragem'),
         total_combustivel=Sum('Consumido'),
         media_geral=Avg('Quilometragem_média')
     )
     
-    # Classificar unidades por eficiência (usar queryset completo)
-    unidades_eficientes = viagens_ontem.filter(Quilometragem_média__gte=1.78).count()
-    unidades_regulares = viagens_ontem.filter(
+    # Classificar unidades por eficiência
+    unidades_eficientes = viagens_do_dia.filter(Quilometragem_média__gte=1.78).count()
+    unidades_regulares = viagens_do_dia.filter(
         Quilometragem_média__gte=1.5, 
         Quilometragem_média__lt=1.78
     ).count()
-    unidades_ineficientes = viagens_ontem.filter(Quilometragem_média__lt=1.0).count()
-
-    # Calcular economia potencial (se todos tivessem ≥ 2.0 km/L)
+    unidades_ineficientes = viagens_do_dia.filter(Quilometragem_média__lt=1.5).count()
+    
+    # Calcular economia potencial
     total_km = stats['total_km'] or 0
     media_atual = stats['media_geral'] or 1
     consumo_atual = total_km / media_atual if media_atual > 0 else 0
-    consumo_ideal = total_km / 2 if total_km > 0 else 0
-    economia_potencial = max(0, consumo_atual - consumo_ideal)
+    #consumo_ideal = total_km / 2.0 if total_km > 0 else 0
+    #economia_potencial = max(0, consumo_atual - consumo_ideal)
     
-    # Preparar dados para o template
+    # Navegação entre datas
+    data_anterior = None
+    data_proxima = None
+    
+    if data_selecionada in datas_disponiveis:
+        indice_atual = datas_disponiveis.index(data_selecionada)
+        
+        # Data anterior (mais recente)
+        if indice_atual > 0:
+            data_anterior = datas_disponiveis[indice_atual - 1]
+        
+        # Data próxima (mais antiga)
+        if indice_atual < len(datas_disponiveis) - 1:
+            data_proxima = datas_disponiveis[indice_atual + 1]
+    
     context = {
         'viagens': viagens,
-        'data_ontem': data_ontem,
+        'data_selecionada': data_selecionada,
+        'data_anterior': data_anterior,
+        'data_proxima': data_proxima,
+        'datas_disponiveis': datas_disponiveis[:10],  # Últimas 10 datas
         'total_unidades': stats['total_unidades'] or 0,
         'total_km': stats['total_km'] or 0,
         'total_combustivel': stats['total_combustivel'] or 0,
@@ -1664,23 +1748,19 @@ def viagem_diaria(request):
         'unidades_eficientes': unidades_eficientes,
         'unidades_regulares': unidades_regulares,
         'unidades_ineficientes': unidades_ineficientes,
-        'economia_potencial': economia_potencial,
+        #'economia_potencial': economia_potencial,
+        'empresa_logada': empresa_logada,
     }
     
     return render(request, 'umbrella360/Planilhas/viagem_diaria.html', context)
 
-
 def export_viagem_diaria_excel(request):
     """
-    Exporta relatório de viagem diária para Excel
-    
-    Esta função gera um arquivo Excel com os dados de viagem diária,
-    seguindo o mesmo padrão da planilha de cercas, mas adaptado
-    para dados de eficiência de combustível das unidades.
+    Exporta relatório de viagem diária para Excel - agora com data específica
     """
     from datetime import datetime, timedelta
     
-    # Verificar se há empresa logada (mesmo filtro da view principal)
+    # Verificar se há empresa logada
     empresa_logada_id = request.session.get('empresa_logada')
     empresa_logada = None
     if empresa_logada_id:
@@ -1689,55 +1769,70 @@ def export_viagem_diaria_excel(request):
         except Empresa.DoesNotExist:
             pass
 
-    # ========== OBTENÇÃO DOS DADOS ==========
-    # Usar a mesma lógica da função viagem_diaria para garantir consistência
-    hoje = timezone.now().date()
-    data_ontem = hoje - timedelta(days=1)
+    # Obter parâmetro de data da URL
+    data_param = request.GET.get('data')
     
-    # Buscar viagens dos motoristas
-    viagens_query = Viagem_Base.objects.select_related('unidade', 'unidade__empresa')
+    # ========== OBTENÇÃO DOS DADOS ==========
+    # Usar a mesma lógica da view viagem_diaria
+    viagens_query = Viagem_Detalhada.objects.select_related('unidade', 'unidade__empresa')
     viagens_query = viagens_query.filter(unidade__cls__icontains='motorista')
     
     # Aplicar filtro de empresa se necessário
     if empresa_logada:
         viagens_query = viagens_query.filter(unidade__empresa=empresa_logada)
-
-    # Buscar dados de "ontem" usando a mesma estratégia da view principal
-    viagens_ontem = viagens_query.filter(
-        Q(período__icontains='Ontem') | 
-        Q(período__icontains='yesterday') |
-        Q(período__icontains='hoje') |
-        Q(período__icontains='today')
+    
+    # Obter todas as datas disponíveis
+    datas_disponiveis = set()
+    for viagem in viagens_query.filter(timestamp_inicial__isnull=False):
+        try:
+            data_viagem = datetime.fromtimestamp(viagem.timestamp_inicial).date()
+            datas_disponiveis.add(data_viagem)
+        except (ValueError, OSError):
+            continue
+    
+    datas_disponiveis = sorted(list(datas_disponiveis), reverse=True)
+    
+    # Determinar qual data usar
+    if data_param:
+        try:
+            data_selecionada = datetime.strptime(data_param, '%Y-%m-%d').date()
+            if data_selecionada not in datas_disponiveis:
+                data_selecionada = datas_disponiveis[0] if datas_disponiveis else timezone.now().date()
+        except (ValueError, IndexError):
+            data_selecionada = datas_disponiveis[0] if datas_disponiveis else timezone.now().date()
+    else:
+        data_selecionada = datas_disponiveis[0] if datas_disponiveis else timezone.now().date()
+    
+    # Calcular timestamps do dia selecionado
+    inicio_dia = datetime.combine(data_selecionada, datetime.min.time())
+    fim_dia = datetime.combine(data_selecionada, datetime.max.time())
+    
+    timestamp_inicio = int(inicio_dia.timestamp())
+    timestamp_fim = int(fim_dia.timestamp())
+    
+    # Filtrar viagens do dia selecionado
+    viagens_do_dia = viagens_query.filter(
+        timestamp_inicial__gte=timestamp_inicio,
+        timestamp_inicial__lte=timestamp_fim
     )
     
-    # Fallback para dados mais recentes se não encontrar "ontem"
-    if not viagens_ontem.exists():
-        ultimo_periodo = viagens_query.values_list('período', flat=True).order_by('-período').first()
-        if ultimo_periodo:
-            viagens_ontem = viagens_query.filter(período=ultimo_periodo)
-    
-    if not viagens_ontem.exists():
-        viagens_ontem = viagens_query.all()
-    
-    # Aplicar filtros de qualidade dos dados
-    viagens_ontem = viagens_ontem.filter(
+    # Aplicar filtros de qualidade
+    viagens_do_dia = viagens_do_dia.filter(
         quilometragem__gt=0,
         Consumido__gt=0,
         Quilometragem_média__gte=1.0,
         Quilometragem_média__lte=5.0
     )
     
-    # Obter todas as viagens para o Excel (sem limitação de 50 itens)
-    viagens = viagens_ontem.order_by('-Quilometragem_média')
+    viagens = viagens_do_dia.order_by('-Quilometragem_média')
     
     # Calcular estatísticas
-    stats = viagens_ontem.aggregate(
+    stats = viagens_do_dia.aggregate(
         total_unidades=Count('unidade', distinct=True),
         total_km=Sum('quilometragem'),
         total_combustivel=Sum('Consumido'),
         media_geral=Avg('Quilometragem_média')
     )
-
     # ========== CRIAÇÃO DO EXCEL ==========
     # Criar workbook e planilha
     wb = openpyxl.Workbook()
@@ -1758,7 +1853,7 @@ def export_viagem_diaria_excel(request):
     
     # ========== CABEÇALHO PRINCIPAL ==========
     ws.merge_cells('A1:F1')
-    ws['A1'] = f"📋 Relatório de Viagem Diária - {data_ontem.strftime('%d/%m/%Y')}"
+    ws['A1'] = f"📋 Relatório de Viagem Diária - {data_selecionada.strftime('%d/%m/%Y')}"
     ws['A1'].font = title_font
     ws['A1'].alignment = Alignment(horizontal='center')
     
@@ -1865,7 +1960,7 @@ def export_viagem_diaria_excel(request):
     
     # Nome do arquivo com timestamp para evitar conflitos
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = f"viagem_diaria_{data_ontem.strftime('%Y%m%d')}_{timestamp}.xlsx"
+    filename = f"viagem_diaria_{data_selecionada.strftime('%Y%m%d')}_{timestamp}.xlsx"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     # Salvar workbook na resposta

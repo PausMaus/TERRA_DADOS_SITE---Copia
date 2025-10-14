@@ -224,6 +224,19 @@ class Viagem_Base(models.Model):
         verbose_name_plural = "Viagens"
         ordering = ['-período']
 
+#Viagem detalhada, herda de Viagem_Base
+class Viagem_Detalhada(Viagem_Base):
+    timestamp_inicial = models.PositiveIntegerField(verbose_name="Timestamp Inicial", blank=True, null=True)
+    timestamp_final = models.PositiveIntegerField(verbose_name="Timestamp Final", blank=True, null=True)
+    #herda todos os campos de Viagem_Base
+    class Meta:
+        verbose_name = "Viagem Detalhada"
+        verbose_name_plural = "Viagens Detalhadas"
+        ordering = ['-período']
+
+        
+
+
 class Viagem_eco(models.Model):
     #várias viagens ecológicas por unidade
 

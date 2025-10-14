@@ -1708,7 +1708,9 @@ def select_result_rows(sid, table_index, index_from, index_to, level):
         # Verifica se há dados retornados
         if isinstance(data, list):
             #comm(f"Obtidas {len(data)} linhas de dados")
-            
+            #da print em json formatado
+            #
+            comm(f"Dados: {json.dumps(data, indent=4)}")
 
             return data
         
@@ -2115,6 +2117,119 @@ def Colheitadeira_JSON_03(sid, flag, unit_id, tempo_dias, periodo, reportResourc
         # Adiciona apenas os metadados essenciais do período (opcional)
         relatorio_df['unit_id'] = unit_id
         relatorio_df['periodo'] = periodo
+        #---
+        #comm(f"✅ DataFrame criado com sucesso com {len(relatorio_df)} linhas")
+        #---
+        comm(f"Colunas do DataFrame: {relatorio_df.columns.tolist()}")
+        
+        return relatorio_df
+        
+    except Exception as e:
+        comm(f"❌ Erro inesperado ao processar unidade {unit_id}: {str(e)}")
+        return None
+
+
+def Colheitadeira_JSON_03_EX(sid, flag, unit_id, tempo_dias, periodo, reportResourceId, reportTemplateId, reportObjectId, reportObjectSecId):
+    """
+    Função para coletar dados de relatório de uma unidade específica para um período.
+    
+    :param sid: Session ID da API Wialon
+    :param unit_id: ID da unidade
+    :param tempo_dias: Número de dias para buscar (7 ou 30)
+    :param periodo: String descritiva do período
+    :return: DataFrame com os dados ou None se não houver dados
+    """
+    nome = "Colheitadeira_JSON_03"
+    def comm(msg):
+        print(colored("="*30, "blue"))
+        print(colored(f"{nome}:", "green"))
+        print(f"{msg}")
+        print(colored("="*30, "blue"))
+
+    # Calcula timestamps UNIX, da zero horas do dia X dias atrás até 23:59:59 do dia X dias atrás
+    current_time = int(time.time())
+    interval_from = current_time - (tempo_dias * 24 * 3600)  # X dias atrás
+    interval_to = interval_from + 86399  # Final do mesmo dia (23:59:59)
+    
+    try:
+        # Executa o relatório
+        relatorio = exec_report_04(sid=sid, flag=flag, reportResourceId=reportResourceId, reportTemplateId=reportTemplateId, reportObjectId=reportObjectId, reportObjectSecId=reportObjectSecId, interval_from=interval_from, interval_to=interval_to)
+
+        if not relatorio:
+            comm(f"❌ Falha ao executar relatório para unidade {unit_id}")
+            return None
+
+        # Verifica se há tabelas no resultado
+        tables = relatorio.get('reportResult', {}).get('tables', [])
+        if not tables:
+            comm(f"⚠️ Nenhuma tabela encontrada no relatório para unidade {unit_id}")
+            return None
+        n_rows = relatorio.get('reportResult', {}).get('tables', [])
+        n_rows = tables[0].get('rows', [])
+
+        #---
+        #print(f"n_rows: {n_rows}")
+        #---
+
+        
+        # Extrai headers
+        headers = extract_report_headers(relatorio)
+        if not headers:
+            comm(f"⚠️ Nenhum header encontrado no relatório para unidade {unit_id}")
+            return None
+        
+        comm(f"Headers do relatório: {headers}")
+        
+        # Obtém as linhas de dados
+        rows = select_result_rows(sid, table_index=0, index_from=0, index_to=n_rows, level=1)
+        if not rows:
+            comm(f"⚠️ Nenhuma linha de dados encontrada para unidade {unit_id}")
+            return None
+
+        comm(f"Linhas obtidas: {len(rows)}")
+
+        rows_02 = select_result_rows(sid, table_index=0, index_from=0, index_to=n_rows, level=2)
+        if not rows_02:
+            comm(f"⚠️ Nenhuma linha de dados encontrada no nível 2 para unidade {unit_id}")
+            return None
+        comm(f"Linhas nível 2 obtidas: {len(rows_02)}")
+        comm(f"Linhas nível 2: {json.dumps(rows_02, indent=4)}")
+        
+        # Verifica se há dados
+        if len(rows) == 0:
+            comm(f"⚠️ Array de linhas vazio para unidade {unit_id}")
+            return None
+        
+        # Processa todas as linhas de dados - apenas os dados dos headers
+        data_rows = []
+        for row in rows:
+            if isinstance(row, dict) and 'c' in row:
+                row_data = row['c']
+                if row_data:  # Verifica se há dados na linha
+                    # Cria dicionário apenas com os dados das colunas do relatório
+                    row_dict = {}
+                    for i, value in enumerate(row_data):
+                        if i < len(headers):
+                            row_dict[headers[i]] = value
+                        else:
+                            row_dict[f'coluna_{i}'] = value  # Para colunas extras
+                    # dentro de row procura por subrows
+                    row_data_r = row_data
+                    
+                    data_rows.append(row_dict)
+        
+        if not data_rows:
+            comm(f"⚠️ Nenhum dado válido encontrado para unidade {unit_id}")
+            return None
+        
+        # Cria o DataFrame apenas com os dados dos headers
+        relatorio_df = pd.DataFrame(data_rows)
+        
+        # Adiciona apenas os metadados essenciais do período (opcional)
+        relatorio_df['unit_id'] = unit_id
+        relatorio_df['periodo'] = periodo
+        relatorio_df['timestamp_from'] = interval_from
+        relatorio_df['timestamp_to'] = interval_to
         #---
         #comm(f"✅ DataFrame criado com sucesso com {len(relatorio_df)} linhas")
         #---
