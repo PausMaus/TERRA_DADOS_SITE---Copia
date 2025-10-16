@@ -1626,8 +1626,10 @@ def export_cercas_excel(request, unidade_id):
     return response
 
 def viagem_diaria(request):
-    """View para planilha de viagem diária - navegação entre dias disponíveis"""
+    """View para planilha de viagem diária - navegação entre dias disponíveis, agrupado por motorista com veículos discriminados"""
     from datetime import datetime, timedelta
+    from django.db.models import Sum, Avg, F, Case, When, FloatField
+    from collections import defaultdict
     
     # Verificar se há empresa logada
     empresa_logada_id = request.session.get('empresa_logada')
@@ -1694,31 +1696,72 @@ def viagem_diaria(request):
         Quilometragem_média__lte=5.0
     )
     
-    # Ordenar por eficiência (melhor para pior)
-    viagens = viagens_do_dia.order_by('-Quilometragem_média')
+    # Agrupar por motorista E veículo
+    viagens_agrupadas = viagens_do_dia.values(
+        'unidade',
+        'unidade__nm',
+        'veiculo'
+    ).annotate(
+        total_quilometragem=Sum('quilometragem'),
+        total_consumido=Sum('Consumido'),
+        media_velocidade=Avg('Velocidade_média'),
+        media_rpm=Avg('RPM_médio'),
+        media_temperatura=Avg('Temperatura_média'),
+        total_emissoes=Sum('Emissões_CO2'),
+        eficiencia_media=Case(
+            When(total_consumido__gt=0, then=F('total_quilometragem') / F('total_consumido')),
+            default=0.0,
+            output_field=FloatField()
+        ),
+        numero_viagens=Count('id')
+    ).order_by('unidade__nm', 'veiculo')
+    
+    # 🔥 REORGANIZAR DADOS PARA AGRUPAMENTO VISUAL POR MOTORISTA
+    motoristas_agrupados = defaultdict(list)
+    
+    for viagem in viagens_agrupadas:
+        motorista_key = viagem['unidade__nm'] or viagem['unidade']
+        motoristas_agrupados[motorista_key].append({
+            'veiculo': viagem['veiculo'] or 'N/A',
+            'total_quilometragem': viagem['total_quilometragem'],
+            'total_consumido': viagem['total_consumido'],
+            'eficiencia_media': viagem['eficiencia_media'],
+            'numero_viagens': viagem['numero_viagens'],
+            'media_velocidade': viagem['media_velocidade'],
+        })
+    
+    # Transformar em lista ordenada para o template
+    motoristas_lista = [
+        {
+            'nome': motorista,
+            'veiculos': veiculos,
+            'rowspan': len(veiculos)  # Número de linhas que o nome ocupará
+        }
+        for motorista, veiculos in sorted(motoristas_agrupados.items())
+    ]
     
     # Calcular estatísticas do dia
-    stats = viagens_do_dia.aggregate(
-        total_unidades=Count('unidade', distinct=True),
-        total_km=Sum('quilometragem'),
-        total_combustivel=Sum('Consumido'),
-        media_geral=Avg('Quilometragem_média')
-    )
+    stats = {
+        'total_unidades': len(motoristas_agrupados),  # Número único de motoristas
+        'total_veiculos': viagens_agrupadas.values('veiculo').distinct().count(),
+        'total_registros': viagens_agrupadas.count(),
+        'total_km': sum(item['total_quilometragem'] for item in viagens_agrupadas if item['total_quilometragem']),
+        'total_combustivel': sum(item['total_consumido'] for item in viagens_agrupadas if item['total_consumido']),
+        'media_geral': (sum(item['total_quilometragem'] for item in viagens_agrupadas if item['total_quilometragem']) /
+                        sum(item['total_consumido'] for item in viagens_agrupadas if item['total_consumido'])) if 
+                       sum(item['total_consumido'] for item in viagens_agrupadas if item['total_consumido']) > 0 else 0
+    }
     
-    # Classificar unidades por eficiência
-    unidades_eficientes = viagens_do_dia.filter(Quilometragem_média__gte=1.78).count()
-    unidades_regulares = viagens_do_dia.filter(
-        Quilometragem_média__gte=1.5, 
-        Quilometragem_média__lt=1.78
-    ).count()
-    unidades_ineficientes = viagens_do_dia.filter(Quilometragem_média__lt=1.5).count()
-    
-    # Calcular economia potencial
-    total_km = stats['total_km'] or 0
-    media_atual = stats['media_geral'] or 1
-    consumo_atual = total_km / media_atual if media_atual > 0 else 0
-    #consumo_ideal = total_km / 2.0 if total_km > 0 else 0
-    #economia_potencial = max(0, consumo_atual - consumo_ideal)
+    # Classificar por eficiência
+    unidades_eficientes = sum(1 for motorista in motoristas_lista 
+                              for veiculo in motorista['veiculos'] 
+                              if veiculo['eficiencia_media'] >= 1.78)
+    unidades_regulares = sum(1 for motorista in motoristas_lista 
+                             for veiculo in motorista['veiculos'] 
+                             if 1.5 <= veiculo['eficiencia_media'] < 1.78)
+    unidades_ineficientes = sum(1 for motorista in motoristas_lista 
+                                for veiculo in motorista['veiculos'] 
+                                if veiculo['eficiencia_media'] < 1.5)
     
     # Navegação entre datas
     data_anterior = None
@@ -1727,28 +1770,27 @@ def viagem_diaria(request):
     if data_selecionada in datas_disponiveis:
         indice_atual = datas_disponiveis.index(data_selecionada)
         
-        # Data anterior (mais recente)
         if indice_atual > 0:
             data_anterior = datas_disponiveis[indice_atual - 1]
         
-        # Data próxima (mais antiga)
         if indice_atual < len(datas_disponiveis) - 1:
             data_proxima = datas_disponiveis[indice_atual + 1]
     
     context = {
-        'viagens': viagens,
+        'motoristas': motoristas_lista,  # 🔥 Nova estrutura agrupada
         'data_selecionada': data_selecionada,
         'data_anterior': data_anterior,
         'data_proxima': data_proxima,
-        'datas_disponiveis': datas_disponiveis[:10],  # Últimas 10 datas
-        'total_unidades': stats['total_unidades'] or 0,
-        'total_km': stats['total_km'] or 0,
-        'total_combustivel': stats['total_combustivel'] or 0,
-        'media_geral': stats['media_geral'] or 0,
+        'datas_disponiveis': datas_disponiveis[:10],
+        'total_unidades': stats['total_unidades'],
+        'total_veiculos': stats['total_veiculos'],
+        'total_registros': stats['total_registros'],
+        'total_km': stats['total_km'],
+        'total_combustivel': stats['total_combustivel'],
+        'media_geral': stats['media_geral'],
         'unidades_eficientes': unidades_eficientes,
         'unidades_regulares': unidades_regulares,
         'unidades_ineficientes': unidades_ineficientes,
-        #'economia_potencial': economia_potencial,
         'empresa_logada': empresa_logada,
     }
     
@@ -1756,10 +1798,12 @@ def viagem_diaria(request):
 
 def export_viagem_diaria_excel(request):
     """
-    Exporta relatório de viagem diária para Excel - agora com data específica
+    Exporta relatório de viagem diária para Excel - agora com somatório por motorista E veículo
     """
     from datetime import datetime, timedelta
+    from django.db.models import Sum, Avg, F, Case, When, FloatField, Count
     
+    # ========== MESMA LÓGICA DA VIEW PRINCIPAL ==========
     # Verificar se há empresa logada
     empresa_logada_id = request.session.get('empresa_logada')
     empresa_logada = None
@@ -1773,11 +1817,9 @@ def export_viagem_diaria_excel(request):
     data_param = request.GET.get('data')
     
     # ========== OBTENÇÃO DOS DADOS ==========
-    # Usar a mesma lógica da view viagem_diaria
     viagens_query = Viagem_Detalhada.objects.select_related('unidade', 'unidade__empresa')
     viagens_query = viagens_query.filter(unidade__cls__icontains='motorista')
     
-    # Aplicar filtro de empresa se necessário
     if empresa_logada:
         viagens_query = viagens_query.filter(unidade__empresa=empresa_logada)
     
@@ -1824,17 +1866,36 @@ def export_viagem_diaria_excel(request):
         Quilometragem_média__lte=5.0
     )
     
-    viagens = viagens_do_dia.order_by('-Quilometragem_média')
+    # Agrupar por motorista E veículo
+    viagens_agrupadas = viagens_do_dia.values(
+        'unidade',
+        'unidade__nm',
+        'veiculo'  # INCLUÍDO NO AGRUPAMENTO
+    ).annotate(
+        total_quilometragem=Sum('quilometragem'),
+        total_consumido=Sum('Consumido'),
+        media_velocidade=Avg('Velocidade_média'),
+        eficiencia_media=Case(
+            When(total_consumido__gt=0, then=F('total_quilometragem') / F('total_consumido')),
+            default=0.0,
+            output_field=FloatField()
+        ),
+        numero_viagens=Count('id')
+    ).order_by('unidade__nm', 'veiculo')
     
     # Calcular estatísticas
-    stats = viagens_do_dia.aggregate(
-        total_unidades=Count('unidade', distinct=True),
-        total_km=Sum('quilometragem'),
-        total_combustivel=Sum('Consumido'),
-        media_geral=Avg('Quilometragem_média')
-    )
+    stats = {
+        'total_unidades': viagens_agrupadas.values('unidade').distinct().count(),
+        'total_veiculos': viagens_agrupadas.values('veiculo').distinct().count(),
+        'total_registros': viagens_agrupadas.count(),
+        'total_km': sum(item['total_quilometragem'] for item in viagens_agrupadas if item['total_quilometragem']),
+        'total_combustivel': sum(item['total_consumido'] for item in viagens_agrupadas if item['total_consumido']),
+        'media_geral': (sum(item['total_quilometragem'] for item in viagens_agrupadas if item['total_quilometragem']) /
+                        sum(item['total_consumido'] for item in viagens_agrupadas if item['total_consumido'])) if 
+                       sum(item['total_consumido'] for item in viagens_agrupadas if item['total_consumido']) > 0 else 0
+    }
+    
     # ========== CRIAÇÃO DO EXCEL ==========
-    # Criar workbook e planilha
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Viagem Diária"
@@ -1852,18 +1913,18 @@ def export_viagem_diaria_excel(request):
     )
     
     # ========== CABEÇALHO PRINCIPAL ==========
-    ws.merge_cells('A1:F1')
-    ws['A1'] = f"📋 Relatório de Viagem Diária - {data_selecionada.strftime('%d/%m/%Y')}"
+    ws.merge_cells('A1:G1')
+    ws['A1'] = f"📋 Relatório de Viagem Diária - {data_selecionada.strftime('%d/%m/%Y')} (Por Motorista e Veículo)"
     ws['A1'].font = title_font
     ws['A1'].alignment = Alignment(horizontal='center')
     
     # Informações gerais
-    ws.merge_cells('A2:F2')
+    ws.merge_cells('A2:G2')
     ws['A2'] = f"Gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}"
     ws['A2'].alignment = Alignment(horizontal='center')
     
     if empresa_logada:
-        ws.merge_cells('A3:F3')
+        ws.merge_cells('A3:G3')
         ws['A3'] = f"Empresa: {empresa_logada.nome}"
         ws['A3'].alignment = Alignment(horizontal='center')
         start_row = 5
@@ -1871,29 +1932,34 @@ def export_viagem_diaria_excel(request):
         start_row = 4
     
     # ========== ESTATÍSTICAS RESUMO ==========
-    ws.merge_cells(f'A{start_row}:F{start_row}')
+    ws.merge_cells(f'A{start_row}:G{start_row}')
     ws[f'A{start_row}'] = "📊 RESUMO EXECUTIVO"
     ws[f'A{start_row}'].font = stats_font
     ws[f'A{start_row}'].alignment = Alignment(horizontal='center')
     
     stats_row = start_row + 1
     
-    # Linha de estatísticas
-    ws[f'A{stats_row}'] = "Unidades Ativas:"
-    ws[f'B{stats_row}'] = stats['total_unidades'] or 0
-    ws[f'C{stats_row}'] = "KM Total:"
-    ws[f'D{stats_row}'] = round(stats['total_km'] or 0, 2)
-    ws[f'E{stats_row}'] = "Combustível Total:"
-    ws[f'F{stats_row}'] = f"{round(stats['total_combustivel'] or 0, 2)} L"
+    # Linha 1 de estatísticas
+    ws[f'A{stats_row}'] = "Motoristas:"
+    ws[f'B{stats_row}'] = stats['total_unidades']
+    ws[f'C{stats_row}'] = "Veículos:"
+    ws[f'D{stats_row}'] = stats['total_veiculos']
+    ws[f'E{stats_row}'] = "Registros:"
+    ws[f'F{stats_row}'] = stats['total_registros']
     
+    # Linha 2 de estatísticas
     stats_row += 1
-    ws[f'A{stats_row}'] = "Média Geral:"
-    ws[f'B{stats_row}'] = f"{round(stats['media_geral'] or 0, 2)} km/L"
+    ws[f'A{stats_row}'] = "KM Total:"
+    ws[f'B{stats_row}'] = round(stats['total_km'], 2)
+    ws[f'C{stats_row}'] = "Combustível:"
+    ws[f'D{stats_row}'] = f"{round(stats['total_combustivel'], 2)} L"
+    ws[f'E{stats_row}'] = "Média Geral:"
+    ws[f'F{stats_row}'] = f"{round(stats['media_geral'], 2)} km/L"
     
     # ========== CABEÇALHOS DA TABELA ==========
     table_start = stats_row + 3
     
-    headers = ['Motorista/Unidade', 'KM Rodado', 'Consumo (L)', 'Média (km/L)', 'Eficiência', 'Observações']
+    headers = ['Motorista', 'Veículo', 'KM Total', 'Consumo Total (L)', 'Eficiência (km/L)', 'Viagens', 'Observações']
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=table_start, column=col)
         cell.value = header
@@ -1905,51 +1971,46 @@ def export_viagem_diaria_excel(request):
     # ========== DADOS DA TABELA ==========
     current_row = table_start + 1
     
-    for viagem in viagens:
-        # Nome da unidade/motorista
-        ws.cell(row=current_row, column=1).value = viagem.unidade.nm or viagem.unidade.id
+    for viagem in viagens_agrupadas:
+        # Motorista
+        ws.cell(row=current_row, column=1).value = viagem['unidade__nm'] or viagem['unidade']
         
-        # KM Rodado
-        ws.cell(row=current_row, column=2).value = round(viagem.quilometragem, 2)
+        # Veículo
+        ws.cell(row=current_row, column=2).value = viagem['veiculo'] or 'N/A'
         
-        # Consumo em litros
-        ws.cell(row=current_row, column=3).value = round(viagem.Consumido, 1)
+        # KM Total
+        ws.cell(row=current_row, column=3).value = round(viagem['total_quilometragem'], 2)
         
-        # Média km/L
-        ws.cell(row=current_row, column=4).value = round(viagem.Quilometragem_média, 2)
+        # Consumo Total
+        ws.cell(row=current_row, column=4).value = round(viagem['total_consumido'], 1)
         
-        # Classificação de eficiência
-        media = viagem.Quilometragem_média
-        if media >= 2.0:
-            eficiencia = "Excelente"
-        elif media >= 1.78:
-            eficiencia = "Boa"
-        elif media >= 1.5:
-            eficiencia = "Regular"
+        # Eficiência
+        ws.cell(row=current_row, column=5).value = round(viagem['eficiencia_media'], 2)
+        
+        # Número de Viagens
+        ws.cell(row=current_row, column=6).value = viagem['numero_viagens']
+        
+        # Observações
+        eficiencia = viagem['eficiencia_media']
+        if eficiencia >= 2.0:
+            obs = "Excelente"
+        elif eficiencia >= 1.78:
+            obs = "Boa"
+        elif eficiencia >= 1.5:
+            obs = "Regular"
         else:
-            eficiencia = "Ruim"
-        
-        ws.cell(row=current_row, column=5).value = eficiencia
-        
-        # Observações baseadas na eficiência
-        if media >= 2.0:
-            obs = "Eficiência acima da meta"
-        elif media < 1.5:
-            obs = "Requer atenção - consumo alto"
-        else:
-            obs = "Dentro da faixa esperada"
+            obs = "Ruim - Requer atenção"
             
-        ws.cell(row=current_row, column=6).value = obs
+        ws.cell(row=current_row, column=7).value = obs
         
-        # Aplicar bordas em todas as células da linha
-        for col in range(1, 7):
+        # Aplicar bordas
+        for col in range(1, 8):
             ws.cell(row=current_row, column=col).border = border
             
         current_row += 1
     
     # ========== CONFIGURAÇÕES FINAIS ==========
-    # Ajustar largura das colunas automaticamente
-    column_widths = [25, 12, 12, 12, 15, 30]  # Larguras otimizadas
+    column_widths = [25, 20, 12, 15, 15, 10, 30]
     for i, width in enumerate(column_widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = width
     
@@ -1958,16 +2019,14 @@ def export_viagem_diaria_excel(request):
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
     
-    # Nome do arquivo com timestamp para evitar conflitos
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = f"viagem_diaria_{data_selecionada.strftime('%Y%m%d')}_{timestamp}.xlsx"
+    filename = f"viagem_diaria_detalhada_{data_selecionada.strftime('%Y%m%d')}_{timestamp}.xlsx"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
-    # Salvar workbook na resposta
     wb.save(response)
     
     return response
-
+# ...existing code...
 
 def export_cercas_pdf(request, unidade_id):
     """Exporta checkpoints de uma unidade para PDF"""

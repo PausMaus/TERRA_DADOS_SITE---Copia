@@ -42,8 +42,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
         ###############################################
         # PRINCIPAL #
+        #self.Limpeza() 
 
-        self.PRINCIPAL()
+        self.CLTDR_UMBRELLA_03(cor1="blue", cor2="green")
         ##################################################
         # TESTE #
         
@@ -59,6 +60,9 @@ class Command(BaseCommand):
         #self.ESTUDO_02()
         #self.ESTUDO_03()
         ##################################################
+        # CHECAGEM #
+        self.Checagem_01()
+        ##################################################
         # End timing and display results
         end_time = datetime.now()
         execution_time = end_time - start_time
@@ -70,19 +74,50 @@ class Command(BaseCommand):
         print("--------------------------------------------------")
     #######################################################################################
     
+#checa se o banco de dados for completamente atualizado
+    def Checagem_01(self):
+        #imprime todos os dados
 
-    def PRINCIPAL(self):
-        """Main function to execute the command workflow."""
-        
-        
-        # Execute main workflow
-        self.Limpeza() 
-        #self.atualizador()
-        #self.CLTDR_UMBRELLA_02(cor1="blue", cor2="green")
-        self.CLTDR_UMBRELLA_03(cor1="blue", cor2="green")
-        
-       
+        unidades = Unidade.objects.all()
+        infrações = Infrações.objects.all()
+        checkpoints = CheckPoint.objects.all()
+        viagens_base = Viagem_Base.objects.all()
+        viagens_detalhadas = Viagem_Detalhada.objects.all()
+        viagens_eco = Viagem_eco.objects.all()
 
+        print(f'Unidades: {unidades.count()}')
+        print(f'Infrações: {infrações.count()}')
+        print(f'CheckPoints: {checkpoints.count()}')
+        print(f'Viagens Base: {viagens_base.count()}')
+        print(f'Viagens Detalhadas: {viagens_detalhadas.count()}')
+        print(f'Viagens Econômicas: {viagens_eco.count()}')
+        print("--------------------------------------------------")
+
+        print("Unidades:")
+        for unidade in unidades:
+            print(f' - {unidade}')  
+        print("--------------------------------------------------")
+        print("Infrações:")
+        for infração in infrações:
+            print(f' - {infração}')
+        print("--------------------------------------------------")
+        print("CheckPoints:")
+        for checkpoint in checkpoints:
+            print(f' - {checkpoint}')
+        print("--------------------------------------------------")
+        print("Viagens Base:")
+        for viagem in viagens_base:
+            print(f' - {viagem}')
+        print("--------------------------------------------------")
+        print("Viagens Detalhadas:")
+        for viagem in viagens_detalhadas:
+            print(f' - {viagem}')
+        print("--------------------------------------------------")
+        print("Viagens Econômicas:")
+        for viagem in viagens_eco:
+            print(f' - {viagem}')
+        print("--------------------------------------------------")
+    ############################################################################################
 
     def CLTDR_UMBRELLA_02(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
         def comm(msg):
@@ -145,10 +180,7 @@ class Command(BaseCommand):
         comm(usuários)
 
         ###__ATUALIZADOR_UNIDADES__###
-        self.atualizador_04(sid, id_criador=401756218)
-        self.atualizador_04(sid, id_criador=401768998)
-        self.atualizador_04(sid, id_criador=401872802)
-        self.atualizador_04(sid, id_criador=401824174)
+        self.ATUALIZADOR_01(sid)
 
 
 
@@ -174,6 +206,7 @@ class Command(BaseCommand):
 
         ###__checkpoints e infrações__###
         self.CH_INFRA(sid)
+        
 
         
 
@@ -183,6 +216,12 @@ class Command(BaseCommand):
         )
 
         Wialon.wialon_logout(sid)
+
+    def ATUALIZADOR_01(self, sid):
+        self.atualizador_04(sid, id_criador=401756218)
+        self.atualizador_04(sid, id_criador=401768998)
+        self.atualizador_04(sid, id_criador=401872802)
+        self.atualizador_04(sid, id_criador=401824174)
 
     def CH_INFRA(self, sid):
         processamento_df = pd.DataFrame()
@@ -194,596 +233,10 @@ class Command(BaseCommand):
 
 
 
-    def atualizador(self,nome="atualizador_unidades"):
-            def comm(msg):
-                print(colored("="*30, "yellow"))
-                print(colored(f"{nome}:","green"))
-                print(f"{msg}")
-                print(colored("="*30, "yellow"))
-            #lista as empresas registradas
-            contador_sessoes = 0
-            empresas = Empresa.objects.all()
-            for empresa in empresas:
-                comm(f'Empresa: {empresa.nome}')
-                # Inicia a sessão Wialon para cada empresa
-                sid=Wialon.authenticate_with_wialon(empresa.token)
-                comm(f'Sessão Wialon iniciada para {empresa.nome}, ID de recurso: {empresa.id_recurso}')
-                if not sid:
-                    self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                    continue
-                if sid:
-                    contador_sessoes += 1
-
-
-                unidades = Wialon.unidades_simples_03(sid,empresa)
-                if not unidades:
-                    self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-                    return
-
-                comm(f'Unidades encontradas: {len(unidades)}')
-                #
-                #+-----
-                #print(f'Unidades: {colored(f"{unidades}", "green")}')
-                #+-----
-                #
-
-                #coloca os dados em um dataframe
-                df_unidades = pd.DataFrame(unidades)
-                comm(f'Unidades encontradas: {len(df_unidades)}')
-                comm(f'Unidades: {df_unidades}')
-                #
-                #+-----
-                #df_unidades.to_excel(f'{deposito}/{empresa.nome}_unidades.xlsx', index=False)
-                #comm(f'Arquivo {deposito}/{empresa.nome}_unidades.xlsx salvo.')
-                #+-----
-                #
-                
-
-                for unidade in df_unidades.itertuples(index=False):
-                    id=unidade.unit_id
-                    nome=unidade.unit_name
-                    marca=unidade.brand
-                    modelo=unidade.model
-                    ano=unidade.year
-                    cor=unidade.color
-                    placa=unidade.registration_plate
-                    cls = 'Veículo'
-                    unidade_id = f"{empresa.nome}_{id}"
-
-                    #
-                    #+---
-                    #comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
-                    #+---
-                    #
-
-                    # Atualiza a unidade no banco de dados
-                    Veiculo.objects.update_or_create(
-                        id=unidade_id,
-                        defaults={
-                            'nm': nome,
-                            'placa': placa,
-                            'marca': marca,
-                            'cls': cls,
-                            'empresa': empresa,
-                            'cor': cor,
-                            'modelo': modelo,
-                            'id_wialon': id,
-                        }
-                    )
-                    comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
-                
-                #adiciona também os motoristas
-
-                motoristas = Wialon.motoristas_simples2(sid)
-                df_motoristas = pd.DataFrame(motoristas)
-                comm(f'Motoristas encontrados: {len(df_motoristas)}')
-                comm(f'Motoristas: {df_motoristas}')
-                for motorista in df_motoristas.itertuples(index=False):
-                    motorista_id = motorista.driver_id
-                    motorista_nome = motorista.driver_name
-                    cls = 'Motorista'
-
-
-                    motorista_id = f"{empresa.nome}_{motorista_id}"
-
-                    comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
-
-                    # Atualiza o motorista no banco de dados
-                    Unidade.objects.update_or_create(
-                        id=motorista_id,
-                        defaults={
-                            'nm': motorista_nome,
-                            'cls': cls,
-                            'empresa': empresa,
-                            'id_wialon': motorista_id,
-                        }
-                        
-                    )
-            #faz logout
-            Wialon.wialon_logout(sid)
-            return contador_sessoes
-
-            #-------------------------------------------------------------------------------------------------------------#
-
-    def atualizador_02(self,sid, nome="atualizador_unidades", empresa='CPBracell', flags=8388609):
-            def comm(msg):
-                print(colored("="*30, "yellow"))
-                print(colored(f"{nome}:","green"))
-                print(f"{msg}")
-                print(colored("="*30, "yellow"))
-
-
-            unidades = Wialon.unidades_simples_04(sid, empresa=empresa, flags=flags)
-            if not unidades:
-                self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-                return
-
-            comm(f'Unidades encontradas: {len(unidades)}')
-            #
-            #+-----
-            #print(f'Unidades: {colored(f"{unidades}", "green")}')
-            #+-----
-            #
-
-            #coloca os dados em um dataframe
-            df_unidades = pd.DataFrame(unidades)
-            comm(f'Unidades encontradas: {len(df_unidades)}')
-            comm(f'Unidades: {df_unidades}')
-            #
-            #+-----
-            #df_unidades.to_excel(f'{deposito}/{empresa.nome}_unidades.xlsx', index=False)
-            #comm(f'Arquivo {deposito}/{empresa.nome}_unidades.xlsx salvo.')
-            #+-----
-            #
-            
-
-            for unidade in df_unidades.itertuples(index=False):
-                id=unidade.unit_id
-                nome=unidade.unit_name
-                marca=unidade.brand
-                modelo=unidade.model
-                ano=unidade.year
-                cor=unidade.color
-                placa=unidade.registration_plate
-                cls = 'Veículo'
-                unidade_id = f"{empresa}_{id}"
-
-                #
-                #+---
-                #comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
-                #+---
-                #
-
-                # Atualiza a unidade no banco de dados
-                Veiculo.objects.update_or_create(
-                    id=unidade_id,
-                    defaults={
-                        'nm': nome,
-                        'placa': placa,
-                        'marca': marca,
-                        'cls': cls,
-                        'empresa': empresa,
-                        'cor': cor,
-                        'modelo': modelo,
-                        'id_wialon': id,
-                    }
-                )
-                comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
-            
-            #adiciona também os motoristas
-
-            motoristas = Wialon.motoristas_simples2(sid)
-            df_motoristas = pd.DataFrame(motoristas)
-            comm(f'Motoristas encontrados: {len(df_motoristas)}')
-            comm(f'Motoristas: {df_motoristas}')
-            for motorista in df_motoristas.itertuples(index=False):
-                motorista_id = motorista.driver_id
-                motorista_nome = motorista.driver_name
-                cls = 'Motorista'
-
-
-                motorista_id = f"{empresa}_{motorista_id}"
-
-                comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa}')
-
-                # Atualiza o motorista no banco de dados
-                Unidade.objects.update_or_create(
-                    id=motorista_id,
-                    defaults={
-                        'nm': motorista_nome,
-                        'cls': cls,
-                        'empresa': empresa,
-                        'id_wialon': motorista_id,
-                    }
-                    
-                )
-
-    def atualizador_03(self,sid,id_criador,  flags=8388613):
-        
-
-        def comm(msg):
-            print(colored("="*30, "yellow"))
-            print(colored(f"Atualizador de Unidades:","green"))
-            print(f"{msg}")
-            print(colored("="*30, "yellow"))
-
-
-        unidades = Wialon.unidades_simples_05(sid,  flags=flags)
-        if not unidades:
-            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-            return
-
-        comm(f'Unidades encontradas: {len(unidades)}')
-        #coloca os dados em um dataframe
-        df_unidades = pd.DataFrame(unidades)
-        comm(f'Unidades encontradas: {len(df_unidades)}')
-        comm(f'Unidades: {df_unidades}')
-
-        for unidade in df_unidades.itertuples(index=False):
-            id=unidade.unit_id
-            nome=unidade.unit_name
-            marca=unidade.brand
-            modelo=unidade.model
-            ano=unidade.year
-            cor=unidade.color
-            placa=unidade.registration_plate
-            cls = 'Veículo'
-            id_criador_unidade = unidade.id_criador
-            if id_criador_unidade == id_criador:
-                print(f'A unidade {nome} pertence à empresa CARGO POLO.')
-                empresa = Empresa.objects.get(id_criador=id_criador)
-                print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
-                empresa_nome = empresa.nome
-                unidade_id = f"{empresa.nome}_{id}"
-
-
-                comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
-                #+---
-                # Atualiza a unidade no banco de dados
-                Veiculo.objects.update_or_create(
-                    id=unidade_id,
-                    defaults={
-                        'nm': nome,
-                        'placa': placa,
-                        'marca': marca,
-                        'cls': cls,
-                        'empresa': empresa,
-                        'cor': cor,
-                        'modelo': modelo,
-                        'id_wialon': id,
-                    }
-                )
-                comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
-            else:
-                comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
-
-            #adiciona também os motoristas
-
-            motoristas = Wialon.motoristas_simples_03(sid, flags=5)
-            df_motoristas = pd.DataFrame(motoristas)
-            comm(f'Motoristas encontrados: {len(df_motoristas)}')
-            comm(f'Motoristas: {df_motoristas}')
-
-
-            for motorista in df_motoristas.itertuples(index=False):
-                motorista_id = motorista.driver_id
-                motorista_nome = motorista.driver_name
-                cls = 'Motorista'
-                id_criador_unidade = unidade.id_criador
-                if id_criador_unidade == id_criador:
-                    print(f'A unidade {nome} pertence à empresa CARGO POLO.')
-                    empresa = Empresa.objects.get(id_criador=id_criador)
-                    print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
-                    empresa_nome = empresa.nome
-                    unidade_id = f"{empresa.nome}_{id}"
-
-
-                    motorista_id = f"{empresa}_{motorista_id}"
-
-                    comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa}')
-
-                    # Atualiza o motorista no banco de dados
-                    Unidade.objects.update_or_create(
-                        id=motorista_id,
-                        defaults={
-                            'nm': motorista_nome,
-                            'cls': cls,
-                            'empresa': empresa,
-                            'id_wialon': motorista_id,
-                        }
-                        
-                    )
-                else:
-                    comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
-
-
-
-    def atualizador_04(self,sid,id_criador,  flags=8388613):
-        
-
-        def comm(msg):
-            print(colored("="*30, "yellow"))
-            print(colored(f"Atualizador de Unidades V4:","green"))
-            print(f"{msg}")
-            print(colored("="*30, "yellow"))
-                
-                
-        empresa = Empresa.objects.get(id_criador=id_criador)
-
-        vcl_processados = 0
-        vcl_excludentes = 0
-        mtr_processados = 0
-        mtr_excludentes = 0
-
-
-        unidades = Wialon.unidades_simples_05(sid,  flags=flags)
-        if not unidades:
-            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-            return
-
-        #coloca os dados em um dataframe
-        df_unidades = pd.DataFrame(unidades)
-        #+---
-        #comm(f'Unidades encontradas: {len(df_unidades)}')
-        #comm(f'Unidades: {df_unidades}')
-        #+---
-
-        for unidade in df_unidades.itertuples(index=False):
-            id=unidade.unit_id
-            nome=unidade.unit_name
-            marca=unidade.brand
-            modelo=unidade.model
-            ano=unidade.year
-            cor=unidade.color
-            placa=unidade.registration_plate
-            cls = 'Veículo'
-            id_criador_unidade = unidade.id_criador
-            if id_criador_unidade == id_criador:
-
-                #+---
-                #print(f'A unidade {nome} pertence à empresa {empresa.nome}')
-                #print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
-                #+---
-                #+---   
-                #comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
-                #+---
-                
-                # Atualiza a unidade no banco de dados
-                Veiculo.objects.update_or_create(
-                    id=f"{empresa.nome}_{id}",
-                    defaults={
-                        'nm': nome,
-                        'placa': placa,
-                        'marca': marca,
-                        'cls': cls,
-                        'empresa': empresa,
-                        'cor': cor,
-                        'modelo': modelo,
-                        'id_wialon': id,
-                    }
-                )
-                vcl_processados += 1
-                #+---
-                #comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
-                #+---
-
-            else:
-                vcl_excludentes += 1
-                #+---
-                #comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
-                #+---
-
-        #adiciona também os motoristas
-
-        motoristas = Wialon.motoristas_simples_03(sid, flags=261)
-        df_motoristas = pd.DataFrame(motoristas)
-
-        #+---
-        #comm(f'Motoristas encontrados: {len(df_motoristas)}')
-        #comm(f'Motoristas: {df_motoristas}')
-        #+---
-
-        
-
-        for motorista in df_motoristas.itertuples(index=False):
-            if motorista.creator_id == id_criador:
-                #+---
-                #comm(f'O motorista {motorista.driver_name} pertence à empresa CARGO POLO.')
-                #+---
-                Unidade.objects.update_or_create(
-                    id=f"{empresa.nome}_{motorista.driver_id}",
-                    defaults={
-                        'nm': motorista.driver_name,
-                        'cls': 'Motorista',
-                        'empresa': empresa,
-                        'id_wialon': f"{motorista.driver_name}_{motorista.driver_id}",
-                    }
-                )
-                mtr_processados += 1
-                #+---
-                #comm(f'Motorista {motorista.driver_name} atualizado/criado com ID {empresa.nome}_{motorista.driver_id}.')
-                #+---
-                
-
-            else:
-                mtr_excludentes += 1
-                #+---
-                #comm(f'O motorista {motorista.driver_name} não pertence à empresa CARGO POLO. ID Criador: {motorista.creator_id}')
-                #+---
-                
-            
-
-        comm(f'{colored("Resumo:", "magenta")}\n'
-            f'Veículos processados: {colored(vcl_processados, "green")}\n'
-            f'Veículos excluídos: {colored(vcl_excludentes, "red")}\n'
-            f'Motoristas processados: {colored(mtr_processados, "green")}\n'
-            f'Motoristas excluídos: {colored(mtr_excludentes, "red")}\n'
-            f'Motoristas encontrados: {len(df_motoristas)}\n'
-            f'{df_motoristas.head()}'
-        )
-
-
-    def atualizador_teste(self, sid, nome="atualizador_unidades_04", flags=8388613):
-        def comm(msg):
-            print(colored("="*30, "yellow"))
-            print(colored(f"{nome}:", "green"))
-            print(f"{msg}")
-            print(colored("="*30, "yellow"))
-
-        unidades = Wialon.unidades_simples_05(sid, flags=flags)
-        if not unidades:
-            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-            return
-
-        comm(f'Unidades encontradas: {len(unidades)}')
-        
-        # Coloca os dados em um dataframe
-        df_unidades = pd.DataFrame(unidades)
-        comm(f'Unidades encontradas: {len(df_unidades)}')
-        
-        # Busca todas as empresas cadastradas com seus id_criador
-        empresas_dict = {}
-        empresas = Empresa.objects.all()
-        
-        for empresa in empresas:
-            if empresa.id_criador:
-                empresas_dict[empresa.id_criador] = empresa
-                comm(f'Empresa cadastrada: {empresa.nome} - ID Criador: {empresa.id_criador}')
-
-        if not empresas_dict:
-            comm("⚠️ Nenhuma empresa com id_criador encontrada. Verifique o cadastro das empresas.")
-            return
-
-        # Contadores para estatísticas
-        unidades_processadas = 0
-        unidades_vinculadas = 0
-        unidades_sem_empresa = 0
-
-        for unidade in df_unidades.itertuples(index=False):
-            unidades_processadas += 1
-            
-            # Extrai dados da unidade
-            unit_id = unidade.unit_id
-            unit_name = unidade.unit_name
-            id_criador_unidade = unidade.id_criador
-            
-            # Extrai campos do profile se existirem
-            brand = getattr(unidade, 'brand', '')
-            model = getattr(unidade, 'model', '')
-            year = getattr(unidade, 'year', '')
-            color = getattr(unidade, 'color', '')
-            registration_plate = getattr(unidade, 'registration_plate', '')
-            
-            # Verifica se a unidade pertence a alguma empresa cadastrada
-            empresa_vinculada = empresas_dict.get(id_criador_unidade)
-            
-            if empresa_vinculada:
-                unidades_vinculadas += 1
-                cls = 'Veículo'
-                
-                # Cria o ID único da unidade
-                unidade_id = f"{empresa_vinculada.nome}_{unit_id}"
-                
-                comm(f'✅ Unidade {unit_name} pertence à empresa {empresa_vinculada.nome}')
-                comm(f'   Marca: {brand}, Modelo: {model}, Ano: {year}, Cor: {color}, Placa: {registration_plate}')
-                
-                # Atualiza/cria a unidade no banco de dados
-                try:
-                    veiculo, created = Veiculo.objects.update_or_create(
-                        id=unidade_id,
-                        defaults={
-                            'nm': unit_name,
-                            'placa': registration_plate,
-                            'marca': brand,
-                            'cls': cls,
-                            'empresa': empresa_vinculada,
-                            'cor': color,
-                            'modelo': model,
-                            'ano': int(year) if year and str(year).isdigit() else None,
-                            'id_wialon': unit_id,
-                            'id_criador': id_criador_unidade,
-                        }
-                    )
-                    
-                    action = "criado" if created else "atualizado"
-                    comm(f'✅ Veículo {unit_name} {action} com ID {unidade_id}')
-                    
-                except Exception as e:
-                    comm(f'❌ Erro ao processar veículo {unit_name}: {e}')
-                    
-            else:
-                unidades_sem_empresa += 1
-                comm(f'⚠️ Unidade {unit_name} (ID Criador: {id_criador_unidade}) não pertence a nenhuma empresa cadastrada')
-
-        # Processamento dos motoristas (se necessário)
-        comm("Processando motoristas...")
-        motoristas = Wialon.motoristas_simples2(sid)
-        df_motoristas = pd.DataFrame(motoristas)
-        
-        motoristas_processados = 0
-        motoristas_vinculados = 0
-        
-        for motorista in df_motoristas.itertuples(index=False):
-            motoristas_processados += 1
-            
-            motorista_id_wialon = motorista.driver_id
-            motorista_nome = motorista.driver_name
-            resource_id = motorista.resource_id
-            
-            # Tenta identificar a empresa do motorista pelo resource_id
-            # (assumindo que o resource corresponde ao id_criador da empresa)
-            empresa_motorista = empresas_dict.get(str(resource_id))
-            
-            if empresa_motorista:
-                motoristas_vinculados += 1
-                cls = 'Motorista'
-                motorista_id = f"{empresa_motorista.nome}_{motorista_id_wialon}"
-
-                comm(f'✅ Motorista {motorista_nome} pertence à empresa {empresa_motorista.nome}')
-
-                try:
-                    unidade, created = Unidade.objects.update_or_create(
-                        id=motorista_id,
-                        defaults={
-                            'nm': motorista_nome,
-                            'cls': cls,
-                            'empresa': empresa_motorista,
-                            'id_wialon': motorista_id_wialon,
-                        }
-                    )
-                    
-                    action = "criado" if created else "atualizado"
-                    comm(f'✅ Motorista {motorista_nome} {action} com ID {motorista_id}')
-                    
-                except Exception as e:
-                    comm(f'❌ Erro ao processar motorista {motorista_nome}: {e}')
-            else:
-                comm(f'⚠️ Motorista {motorista_nome} (Resource ID: {resource_id}) não pertence a nenhuma empresa cadastrada')
-
-        # Relatório final
-        comm("="*50)
-        comm("RELATÓRIO FINAL:")
-        comm(f"📊 Unidades processadas: {unidades_processadas}")
-        comm(f"✅ Unidades vinculadas: {unidades_vinculadas}")
-        comm(f"⚠️ Unidades sem empresa: {unidades_sem_empresa}")
-        comm(f"📊 Motoristas processados: {motoristas_processados}")
-        comm(f"✅ Motoristas vinculados: {motoristas_vinculados}")
-        comm("="*50)
-
-        # Salva log detalhado se necessário
-        if unidades_sem_empresa > 0:
-            comm(f"⚠️ {unidades_sem_empresa} unidades não puderam ser vinculadas.")
-            comm("Verifique se os id_criador das empresas estão corretos no banco de dados.")
 
     ############################################################################################
 
     def CARGO_POLO(self, sid,  recurso, template, flag, Objeto,  empresa='CPBRACELL'):
-        #self.teste(sid, recurso, template, flag, Objeto)
-        #+---
-        #self.atualizador_02(sid, nome="atualizador_unidades", empresa=empresa.nome, flags=8388609)
-        #self.atualizador_03(sid, id_criador=id_criador, flags=8388613)
-        #+---
-
         #
         self.prsr_vcl(sid, recurso, template, flag, Objeto)
         #
@@ -816,9 +269,9 @@ class Command(BaseCommand):
     def TESTE_01(self, sid, flag):
         processamento_df = pd.DataFrame()
         # pega dos ultimos 30 dias usando um loop for
-        dias = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+        #dias = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
         # dias de testes
-        #dias = [1, 2, 3]
+        dias = [1]
         for dia in dias:
             self.CLTDR_MOT_01_teste(sid, processamento_df, Objeto=401756219, flag=16777216, dias=dia, periodo=str(dia))
 
@@ -876,7 +329,7 @@ class Command(BaseCommand):
         Infrações.objects.all().delete()
         CheckPoint.objects.all().delete()
         Viagem_Base.objects.all().delete()
-        #Viagem_eco.objects.all().delete()
+        Viagem_eco.objects.all().delete()
         Viagem_Detalhada.objects.all().delete()
 
 
@@ -1020,13 +473,13 @@ class Command(BaseCommand):
 
         if relatorio is not None:
             #----
-            print(f'Relatório coletado: {relatorio}')
+            #print(f'Relatório coletado: {relatorio}')
             #---
             
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
             #printa o dataframe completo
             print(processamento_df)
-            self.update_or_create_trip_02(processamento_df)
+            #self.update_or_create_trip_02(processamento_df)
             Wialon.clean_up_result(sid)
     
     def CLTDR_MOT_02(self, sid, processamento_df, recurso, template, Objeto, flag, dias, periodo):
@@ -4808,6 +4261,587 @@ class Command(BaseCommand):
 
 
         Wialon.wialon_logout(sid)
+
+    def atualizador(self,nome="atualizador_unidades"):
+            def comm(msg):
+                print(colored("="*30, "yellow"))
+                print(colored(f"{nome}:","green"))
+                print(f"{msg}")
+                print(colored("="*30, "yellow"))
+            #lista as empresas registradas
+            contador_sessoes = 0
+            empresas = Empresa.objects.all()
+            for empresa in empresas:
+                comm(f'Empresa: {empresa.nome}')
+                # Inicia a sessão Wialon para cada empresa
+                sid=Wialon.authenticate_with_wialon(empresa.token)
+                comm(f'Sessão Wialon iniciada para {empresa.nome}, ID de recurso: {empresa.id_recurso}')
+                if not sid:
+                    self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                    continue
+                if sid:
+                    contador_sessoes += 1
+
+
+                unidades = Wialon.unidades_simples_03(sid,empresa)
+                if not unidades:
+                    self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
+                    return
+
+                comm(f'Unidades encontradas: {len(unidades)}')
+                #
+                #+-----
+                #print(f'Unidades: {colored(f"{unidades}", "green")}')
+                #+-----
+                #
+
+                #coloca os dados em um dataframe
+                df_unidades = pd.DataFrame(unidades)
+                comm(f'Unidades encontradas: {len(df_unidades)}')
+                comm(f'Unidades: {df_unidades}')
+                #
+                #+-----
+                #df_unidades.to_excel(f'{deposito}/{empresa.nome}_unidades.xlsx', index=False)
+                #comm(f'Arquivo {deposito}/{empresa.nome}_unidades.xlsx salvo.')
+                #+-----
+                #
+                
+
+                for unidade in df_unidades.itertuples(index=False):
+                    id=unidade.unit_id
+                    nome=unidade.unit_name
+                    marca=unidade.brand
+                    modelo=unidade.model
+                    ano=unidade.year
+                    cor=unidade.color
+                    placa=unidade.registration_plate
+                    cls = 'Veículo'
+                    unidade_id = f"{empresa.nome}_{id}"
+
+                    #
+                    #+---
+                    #comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
+                    #+---
+                    #
+
+                    # Atualiza a unidade no banco de dados
+                    Veiculo.objects.update_or_create(
+                        id=unidade_id,
+                        defaults={
+                            'nm': nome,
+                            'placa': placa,
+                            'marca': marca,
+                            'cls': cls,
+                            'empresa': empresa,
+                            'cor': cor,
+                            'modelo': modelo,
+                            'id_wialon': id,
+                        }
+                    )
+                    comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
+                
+                #adiciona também os motoristas
+
+                motoristas = Wialon.motoristas_simples2(sid)
+                df_motoristas = pd.DataFrame(motoristas)
+                comm(f'Motoristas encontrados: {len(df_motoristas)}')
+                comm(f'Motoristas: {df_motoristas}')
+                for motorista in df_motoristas.itertuples(index=False):
+                    motorista_id = motorista.driver_id
+                    motorista_nome = motorista.driver_name
+                    cls = 'Motorista'
+
+
+                    motorista_id = f"{empresa.nome}_{motorista_id}"
+
+                    comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
+
+                    # Atualiza o motorista no banco de dados
+                    Unidade.objects.update_or_create(
+                        id=motorista_id,
+                        defaults={
+                            'nm': motorista_nome,
+                            'cls': cls,
+                            'empresa': empresa,
+                            'id_wialon': motorista_id,
+                        }
+                        
+                    )
+            #faz logout
+            Wialon.wialon_logout(sid)
+            return contador_sessoes
+
+            #-------------------------------------------------------------------------------------------------------------#
+
+    def atualizador_02(self,sid, nome="atualizador_unidades", empresa='CPBracell', flags=8388609):
+            def comm(msg):
+                print(colored("="*30, "yellow"))
+                print(colored(f"{nome}:","green"))
+                print(f"{msg}")
+                print(colored("="*30, "yellow"))
+
+
+            unidades = Wialon.unidades_simples_04(sid, empresa=empresa, flags=flags)
+            if not unidades:
+                self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
+                return
+
+            comm(f'Unidades encontradas: {len(unidades)}')
+            #
+            #+-----
+            #print(f'Unidades: {colored(f"{unidades}", "green")}')
+            #+-----
+            #
+
+            #coloca os dados em um dataframe
+            df_unidades = pd.DataFrame(unidades)
+            comm(f'Unidades encontradas: {len(df_unidades)}')
+            comm(f'Unidades: {df_unidades}')
+            #
+            #+-----
+            #df_unidades.to_excel(f'{deposito}/{empresa.nome}_unidades.xlsx', index=False)
+            #comm(f'Arquivo {deposito}/{empresa.nome}_unidades.xlsx salvo.')
+            #+-----
+            #
+            
+
+            for unidade in df_unidades.itertuples(index=False):
+                id=unidade.unit_id
+                nome=unidade.unit_name
+                marca=unidade.brand
+                modelo=unidade.model
+                ano=unidade.year
+                cor=unidade.color
+                placa=unidade.registration_plate
+                cls = 'Veículo'
+                unidade_id = f"{empresa}_{id}"
+
+                #
+                #+---
+                #comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
+                #+---
+                #
+
+                # Atualiza a unidade no banco de dados
+                Veiculo.objects.update_or_create(
+                    id=unidade_id,
+                    defaults={
+                        'nm': nome,
+                        'placa': placa,
+                        'marca': marca,
+                        'cls': cls,
+                        'empresa': empresa,
+                        'cor': cor,
+                        'modelo': modelo,
+                        'id_wialon': id,
+                    }
+                )
+                comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
+            
+            #adiciona também os motoristas
+
+            motoristas = Wialon.motoristas_simples2(sid)
+            df_motoristas = pd.DataFrame(motoristas)
+            comm(f'Motoristas encontrados: {len(df_motoristas)}')
+            comm(f'Motoristas: {df_motoristas}')
+            for motorista in df_motoristas.itertuples(index=False):
+                motorista_id = motorista.driver_id
+                motorista_nome = motorista.driver_name
+                cls = 'Motorista'
+
+
+                motorista_id = f"{empresa}_{motorista_id}"
+
+                comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa}')
+
+                # Atualiza o motorista no banco de dados
+                Unidade.objects.update_or_create(
+                    id=motorista_id,
+                    defaults={
+                        'nm': motorista_nome,
+                        'cls': cls,
+                        'empresa': empresa,
+                        'id_wialon': motorista_id,
+                    }
+                    
+                )
+
+    def atualizador_03(self,sid,id_criador,  flags=8388613):
+        
+
+        def comm(msg):
+            print(colored("="*30, "yellow"))
+            print(colored(f"Atualizador de Unidades:","green"))
+            print(f"{msg}")
+            print(colored("="*30, "yellow"))
+
+
+        unidades = Wialon.unidades_simples_05(sid,  flags=flags)
+        if not unidades:
+            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
+            return
+
+        comm(f'Unidades encontradas: {len(unidades)}')
+        #coloca os dados em um dataframe
+        df_unidades = pd.DataFrame(unidades)
+        comm(f'Unidades encontradas: {len(df_unidades)}')
+        comm(f'Unidades: {df_unidades}')
+
+        for unidade in df_unidades.itertuples(index=False):
+            id=unidade.unit_id
+            nome=unidade.unit_name
+            marca=unidade.brand
+            modelo=unidade.model
+            ano=unidade.year
+            cor=unidade.color
+            placa=unidade.registration_plate
+            cls = 'Veículo'
+            id_criador_unidade = unidade.id_criador
+            if id_criador_unidade == id_criador:
+                print(f'A unidade {nome} pertence à empresa CARGO POLO.')
+                empresa = Empresa.objects.get(id_criador=id_criador)
+                print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
+                empresa_nome = empresa.nome
+                unidade_id = f"{empresa.nome}_{id}"
+
+
+                comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
+                #+---
+                # Atualiza a unidade no banco de dados
+                Veiculo.objects.update_or_create(
+                    id=unidade_id,
+                    defaults={
+                        'nm': nome,
+                        'placa': placa,
+                        'marca': marca,
+                        'cls': cls,
+                        'empresa': empresa,
+                        'cor': cor,
+                        'modelo': modelo,
+                        'id_wialon': id,
+                    }
+                )
+                comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
+            else:
+                comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
+
+            #adiciona também os motoristas
+
+            motoristas = Wialon.motoristas_simples_03(sid, flags=5)
+            df_motoristas = pd.DataFrame(motoristas)
+            comm(f'Motoristas encontrados: {len(df_motoristas)}')
+            comm(f'Motoristas: {df_motoristas}')
+
+
+            for motorista in df_motoristas.itertuples(index=False):
+                motorista_id = motorista.driver_id
+                motorista_nome = motorista.driver_name
+                cls = 'Motorista'
+                id_criador_unidade = unidade.id_criador
+                if id_criador_unidade == id_criador:
+                    print(f'A unidade {nome} pertence à empresa CARGO POLO.')
+                    empresa = Empresa.objects.get(id_criador=id_criador)
+                    print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
+                    empresa_nome = empresa.nome
+                    unidade_id = f"{empresa.nome}_{id}"
+
+
+                    motorista_id = f"{empresa}_{motorista_id}"
+
+                    comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa}')
+
+                    # Atualiza o motorista no banco de dados
+                    Unidade.objects.update_or_create(
+                        id=motorista_id,
+                        defaults={
+                            'nm': motorista_nome,
+                            'cls': cls,
+                            'empresa': empresa,
+                            'id_wialon': motorista_id,
+                        }
+                        
+                    )
+                else:
+                    comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
+
+
+
+    def atualizador_04(self,sid,id_criador,  flags=8388613):
+        
+
+        def comm(msg):
+            print(colored("="*30, "yellow"))
+            print(colored(f"Atualizador de Unidades V4:","green"))
+            print(f"{msg}")
+            print(colored("="*30, "yellow"))
+                
+                
+        empresa = Empresa.objects.get(id_criador=id_criador)
+
+        vcl_processados = 0
+        vcl_excludentes = 0
+        mtr_processados = 0
+        mtr_excludentes = 0
+
+
+        unidades = Wialon.unidades_simples_05(sid,  flags=flags)
+        if not unidades:
+            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
+            return
+
+        #coloca os dados em um dataframe
+        df_unidades = pd.DataFrame(unidades)
+        #+---
+        #comm(f'Unidades encontradas: {len(df_unidades)}')
+        #comm(f'Unidades: {df_unidades}')
+        #+---
+
+        for unidade in df_unidades.itertuples(index=False):
+            id=unidade.unit_id
+            nome=unidade.unit_name
+            marca=unidade.brand
+            modelo=unidade.model
+            ano=unidade.year
+            cor=unidade.color
+            placa=unidade.registration_plate
+            cls = 'Veículo'
+            id_criador_unidade = unidade.id_criador
+            if id_criador_unidade == id_criador:
+
+                #+---
+                #print(f'A unidade {nome} pertence à empresa {empresa.nome}')
+                #print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
+                #+---
+                #+---   
+                #comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
+                #+---
+                
+                # Atualiza a unidade no banco de dados
+                Veiculo.objects.update_or_create(
+                    id=f"{empresa.nome}_{id}",
+                    defaults={
+                        'nm': nome,
+                        'placa': placa,
+                        'marca': marca,
+                        'cls': cls,
+                        'empresa': empresa,
+                        'cor': cor,
+                        'modelo': modelo,
+                        'id_wialon': id,
+                    }
+                )
+                vcl_processados += 1
+                #+---
+                #comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
+                #+---
+
+            else:
+                vcl_excludentes += 1
+                #+---
+                #comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
+                #+---
+
+        #adiciona também os motoristas
+
+        motoristas = Wialon.motoristas_simples_03(sid, flags=261)
+        df_motoristas = pd.DataFrame(motoristas)
+
+        #+---
+        #comm(f'Motoristas encontrados: {len(df_motoristas)}')
+        #comm(f'Motoristas: {df_motoristas}')
+        #+---
+
+        
+
+        for motorista in df_motoristas.itertuples(index=False):
+            if motorista.creator_id == id_criador:
+                #+---
+                #comm(f'O motorista {motorista.driver_name} pertence à empresa CARGO POLO.')
+                #+---
+                Unidade.objects.update_or_create(
+                    id=f"{empresa.nome}_{motorista.driver_id}",
+                    defaults={
+                        'nm': motorista.driver_name,
+                        'cls': 'Motorista',
+                        'empresa': empresa,
+                        'id_wialon': f"{motorista.driver_name}_{motorista.driver_id}",
+                    }
+                )
+                mtr_processados += 1
+                #+---
+                #comm(f'Motorista {motorista.driver_name} atualizado/criado com ID {empresa.nome}_{motorista.driver_id}.')
+                #+---
+                
+
+            else:
+                mtr_excludentes += 1
+                #+---
+                #comm(f'O motorista {motorista.driver_name} não pertence à empresa CARGO POLO. ID Criador: {motorista.creator_id}')
+                #+---
+                
+            
+
+        comm(f'{colored("Resumo:", "magenta")}\n'
+            f'Veículos processados: {colored(vcl_processados, "green")}\n'
+            f'Veículos excluídos: {colored(vcl_excludentes, "red")}\n'
+            f'Motoristas processados: {colored(mtr_processados, "green")}\n'
+            f'Motoristas excluídos: {colored(mtr_excludentes, "red")}\n'
+            f'Motoristas encontrados: {len(df_motoristas)}\n'
+            f'{df_motoristas.head()}'
+        )
+
+
+    def atualizador_teste(self, sid, nome="atualizador_unidades_04", flags=8388613):
+        def comm(msg):
+            print(colored("="*30, "yellow"))
+            print(colored(f"{nome}:", "green"))
+            print(f"{msg}")
+            print(colored("="*30, "yellow"))
+
+        unidades = Wialon.unidades_simples_05(sid, flags=flags)
+        if not unidades:
+            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
+            return
+
+        comm(f'Unidades encontradas: {len(unidades)}')
+        
+        # Coloca os dados em um dataframe
+        df_unidades = pd.DataFrame(unidades)
+        comm(f'Unidades encontradas: {len(df_unidades)}')
+        
+        # Busca todas as empresas cadastradas com seus id_criador
+        empresas_dict = {}
+        empresas = Empresa.objects.all()
+        
+        for empresa in empresas:
+            if empresa.id_criador:
+                empresas_dict[empresa.id_criador] = empresa
+                comm(f'Empresa cadastrada: {empresa.nome} - ID Criador: {empresa.id_criador}')
+
+        if not empresas_dict:
+            comm("⚠️ Nenhuma empresa com id_criador encontrada. Verifique o cadastro das empresas.")
+            return
+
+        # Contadores para estatísticas
+        unidades_processadas = 0
+        unidades_vinculadas = 0
+        unidades_sem_empresa = 0
+
+        for unidade in df_unidades.itertuples(index=False):
+            unidades_processadas += 1
+            
+            # Extrai dados da unidade
+            unit_id = unidade.unit_id
+            unit_name = unidade.unit_name
+            id_criador_unidade = unidade.id_criador
+            
+            # Extrai campos do profile se existirem
+            brand = getattr(unidade, 'brand', '')
+            model = getattr(unidade, 'model', '')
+            year = getattr(unidade, 'year', '')
+            color = getattr(unidade, 'color', '')
+            registration_plate = getattr(unidade, 'registration_plate', '')
+            
+            # Verifica se a unidade pertence a alguma empresa cadastrada
+            empresa_vinculada = empresas_dict.get(id_criador_unidade)
+            
+            if empresa_vinculada:
+                unidades_vinculadas += 1
+                cls = 'Veículo'
+                
+                # Cria o ID único da unidade
+                unidade_id = f"{empresa_vinculada.nome}_{unit_id}"
+                
+                comm(f'✅ Unidade {unit_name} pertence à empresa {empresa_vinculada.nome}')
+                comm(f'   Marca: {brand}, Modelo: {model}, Ano: {year}, Cor: {color}, Placa: {registration_plate}')
+                
+                # Atualiza/cria a unidade no banco de dados
+                try:
+                    veiculo, created = Veiculo.objects.update_or_create(
+                        id=unidade_id,
+                        defaults={
+                            'nm': unit_name,
+                            'placa': registration_plate,
+                            'marca': brand,
+                            'cls': cls,
+                            'empresa': empresa_vinculada,
+                            'cor': color,
+                            'modelo': model,
+                            'ano': int(year) if year and str(year).isdigit() else None,
+                            'id_wialon': unit_id,
+                            'id_criador': id_criador_unidade,
+                        }
+                    )
+                    
+                    action = "criado" if created else "atualizado"
+                    comm(f'✅ Veículo {unit_name} {action} com ID {unidade_id}')
+                    
+                except Exception as e:
+                    comm(f'❌ Erro ao processar veículo {unit_name}: {e}')
+                    
+            else:
+                unidades_sem_empresa += 1
+                comm(f'⚠️ Unidade {unit_name} (ID Criador: {id_criador_unidade}) não pertence a nenhuma empresa cadastrada')
+
+        # Processamento dos motoristas (se necessário)
+        comm("Processando motoristas...")
+        motoristas = Wialon.motoristas_simples2(sid)
+        df_motoristas = pd.DataFrame(motoristas)
+        
+        motoristas_processados = 0
+        motoristas_vinculados = 0
+        
+        for motorista in df_motoristas.itertuples(index=False):
+            motoristas_processados += 1
+            
+            motorista_id_wialon = motorista.driver_id
+            motorista_nome = motorista.driver_name
+            resource_id = motorista.resource_id
+            
+            # Tenta identificar a empresa do motorista pelo resource_id
+            # (assumindo que o resource corresponde ao id_criador da empresa)
+            empresa_motorista = empresas_dict.get(str(resource_id))
+            
+            if empresa_motorista:
+                motoristas_vinculados += 1
+                cls = 'Motorista'
+                motorista_id = f"{empresa_motorista.nome}_{motorista_id_wialon}"
+
+                comm(f'✅ Motorista {motorista_nome} pertence à empresa {empresa_motorista.nome}')
+
+                try:
+                    unidade, created = Unidade.objects.update_or_create(
+                        id=motorista_id,
+                        defaults={
+                            'nm': motorista_nome,
+                            'cls': cls,
+                            'empresa': empresa_motorista,
+                            'id_wialon': motorista_id_wialon,
+                        }
+                    )
+                    
+                    action = "criado" if created else "atualizado"
+                    comm(f'✅ Motorista {motorista_nome} {action} com ID {motorista_id}')
+                    
+                except Exception as e:
+                    comm(f'❌ Erro ao processar motorista {motorista_nome}: {e}')
+            else:
+                comm(f'⚠️ Motorista {motorista_nome} (Resource ID: {resource_id}) não pertence a nenhuma empresa cadastrada')
+
+        # Relatório final
+        comm("="*50)
+        comm("RELATÓRIO FINAL:")
+        comm(f"📊 Unidades processadas: {unidades_processadas}")
+        comm(f"✅ Unidades vinculadas: {unidades_vinculadas}")
+        comm(f"⚠️ Unidades sem empresa: {unidades_sem_empresa}")
+        comm(f"📊 Motoristas processados: {motoristas_processados}")
+        comm(f"✅ Motoristas vinculados: {motoristas_vinculados}")
+        comm("="*50)
+
+        # Salva log detalhado se necessário
+        if unidades_sem_empresa > 0:
+            comm(f"⚠️ {unidades_sem_empresa} unidades não puderam ser vinculadas.")
+            comm("Verifique se os id_criador das empresas estão corretos no banco de dados.")
 
 
     ############################################################################################
