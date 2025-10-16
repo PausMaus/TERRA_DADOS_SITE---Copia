@@ -228,6 +228,9 @@ class Viagem_Base(models.Model):
 class Viagem_Detalhada(Viagem_Base):
     timestamp_inicial = models.PositiveIntegerField(verbose_name="Timestamp Inicial", blank=True, null=True)
     timestamp_final = models.PositiveIntegerField(verbose_name="Timestamp Final", blank=True, null=True)
+    # relaciona com um Veículo
+    veiculo = models.CharField(max_length=50, blank=True, null=True)
+
     #herda todos os campos de Viagem_Base
     class Meta:
         verbose_name = "Viagem Detalhada"

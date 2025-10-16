@@ -1,0 +1,628 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=8">
+<link rel="stylesheet" href="{% static 'umbrella360/style_refatorado.css' %}?v=2">
+<script src="{% static 'umbrella360/theme-toggle.js' %}?v=2"></script>
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viagem Diária - Umbrella360</title>
+    
+    <style>
+      .planilha-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+      
+      .planilha-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      }
+      
+      .planilha-header h1 {
+        margin: 0 0 0.5rem 0;
+        font-size: 2.2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      }
+      
+      .planilha-header p {
+        margin: 0;
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+      
+      .stats-overview {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border: 1px solid #dee2e6;
+      }
+      
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+      }
+      
+      .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+        border: 1px solid #e9ecef;
+        transition: transform 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      }
+      
+      .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      }
+      
+      .stat-value {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0.5rem 0;
+      }
+      
+      .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .planilha-table-container {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        border: 1px solid #dee2e6;
+        margin-bottom: 2rem;
+      }
+      
+      .planilha-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+      }
+      
+      .planilha-table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+      
+      .planilha-table thead th {
+        padding: 1.2rem 1rem;
+        text-align: left;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      
+      .planilha-table tbody tr {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid #e9ecef;
+      }
+      
+      .planilha-table tbody tr:nth-child(even) {
+        background: #f8f9fa;
+      }
+      
+      .planilha-table tbody tr:hover {
+        background: #e3f2fd;
+        transform: scale(1.01);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      
+      .planilha-table tbody td {
+        padding: 1rem;
+        border-right: 1px solid #f1f3f4;
+        vertical-align: middle;
+      }
+      
+      .placa-badge {
+        background: linear-gradient(135deg, #e7f3ff, #cce7ff);
+        color: #0066cc;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: inline-block;
+        border: 1px solid #b3d9ff;
+        font-family: monospace;
+      }
+      
+      .motorista-name {
+        font-weight: 500;
+        color: #2c3e50;
+      }
+      
+      .km-value {
+        font-weight: 600;
+        color: #007bff;
+        text-align: right;
+      }
+      
+      .consumo-value {
+        font-weight: 600;
+        color: #dc3545;
+        text-align: right;
+      }
+      
+      .media-value {
+        font-weight: 600;
+        color: #28a745;
+        text-align: right;
+      }
+      
+      .eficiencia-badge {
+        padding: 0.3rem 0.7rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .eficiencia-excelente {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      
+      .eficiencia-boa {
+        background: linear-gradient(135deg, #cce5ff, #99d6ff);
+        color: #004085;
+        border: 1px solid #99d6ff;
+      }
+      
+      .eficiencia-regular {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+      
+      .eficiencia-ruim {
+        background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      
+      .no-data {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+      }
+      
+      .no-data h3 {
+        color: #495057;
+        margin-bottom: 1rem;
+      }
+      
+      .export-buttons {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        text-align: center;
+      }
+      
+      .export-buttons h4 {
+        margin-bottom: 1rem;
+        color: #495057;
+      }
+      
+      .export-buttons-grid {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      
+      .btn-export {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+      }
+      
+      .btn-export:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        text-decoration: none;
+        color: white;
+      }
+      
+      .btn-export.excel {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      }
+      
+      .btn-export.pdf {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      }
+      
+      .btn-export.csv {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+      }
+      
+      /* Estilos para navegação de datas */
+      .date-navigation {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        text-align: center;
+      }
+      
+      .date-controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      
+      .date-arrow {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        font-size: 1.2rem;
+        font-weight: bold;
+      }
+      
+      .date-arrow:hover:not(.disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+        color: white;
+        text-decoration: none;
+      }
+      
+      .date-arrow.disabled {
+        background: #dee2e6;
+        color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+      
+      .current-date {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        min-width: 200px;
+      }
+      
+      .date-selector {
+        margin-top: 1rem;
+      }
+      
+      .date-selector select {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #495057;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+      
+      .date-selector select:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+      }
+      
+      .date-info {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+      }
+      
+      .date-stat {
+        color: #6c757d;
+        font-size: 0.85rem;
+      }
+      
+      @media (max-width: 768px) {
+        .planilha-container {
+          padding: 1rem;
+        }
+        
+        .stats-grid {
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+        
+        .planilha-table-container {
+          overflow-x: auto;
+        }
+        
+        .planilha-table {
+          min-width: 800px;
+        }
+        
+        .planilha-table thead th,
+        .planilha-table tbody td {
+          padding: 0.75rem 0.5rem;
+          font-size: 0.85rem;
+        }
+        
+        .export-buttons-grid {
+          flex-direction: column;
+          align-items: center;
+        }
+        
+        .date-controls {
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        
+        .date-info {
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- Botão de alternância de tema -->
+    <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
+      <span class="theme-icon">◐</span> Noite de Verão
+    </button>
+
+    <div class="header">
+      <div class="menu-buttons">
+        <a href="{% url 'index' %}" class="btn btn-secondary">Início</a>
+        <a href="{% url 'lista_unidades' %}" class="btn btn-secondary">Lista de Unidades</a>
+        <a href="{% url 'report_empresa' %}" class="btn btn-secondary">Relatórios</a>
+      </div>
+    </div>
+
+    <main class="planilha-container">
+      
+      <!-- Cabeçalho da Planilha -->
+      <div class="planilha-header">
+        <h1>📋 Viagem Diária - <span class="gradient-text">{{ data_selecionada|date:"d/m/Y" }}</span></h1>
+        <p>Relatório detalhado das viagens realizadas na data de {{ data_selecionada|date:"d/m/Y" }}</p>
+      </div>
+
+      <!-- Navegação de Datas -->
+      <div class="date-navigation">
+        <div class="date-controls">
+          {% if data_anterior %}
+            <a href="?data={{ data_anterior|date:'Y-m-d' }}" class="date-arrow" title="Data anterior: {{ data_anterior|date:'d/m/Y' }}">
+              ←
+            </a>
+          {% else %}
+            <span class="date-arrow disabled">←</span>
+          {% endif %}
+          
+          <div class="current-date">
+            {{ data_selecionada|date:"d/m/Y" }}
+          </div>
+          
+          {% if data_proxima %}
+            <a href="?data={{ data_proxima|date:'Y-m-d' }}" class="date-arrow" title="Data seguinte: {{ data_proxima|date:'d/m/Y' }}">
+              →
+            </a>
+          {% else %}
+            <span class="date-arrow disabled">→</span>
+          {% endif %}
+        </div>
+        
+        <!-- Seletor rápido de datas -->
+        <div class="date-selector">
+          <label for="date-select" style="margin-right: 0.5rem; font-weight: 500;">Ir para data:</label>
+          <select id="date-select" onchange="navigateToDate(this.value)">
+            <option value="">Selecione uma data</option>
+            {% for data in datas_disponiveis %}
+              <option value="{{ data|date:'Y-m-d' }}" {% if data == data_selecionada %}selected{% endif %}>
+                {{ data|date:"d/m/Y" }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+      </div>
+
+      <!-- Estatísticas Gerais -->
+      <div class="stats-overview">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">{{ total_unidades }}</div>
+            <div class="stat-label">Unidades Ativas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ total_km|floatformat:0 }} km</div>
+            <div class="stat-label">KM Total Rodado</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ total_combustivel|floatformat:0 }} L</div>
+            <div class="stat-label">Combustível Total</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ media_geral|floatformat:2 }} km/L</div>
+            <div class="stat-label">Média Geral</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de Exportação -->
+      <div class="export-buttons">
+        <h4>📥 Exportar Planilha</h4>
+        <div class="export-buttons-grid">
+          <a href="{% url 'export_viagem_diaria_excel' %}?data={{ data_selecionada|date:'Y-m-d' }}" 
+             class="btn-export excel" 
+             style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;"
+             title="Exportar relatório de viagem diária para Excel">
+            📊 Exportar Excel
+          </a>
+        </div>
+        <p style="margin-top: 0.75rem; color: #6c757d; font-size: 0.85rem;">
+          Exporte os dados de {{ data_selecionada|date:"d/m/Y" }} para análise externa ou arquivamento
+        </p>
+      </div>
+
+      <!-- Tabela de Viagens -->
+      <div class="planilha-table-container">
+        {% if viagens %}
+          <table class="planilha-table">
+            <thead>
+              <tr>
+                <th>Motorista</th>
+                <th>KM Rodado</th>
+                <th>Consumo (L)</th>
+                <th>Média (km/L)</th>
+                <th>Eficiência</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for viagem in viagens %}
+              <tr>
+                <td>
+                  <span class="motorista-name">{{ viagem.unidade.nm|default:viagem.unidade.id}}</span>
+                </td>
+                <td class="km-value">
+                  {{ viagem.quilometragem|floatformat:2 }}
+                </td>
+                <td class="consumo-value">
+                  {{ viagem.Consumido|floatformat:1 }}
+                </td>
+                <td class="media-value">
+                  {{ viagem.Quilometragem_média|floatformat:2 }}
+                </td>
+                <td>
+                  {% if viagem.Quilometragem_média >= 2.0 %}
+                    <span class="eficiencia-badge eficiencia-excelente">Excelente</span>
+                  {% elif viagem.Quilometragem_média >= 1.78 %}
+                    <span class="eficiencia-badge eficiencia-boa">Boa</span>
+                  {% elif viagem.Quilometragem_média >= 1.5 %}
+                    <span class="eficiencia-badge eficiencia-regular">Regular</span>
+                  {% else %}
+                    <span class="eficiencia-badge eficiencia-ruim">Ruim</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="no-data">
+            <h3>📭 Nenhum dado encontrado</h3>
+            <p>Não há registros de viagens para {{ data_selecionada|date:"d/m/Y" }}.</p>
+            <p>Verifique se os dados foram sincronizados corretamente ou selecione outra data.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Informações Adicionais -->
+      <div class="stats-overview">
+        <h3 style="text-align: center; margin-bottom: 1.5rem; color: #2c3e50;">📈 Resumo do Período</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">{{ unidades_eficientes }}</div>
+            <div class="stat-label">Motoristas Eficientes</div>
+            <small style="color: #28a745;">≥ 1.78 km/L</small>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ unidades_regulares }}</div>
+            <div class="stat-label">Motoristas Regulares</div>
+            <small style="color: #ffc107;">1.5 - 1.78 km/L</small>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ unidades_ineficientes }}</div>
+            <div class="stat-label">Motoristas Ineficientes</div>
+            <small style="color: #dc3545;">< 1.5 km/L</small>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ economia_potencial|floatformat:0 }} L</div>
+            <div class="stat-label">Economia Potencial</div>
+            <small style="color: #17a2b8;">Se todos ≥ 2.0 km/L</small>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="footer">
+      <p>&copy; 2025 Umbrella360. Viagem Diária - Relatório de {{ data_selecionada|date:"d/m/Y" }}</p>
+      <p><em>"Controle total sobre sua frota, dia após dia"</em></p>
+      <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+    </footer>
+
+    <script>
+      // Navegação para data selecionada
+      function navigateToDate(dateValue) {
+        if (dateValue) {
+          window.location.href = `?data=${dateValue}`;
+        }
+      }
+
+      // Funcionalidade adicional
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('Planilha de Viagem Diária carregada');
+        
+        // Destacar linha ao passar o mouse
+        const rows = document.querySelectorAll('.planilha-table tbody tr');
+        rows.forEach(row => {
+          row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#e3f2fd';
+          });
+          row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+          });
+        });
+
+        // Navegação por teclado
+        document.addEventListener('keydown', function(event) {
+          if (event.key === 'ArrowLeft') {
+            const btnAnterior = document.querySelector('a[href*="data="]:first-of-type');
+            if (btnAnterior && !btnAnterior.classList.contains('disabled')) {
+              window.location.href = btnAnterior.href;
+            }
+          } else if (event.key === 'ArrowRight') {
+            const btnProximo = document.querySelector('a[href*="data="]:last-of-type');
+            if (btnProximo && !btnProximo.classList.contains('disabled')) {
+              window.location.href = btnProximo.href;
+            }
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
