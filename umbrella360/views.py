@@ -2211,3 +2211,104 @@ def export_cercas_pdf(request, unidade_id):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     return response
+
+
+def performance_frota(request):
+    """View para análise de performance de RPM da frota toda - TODOS OS DADOS"""
+    # Verificar se há empresa logada
+    empresa_logada_id = request.session.get('empresa_logada')
+    empresa_logada = None
+    
+    if empresa_logada_id:
+        try:
+            empresa_logada = Empresa.objects.get(id=empresa_logada_id)
+        except Empresa.DoesNotExist:
+            return HttpResponseRedirect(reverse('login_view'))
+    
+    # Buscar TODAS as viagens eco da empresa (sem filtro de data)
+    from .models import Viagem_eco
+    
+    viagens_eco_query = Viagem_eco.objects.select_related('unidade', 'unidade__empresa')
+    
+    if empresa_logada_id:
+        viagens_eco_query = viagens_eco_query.filter(unidade__empresa_id=empresa_logada_id)
+    
+    # Processar todos os dados de uma vez
+    unidades_performance = []
+    
+    if viagens_eco_query.exists():
+        # Agrupar por unidade e calcular faixas de RPM
+        unidades_ids = viagens_eco_query.values_list('unidade_id', flat=True).distinct()
+        
+        for unidade_id in unidades_ids:
+            try:
+                unidade = Unidade.objects.select_related('empresa').get(id=unidade_id)
+                viagens_unidade = viagens_eco_query.filter(unidade_id=unidade_id)
+                
+                # Calcular dados de RPM (todos os dados históricos)
+                rpms = []
+                for v in viagens_unidade:
+                    if v.rpm and float(v.rpm/8) <= 3500:
+                        rpms.append(float(v.rpm/8))
+                
+                if rpms:
+                    total_pontos = len(rpms)
+                    rpm_medio = sum(rpms) / total_pontos
+                    rpm_maximo = max(rpms)
+                    rpm_minimo = min(rpms)
+                    
+                    # Calcular faixas de RPM
+                    faixa_azul = len([r for r in rpms if 350 <= r < 799])
+                    faixa_verde = len([r for r in rpms if 800 <= r < 1300])
+                    faixa_amarela = len([r for r in rpms if 1301 <= r < 2300])
+                    faixa_vermelha = len([r for r in rpms if r >= 2301])
+                    
+                    # Calcular percentuais
+                    perc_azul = (faixa_azul / total_pontos * 100) if total_pontos > 0 else 0
+                    perc_verde = (faixa_verde / total_pontos * 100) if total_pontos > 0 else 0
+                    perc_amarela = (faixa_amarela / total_pontos * 100) if total_pontos > 0 else 0
+                    perc_vermelha = (faixa_vermelha / total_pontos * 100) if total_pontos > 0 else 0
+                    
+                    # Score de performance (mais verde e azul = melhor)
+                    score = (perc_verde * 1.0) + (perc_azul * 0.8) - (perc_amarela * 0.5) - (perc_vermelha * 1.0)
+                    
+                    unidades_performance.append({
+                        'unidade': unidade,
+                        'total_pontos': total_pontos,
+                        'rpm_medio': rpm_medio,
+                        'rpm_maximo': rpm_maximo,
+                        'rpm_minimo': rpm_minimo,
+                        'faixa_azul': faixa_azul,
+                        'faixa_verde': faixa_verde,
+                        'faixa_amarela': faixa_amarela,
+                        'faixa_vermelha': faixa_vermelha,
+                        'perc_azul': perc_azul,
+                        'perc_verde': perc_verde,
+                        'perc_amarela': perc_amarela,
+                        'perc_vermelha': perc_vermelha,
+                        'score': score,
+                    })
+            except Unidade.DoesNotExist:
+                continue
+    
+    # Ordenar por score (melhor performance primeiro)
+    unidades_performance = sorted(unidades_performance, key=lambda x: x['score'], reverse=True)
+    
+    # Calcular estatísticas gerais da frota
+    stats_gerais = {
+        'total_unidades': len(unidades_performance),
+        'total_pontos': sum(u['total_pontos'] for u in unidades_performance),
+        'rpm_medio_frota': sum(u['rpm_medio'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
+        'perc_verde_frota': sum(u['perc_verde'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
+        'perc_vermelha_frota': sum(u['perc_vermelha'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
+        'perc_azul_frota': sum(u['perc_azul'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
+        'perc_amarela_frota': sum(u['perc_amarela'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
+    }
+    
+    context = {
+        'empresa_logada': empresa_logada,
+        'unidades_performance': unidades_performance,
+        'stats_gerais': stats_gerais,
+    }
+    
+    return render(request, 'umbrella360/performance.html', context)

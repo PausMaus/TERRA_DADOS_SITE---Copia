@@ -16,6 +16,7 @@ urlpatterns = [
     path("unidade/<str:unidade_id>/cercas/export-pdf/", views.export_cercas_pdf, name="export_cercas_pdf"),
     path("viagem-diaria/", views.viagem_diaria, name="viagem_diaria"),
     path("viagem-diaria/export-excel/", views.export_viagem_diaria_excel, name="export_viagem_diaria_excel"),
+    path("performance-frota/", views.performance_frota, name="performance_frota"),
     path("motoristas/", views.motoristas, name="motoristas"),
     path("caminhoes/", views.caminhoes, name="caminhoes"),
     path("login/", views.login_view, name="login"),
