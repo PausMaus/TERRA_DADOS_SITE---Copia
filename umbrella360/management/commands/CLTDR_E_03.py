@@ -42,16 +42,13 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
         ###############################################
         # PRINCIPAL #
-        self.Limpeza() 
+        #self.Limpeza() 
 
-        self.CLTDR_TESTE_01(cor1="blue", cor2="green")
+        #self.CLTDR_TESTE_01(cor1="blue", cor2="green")
         ##################################################
         # TESTE #
         
-
-        #self.TESTE_MENSAGENS(1)
-        #self.TESTE_MENSAGENS_02(7)
-        self.TESTE_MENSAGENS_03(3)
+        self.MENSAGENS_03(3)
 
         ##################################################
         # ESTUDO #
@@ -146,6 +143,9 @@ class Command(BaseCommand):
         print(f'Viagens Econômicas: {viagens_eco.count()}')
         print("--------------------------------------------------")
 
+        #self.Checagem_Detalhada(unidades, infrações, checkpoints, viagens_base, viagens_detalhadas, viagens_eco)
+
+    def Checagem_Detalhada(self, unidades, infrações, checkpoints, viagens_base, viagens_detalhadas, viagens_eco):
         print("Unidades:")
         for unidade in unidades:
             print(f' - {unidade}')  
@@ -532,8 +532,10 @@ class Command(BaseCommand):
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
             #printa o dataframe completo
             print(processamento_df)
+            #+---
             # salva como excel
-            processamento_df.to_excel(f'{deposito}/CLTDR_MOT_01_teste.xlsx', index=False)
+            #processamento_df.to_excel(f'{deposito}/CLTDR_MOT_01_teste.xlsx', index=False)
+            #+---
             
             self.update_or_create_trip_02(processamento_df)
             Wialon.clean_up_result(sid)
@@ -1652,7 +1654,7 @@ class Command(BaseCommand):
         Wialon.wialon_logout(sid)
 
 
-    def TESTE_MENSAGENS_03(self, tempo):
+    def MENSAGENS_03(self, tempo):
         import threading
         import time
         
@@ -1830,9 +1832,11 @@ class Command(BaseCommand):
                         print(df_messages.head())
                         
                         # Salva em Excel para análise
-                        df_messages.to_excel(f'{deposito}/{unidade_nome}_{unidade_id}.xlsx', index=False)
-                        print(f"DataFrame salvo em {deposito}/{unidade_nome}_{unidade_id}.xlsx")
-
+                        #+---
+                        #df_messages.to_excel(f'{deposito}/{unidade_nome}_{unidade_id}.xlsx', index=False)
+                        #print(f"DataFrame salvo em {deposito}/{unidade_nome}_{unidade_id}.xlsx")
+                        #+---
+                        
                         # Mostra algumas estatísticas
                         print(f"\nEstatísticas das mensagens:")
                         print(f"Período: {df_messages['datetime'].min()} até {df_messages['datetime'].max()}")
