@@ -44,14 +44,11 @@ class Command(BaseCommand):
         # PRINCIPAL #
         #self.Limpeza() 
 
-        self.CLTDR_UMBRELLA_03(cor1="blue", cor2="green")
+        self.CLTDR_TESTE_01(cor1="blue", cor2="green")
         ##################################################
         # TESTE #
         
-
-        #self.TESTE_MENSAGENS(1)
-        #self.TESTE_MENSAGENS_02(7)
-        self.TESTE_MENSAGENS_03(3)
+        self.MENSAGENS_03(3)
 
         ##################################################
         # ESTUDO #
@@ -74,6 +71,59 @@ class Command(BaseCommand):
         print("--------------------------------------------------")
     #######################################################################################
     
+################################################################################################
+
+
+    def CLTDR_TESTE_01(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
+        def comm(msg):
+            print(colored("="*30, cor1))
+            print(colored(tool, cor2))
+            print(f"{msg}")
+            print(colored("="*30, cor1))
+        comm("Iniciando processamento global...")
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                return
+
+        Wialon.set_locale()
+        #busca os relatorios
+        usuários = Wialon.buscadora_reports(sid)
+        comm(usuários)
+
+        ###__ATUALIZADOR_UNIDADES__###
+        self.ATUALIZADOR_01(sid)
+
+        ###__CARGO__POLO__###
+        comm("Processando CARGO POLO...")
+        self.CARGO_POLO(sid, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr,)
+        comm("CARGO POLO processado.")
+
+        ###__PLACIDO__###
+        comm("Processando PLACIDO...")
+        self.PLACIDO(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac)
+        comm("PLACIDO processado.")
+
+        ###__SFRESGATE__###
+        comm("Processando SFRESGATE...")
+        self.SFRESGATE(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre)
+        comm("SFRESGATE processado.")
+
+        ###__PETITTO__###
+        comm("Processando PETITTO...")
+        self.PETITTO(sid, recurso=401756219, template=59, flag=16777218, Objeto=401904974)
+        comm("PETITTO processado.")
+
+        ###__checkpoints e infrações__###
+        self.CH_INFRA(sid)
+        
+
+        Wialon.wialon_logout(sid)
+
+
+
+
+
 #checa se o banco de dados for completamente atualizado
     def Checagem_01(self):
         #imprime todos os dados
@@ -93,6 +143,9 @@ class Command(BaseCommand):
         print(f'Viagens Econômicas: {viagens_eco.count()}')
         print("--------------------------------------------------")
 
+        #self.Checagem_Detalhada(unidades, infrações, checkpoints, viagens_base, viagens_detalhadas, viagens_eco)
+
+    def Checagem_Detalhada(self, unidades, infrações, checkpoints, viagens_base, viagens_detalhadas, viagens_eco):
         print("Unidades:")
         for unidade in unidades:
             print(f' - {unidade}')  
@@ -271,7 +324,7 @@ class Command(BaseCommand):
         # pega dos ultimos 30 dias usando um loop for
         #dias = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
         # dias de testes
-        dias = [1]
+        dias = range(1,10)
         for dia in dias:
             self.CLTDR_MOT_01_teste(sid, processamento_df, Objeto=401756219, flag=16777216, dias=dia, periodo=str(dia))
 
@@ -479,7 +532,12 @@ class Command(BaseCommand):
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
             #printa o dataframe completo
             print(processamento_df)
-            #self.update_or_create_trip_02(processamento_df)
+            #+---
+            # salva como excel
+            #processamento_df.to_excel(f'{deposito}/CLTDR_MOT_01_teste.xlsx', index=False)
+            #+---
+            
+            self.update_or_create_trip_02(processamento_df)
             Wialon.clean_up_result(sid)
     
     def CLTDR_MOT_02(self, sid, processamento_df, recurso, template, Objeto, flag, dias, periodo):
@@ -520,73 +578,11 @@ class Command(BaseCommand):
 
 
 
-    def processamento_teste(self, empresa):
-        if empresa.nome == 'CPBRACELL':
-        #processa as unidades
-            processamento_df = pd.DataFrame()
-            self.CLTDR_02(sid, processamento_df, flag=16777218, Objeto=401756235, dias=1, periodo="Ontem")
-            self.CLTDR_02(sid, processamento_df, flag=16777220, Objeto=401756235, dias=1, periodo="Últimos 7 dias")
-            self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401756235, dias=1, periodo="Últimos 30 dias")
-
-        #processa os motoristas
-            processamento_df = pd.DataFrame()
-            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
-            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
-            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-        elif empresa.nome == 'PLACIDO':
-            #processa as unidades
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777218, Objeto=401756235, dias=1, periodo="Ontem")
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777220, Objeto=401756235, dias=1, periodo="Últimos 7 dias")
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777224, Objeto=401756235, dias=1, periodo="Últimos 30 dias")
-            
-
-        elif empresa.nome == 'São Francisco Resgate':
-            #processa as unidades
-            processamento_df = pd.DataFrame()
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777218, Objeto=401756235, dias=1, periodo="Ontem")
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777220, Objeto=401756235, dias=1, periodo="Últimos 7 dias")
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777224, Objeto=401756235, dias=1, periodo="Últimos 30 dias")
-
 
 
 
 ########################################################################################
-###+---
 
-    def principal(self, token, empresa_nome):
-        self.stdout.write(self.style.SUCCESS(f'Iniciando importação de dados para a empresa: {empresa_nome}'))
-
-
-        # Inicia a sessão Wialon
-        self.stdout.write(self.style.SUCCESS(f'Iniciando sessão Wialon para {empresa_nome}...'))
-
-        sid = Wialon.authenticate_with_wialon(token)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        self.atualiza_unidades(sid, empresa_nome)
-
-        #busca os relatorios
-        print(Wialon.buscadora_reports(sid))
-
-        if empresa_nome == 'CPBRACELL':
-            self.process_units_CP(sid)
-            #self.process_motoristas_CP_2(sid)
-
-        if empresa_nome == 'PLACIDO':
-            self.process_units_PLAC(sid)
-
-        elif empresa_nome == 'São Francisco Resgate':
-            self.process_units_SF(sid)
-
-        # Encerra a sessão Wialon
-        Wialon.wialon_logout(sid)
-
-        self.stdout.write(self.style.SUCCESS(f'Sessão Wialon encerrada para {empresa_nome}.'))
-
-        ###+---
 
 ########################################################################################
 
@@ -666,7 +662,8 @@ class Command(BaseCommand):
         if not processamento_df.empty:
             for index, row in processamento_df.iterrows():
                 try:
-                    unidades = Unidade.objects.filter(nm=row['Grouping'])
+                    
+                    unidades = Unidade.objects.filter(nm=row['Motorista'])
                     
                     if not unidades.exists():
                         self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
@@ -679,7 +676,8 @@ class Command(BaseCommand):
                             self.stdout.write(self.style.WARNING(f'  - ID: {unidade.id}, Empresa: {unidade.empresa.nome if unidade.empresa else "N/A"}'))
                     
                     unidade_instance = unidades.first()
-                    
+
+                   
                     # Processa os valores numericos
                     quilometragem = self.processar_valor_numerico(row.get('Quilometragem', '0'))
                     consumo = self.processar_valor_numerico(row.get('Consumido por AbsFCS', '0'))
@@ -690,6 +688,8 @@ class Command(BaseCommand):
                     co2 = self.processar_valor_numerico(row.get('Emissões de CO2', '0'))
                     timestamp_inicial = row.get('timestamp_from', None)
                     timestamp_final = row.get('timestamp_to', None)
+                    veiculo = row.get('Unidade', None)
+                    periodo = row.get('periodo', None)
 
 
                     try:
@@ -712,7 +712,11 @@ class Command(BaseCommand):
                     
                     Viagem_Detalhada.objects.update_or_create(
                         unidade=unidade_instance,
-                        período=row['periodo'],
+                        quilometragem = quilometragem_value,
+
+                    
+
+                        
                         defaults={
                             'quilometragem': quilometragem_value,
                             'Consumido': consumo_value,
@@ -723,10 +727,12 @@ class Command(BaseCommand):
                             'Emissões_CO2': co2_value,
                             'timestamp_inicial': timestamp_inicial,
                             'timestamp_final': timestamp_final,
+                            'veiculo': veiculo,
+                            'período': periodo,
 
                         }
                     )
-                    self.stdout.write(self.style.SUCCESS(f'Viagem: {colored(row["Grouping"], "cyan")} - {colored(row["periodo"], "magenta")} - {colored(quilometragem_value, "green")}'))
+                    self.stdout.write(self.style.SUCCESS(f'Viagem: {colored(row["Motorista"], "cyan")} - {colored(row["periodo"], "magenta")} - {colored(row["Unidade"], "light_cyan")}- {colored(quilometragem_value, "green")} '))
 
                 except Unidade.DoesNotExist:
                     self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
@@ -1116,14 +1122,14 @@ class Command(BaseCommand):
         try:
             # Verifica valores nulos ou vazios
             if pd.isna(valor_str) or valor_str == '-----' or valor_str == '' or valor_str is None:
-                return Decimal('0.00')
+                return Decimal(str(valor_padrao))
             
             # Converte para string se não for
             valor_str = str(valor_str).strip()
             
             # Verifica se é vazio após strip
             if not valor_str:
-                return Decimal('0.00')
+                return Decimal(str(valor_padrao))
             
             # Remove unidades de medida comuns
             valor_limpo = valor_str.replace(' km', '').replace(' l', '').replace(' km/h', '').replace(' °C', '').replace(' t', '').replace(' g/km', '').replace(' rpm', '')
@@ -1131,7 +1137,7 @@ class Command(BaseCommand):
             
             # Verifica se ainda tem conteúdo válido
             if not valor_limpo or valor_limpo == '.' or valor_limpo == '-':
-                return Decimal('0.00')
+                return Decimal(str(valor_padrao))
             
             # Remove caracteres não numéricos (exceto ponto e sinal negativo)
             import re
@@ -1139,32 +1145,16 @@ class Command(BaseCommand):
             
             # Verifica se o valor resultante é válido
             if not valor_limpo or valor_limpo == '.' or valor_limpo == '-':
-                return Decimal('0.00')
+                return Decimal(str(valor_padrao))
             
-            # Validação adicional antes de criar o Decimal
-            try:
-                # Testa se o valor é um número válido
-                float_test = float(valor_limpo)
-                if not (float_test == float_test):  # Verifica se não é NaN
-                    return Decimal('0.00')
-                if float_test == float('inf') or float_test == float('-inf'):  # Verifica se não é infinito
-                    return Decimal('0.00')
-            except (ValueError, OverflowError):
-                return Decimal('0.00')
-            
-            # Converte para Decimal com validação
+            # Converte para Decimal
             decimal_value = Decimal(valor_limpo)
-            
-            # Verifica se o decimal é válido
-            if decimal_value.is_nan() or decimal_value.is_infinite():
-                return Decimal('0.00')
-                
             return decimal_value
             
         except (ValueError, TypeError, decimal.InvalidOperation) as e:
             # Log do erro para debug
-            self.stdout.write(self.style.WARNING(f'Erro ao processar valor "{valor_str}": {e}. Usando valor padrão 0.00'))
-            return Decimal('0.00')
+            self.stdout.write(self.style.WARNING(f'Erro ao processar valor "{valor_str}": {e}. Usando valor padrão {valor_padrao}'))
+            return Decimal(str(valor_padrao))
 
 
 
@@ -1620,7 +1610,7 @@ class Command(BaseCommand):
         Wialon.wialon_logout(sid)
 
 
-    def TESTE_MENSAGENS_03(self, tempo):
+    def MENSAGENS_03(self, tempo):
         import threading
         import time
         
@@ -1629,7 +1619,7 @@ class Command(BaseCommand):
         #lista_unidades = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
         lista_unidades = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
         #adiciona a lista as primeiras 10 unidades da empresa "CPBRACELL"
-        lista_unidades = list(lista_unidades) + list(Veiculo.objects.filter(empresa__nome="CPBRACELL").values_list('id_wialon', flat=True)[:10])
+        lista_unidades = list(lista_unidades) + list(Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)[:5])
         
         #lista_unidades = Veiculo.objects.filter(nm__icontains="1023").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
         #lista todos os veículos
@@ -1798,9 +1788,11 @@ class Command(BaseCommand):
                         print(df_messages.head())
                         
                         # Salva em Excel para análise
-                        df_messages.to_excel(f'{deposito}/{unidade_nome}_{unidade_id}.xlsx', index=False)
-                        print(f"DataFrame salvo em {deposito}/{unidade_nome}_{unidade_id}.xlsx")
-
+                        #+---
+                        #df_messages.to_excel(f'{deposito}/{unidade_nome}_{unidade_id}.xlsx', index=False)
+                        #print(f"DataFrame salvo em {deposito}/{unidade_nome}_{unidade_id}.xlsx")
+                        #+---
+                        
                         # Mostra algumas estatísticas
                         print(f"\nEstatísticas das mensagens:")
                         print(f"Período: {df_messages['datetime'].min()} até {df_messages['datetime'].max()}")
@@ -5269,8 +5261,73 @@ class Command(BaseCommand):
 
         self.update_or_create_trip(processamento_df)
 
+    ###+---
+
+    def principal(self, token, empresa_nome):
+        self.stdout.write(self.style.SUCCESS(f'Iniciando importação de dados para a empresa: {empresa_nome}'))
+
+
+        # Inicia a sessão Wialon
+        self.stdout.write(self.style.SUCCESS(f'Iniciando sessão Wialon para {empresa_nome}...'))
+
+        sid = Wialon.authenticate_with_wialon(token)
+        if not sid:
+                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                return
+
+        self.atualiza_unidades(sid, empresa_nome)
+
+        #busca os relatorios
+        print(Wialon.buscadora_reports(sid))
+
+        if empresa_nome == 'CPBRACELL':
+            self.process_units_CP(sid)
+            #self.process_motoristas_CP_2(sid)
+
+        if empresa_nome == 'PLACIDO':
+            self.process_units_PLAC(sid)
+
+        elif empresa_nome == 'São Francisco Resgate':
+            self.process_units_SF(sid)
+
+        # Encerra a sessão Wialon
+        Wialon.wialon_logout(sid)
+
+        self.stdout.write(self.style.SUCCESS(f'Sessão Wialon encerrada para {empresa_nome}.'))
+
+        ###+---
     
+
+
     
+    def processamento_teste(self, empresa):
+        if empresa.nome == 'CPBRACELL':
+        #processa as unidades
+            processamento_df = pd.DataFrame()
+            self.CLTDR_02(sid, processamento_df, flag=16777218, Objeto=401756235, dias=1, periodo="Ontem")
+            self.CLTDR_02(sid, processamento_df, flag=16777220, Objeto=401756235, dias=1, periodo="Últimos 7 dias")
+            self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401756235, dias=1, periodo="Últimos 30 dias")
+
+        #processa os motoristas
+            processamento_df = pd.DataFrame()
+            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
+            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
+            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
+
+        elif empresa.nome == 'PLACIDO':
+            #processa as unidades
+            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777218, Objeto=401756235, dias=1, periodo="Ontem")
+            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777220, Objeto=401756235, dias=1, periodo="Últimos 7 dias")
+            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777224, Objeto=401756235, dias=1, periodo="Últimos 30 dias")
+            
+
+        elif empresa.nome == 'São Francisco Resgate':
+            #processa as unidades
+            processamento_df = pd.DataFrame()
+            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777218, Objeto=401756235, dias=1, periodo="Ontem")
+            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777220, Objeto=401756235, dias=1, periodo="Últimos 7 dias")
+            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777224, Objeto=401756235, dias=1, periodo="Últimos 30 dias")
+
     # DEMOLIÇÃO #
     ###+---------------------------------------------------------------------------------------------+
     ############################################################################################

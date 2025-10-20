@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from umbrella360.FERRAMENTAS.umbrellab import Wialon
 from umbrella360.FERRAMENTAS.umbrellab.Wialon import *
-from umbrella360.models import Empresa, Unidade, Viagem_Base, CheckPoint, Infrações, Veiculo, ConfiguracaoSistema, Viagem_eco
+from umbrella360.models import Empresa, Unidade, Viagem_Base, CheckPoint, Infrações, Veiculo, ConfiguracaoSistema, Viagem_eco, Viagem_Detalhada
 import json
 import pandas as pd
 import time
@@ -42,15 +42,13 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
         ###############################################
         # PRINCIPAL #
+        #self.Limpeza() 
 
-        self.PRINCIPAL()
+        self.CLTDR_TESTE_01(cor1="blue", cor2="green")
         ##################################################
         # TESTE #
         
-
-        #self.TESTE_MENSAGENS(1)
-        #self.TESTE_MENSAGENS_02(7)
-        self.TESTE_MENSAGENS_03(3)
+        self.MENSAGENS_03(3)
 
         ##################################################
         # ESTUDO #
@@ -58,6 +56,9 @@ class Command(BaseCommand):
         #self.ESTUDO_01()
         #self.ESTUDO_02()
         #self.ESTUDO_03()
+        ##################################################
+        # CHECAGEM #
+        self.Checagem_01()
         ##################################################
         # End timing and display results
         end_time = datetime.now()
@@ -70,435 +71,9 @@ class Command(BaseCommand):
         print("--------------------------------------------------")
     #######################################################################################
     
+################################################################################################
 
-    def PRINCIPAL(self):
-        """Main function to execute the command workflow."""
-        
-        
-        # Execute main workflow
-        self.Limpeza() 
-        #self.atualizador()
-        #self.CLTDR_UMBRELLA_02(cor1="blue", cor2="green")
-        self.CLTDR_UMBRELLA_03(cor1="blue", cor2="green")
-        
-       
-
-
-    def CLTDR_UMBRELLA_02(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
-        def comm(msg):
-            print(colored("="*30, cor1))
-            print(colored(tool, cor2))
-            print(f"{msg}")
-            print(colored("="*30, cor1))
-        comm("Iniciando processamento global...")
-        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        Wialon.set_locale()
-        #busca os relatorios
-        usuários = Wialon.buscadora_reports(sid)
-        print(usuários)
-
-
-        ###__CARGO__POLO__###
-        comm("Processando CARGO POLO...")
-        self.CARGO_POLO(sid, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr)
-        comm("CARGO POLO processado.")
-        ###__PLACIDO__###
-        comm("Processando PLACIDO...")
-        self.PLACIDO(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac)
-        comm("PLACIDO processado.")
-        ###__SFRESGATE__###
-        comm("Processando SFRESGATE...")
-        self.SFRESGATE(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre)
-        comm("SFRESGATE processado.")
-
-        ###__checkpoints e infrações__###
-        processamento_df = pd.DataFrame()
-        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
-        processamento_df = pd.DataFrame()
-        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
-        processamento_df = pd.DataFrame()
-
-        print("Usuários encontrados:", colored(f'{len(usuários)}', 'green'))
-        print("Usuários:", usuários)
-    
-        Wialon.wialon_logout(sid)
-
-    def CLTDR_UMBRELLA_03(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
-        def comm(msg):
-            print(colored("="*30, cor1))
-            print(colored(tool, cor2))
-            print(f"{msg}")
-            print(colored("="*30, cor1))
-        comm("Iniciando processamento global...")
-        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        Wialon.set_locale()
-        #busca os relatorios
-        usuários = Wialon.buscadora_reports(sid)
-        comm(usuários)
-
-        ###__ATUALIZADOR_UNIDADES__###
-        self.atualizador_04(sid, id_criador=401756218)
-        self.atualizador_04(sid, id_criador=401768998)
-        self.atualizador_04(sid, id_criador=401872802)
-        self.atualizador_04(sid, id_criador=401824174)
-
-
-
-        ###__CARGO__POLO__###
-        comm("Processando CARGO POLO...")
-        self.CARGO_POLO(sid, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr,)
-        comm("CARGO POLO processado.")
-
-        ###__PLACIDO__###
-        comm("Processando PLACIDO...")
-        self.PLACIDO(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac)
-        comm("PLACIDO processado.")
-
-        ###__SFRESGATE__###
-        comm("Processando SFRESGATE...")
-        self.SFRESGATE(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre)
-        comm("SFRESGATE processado.")
-
-        ###__PETITTO__###
-        comm("Processando PETITTO...")
-        self.PETITTO(sid, recurso=401756219, template=59, flag=16777218, Objeto=401904974)
-        comm("PETITTO processado.")
-
-        ###__checkpoints e infrações__###
-        self.CH_INFRA(sid)
-
-        
-
-        comm(f'{colored("Resumo:", "magenta")}\n'
-            f'Usuários encontrados: {colored(len(usuários), "green")}\n'
-            f'Usuários: {usuários}'
-        )
-
-        Wialon.wialon_logout(sid)
-
-    def CH_INFRA(self, sid):
-        processamento_df = pd.DataFrame()
-        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
-        processamento_df = pd.DataFrame()
-        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
-        processamento_df = pd.DataFrame()
-
-
-
-
-    def atualizador(self,nome="atualizador_unidades"):
-            def comm(msg):
-                print(colored("="*30, "yellow"))
-                print(colored(f"{nome}:","green"))
-                print(f"{msg}")
-                print(colored("="*30, "yellow"))
-            #lista as empresas registradas
-            contador_sessoes = 0
-            empresas = Empresa.objects.all()
-            for empresa in empresas:
-                comm(f'Empresa: {empresa.nome}')
-                # Inicia a sessão Wialon para cada empresa
-                sid=Wialon.authenticate_with_wialon(empresa.token)
-                comm(f'Sessão Wialon iniciada para {empresa.nome}, ID de recurso: {empresa.id_recurso}')
-                if not sid:
-                    self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                    continue
-                if sid:
-                    contador_sessoes += 1
-
-
-                unidades = Wialon.unidades_simples_03(sid,empresa)
-                if not unidades:
-                    self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-                    return
-
-                comm(f'Unidades encontradas: {len(unidades)}')
-                #
-                #+-----
-                #print(f'Unidades: {colored(f"{unidades}", "green")}')
-                #+-----
-                #
-
-                #coloca os dados em um dataframe
-                df_unidades = pd.DataFrame(unidades)
-                comm(f'Unidades encontradas: {len(df_unidades)}')
-                comm(f'Unidades: {df_unidades}')
-                #
-                #+-----
-                #df_unidades.to_excel(f'{deposito}/{empresa.nome}_unidades.xlsx', index=False)
-                #comm(f'Arquivo {deposito}/{empresa.nome}_unidades.xlsx salvo.')
-                #+-----
-                #
-                
-
-                for unidade in df_unidades.itertuples(index=False):
-                    id=unidade.unit_id
-                    nome=unidade.unit_name
-                    marca=unidade.brand
-                    modelo=unidade.model
-                    ano=unidade.year
-                    cor=unidade.color
-                    placa=unidade.registration_plate
-                    cls = 'Veículo'
-                    unidade_id = f"{empresa.nome}_{id}"
-
-                    #
-                    #+---
-                    #comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
-                    #+---
-                    #
-
-                    # Atualiza a unidade no banco de dados
-                    Veiculo.objects.update_or_create(
-                        id=unidade_id,
-                        defaults={
-                            'nm': nome,
-                            'placa': placa,
-                            'marca': marca,
-                            'cls': cls,
-                            'empresa': empresa,
-                            'cor': cor,
-                            'modelo': modelo,
-                            'id_wialon': id,
-                        }
-                    )
-                    comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
-                
-                #adiciona também os motoristas
-
-                motoristas = Wialon.motoristas_simples2(sid)
-                df_motoristas = pd.DataFrame(motoristas)
-                comm(f'Motoristas encontrados: {len(df_motoristas)}')
-                comm(f'Motoristas: {df_motoristas}')
-                for motorista in df_motoristas.itertuples(index=False):
-                    motorista_id = motorista.driver_id
-                    motorista_nome = motorista.driver_name
-                    cls = 'Motorista'
-
-
-                    motorista_id = f"{empresa.nome}_{motorista_id}"
-
-                    comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
-
-                    # Atualiza o motorista no banco de dados
-                    Unidade.objects.update_or_create(
-                        id=motorista_id,
-                        defaults={
-                            'nm': motorista_nome,
-                            'cls': cls,
-                            'empresa': empresa,
-                            'id_wialon': motorista_id,
-                        }
-                        
-                    )
-            #faz logout
-            Wialon.wialon_logout(sid)
-            return contador_sessoes
-
-            #-------------------------------------------------------------------------------------------------------------#
-
-    def atualizador_02(self,sid, nome="atualizador_unidades", empresa='CPBracell', flags=8388609):
-            def comm(msg):
-                print(colored("="*30, "yellow"))
-                print(colored(f"{nome}:","green"))
-                print(f"{msg}")
-                print(colored("="*30, "yellow"))
-
-
-            unidades = Wialon.unidades_simples_04(sid, empresa=empresa, flags=flags)
-            if not unidades:
-                self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-                return
-
-            comm(f'Unidades encontradas: {len(unidades)}')
-            #
-            #+-----
-            #print(f'Unidades: {colored(f"{unidades}", "green")}')
-            #+-----
-            #
-
-            #coloca os dados em um dataframe
-            df_unidades = pd.DataFrame(unidades)
-            comm(f'Unidades encontradas: {len(df_unidades)}')
-            comm(f'Unidades: {df_unidades}')
-            #
-            #+-----
-            #df_unidades.to_excel(f'{deposito}/{empresa.nome}_unidades.xlsx', index=False)
-            #comm(f'Arquivo {deposito}/{empresa.nome}_unidades.xlsx salvo.')
-            #+-----
-            #
-            
-
-            for unidade in df_unidades.itertuples(index=False):
-                id=unidade.unit_id
-                nome=unidade.unit_name
-                marca=unidade.brand
-                modelo=unidade.model
-                ano=unidade.year
-                cor=unidade.color
-                placa=unidade.registration_plate
-                cls = 'Veículo'
-                unidade_id = f"{empresa}_{id}"
-
-                #
-                #+---
-                #comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
-                #+---
-                #
-
-                # Atualiza a unidade no banco de dados
-                Veiculo.objects.update_or_create(
-                    id=unidade_id,
-                    defaults={
-                        'nm': nome,
-                        'placa': placa,
-                        'marca': marca,
-                        'cls': cls,
-                        'empresa': empresa,
-                        'cor': cor,
-                        'modelo': modelo,
-                        'id_wialon': id,
-                    }
-                )
-                comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
-            
-            #adiciona também os motoristas
-
-            motoristas = Wialon.motoristas_simples2(sid)
-            df_motoristas = pd.DataFrame(motoristas)
-            comm(f'Motoristas encontrados: {len(df_motoristas)}')
-            comm(f'Motoristas: {df_motoristas}')
-            for motorista in df_motoristas.itertuples(index=False):
-                motorista_id = motorista.driver_id
-                motorista_nome = motorista.driver_name
-                cls = 'Motorista'
-
-
-                motorista_id = f"{empresa}_{motorista_id}"
-
-                comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa}')
-
-                # Atualiza o motorista no banco de dados
-                Unidade.objects.update_or_create(
-                    id=motorista_id,
-                    defaults={
-                        'nm': motorista_nome,
-                        'cls': cls,
-                        'empresa': empresa,
-                        'id_wialon': motorista_id,
-                    }
-                    
-                )
-
-    def atualizador_03(self,sid,id_criador,  flags=8388613):
-        
-
-        def comm(msg):
-            print(colored("="*30, "yellow"))
-            print(colored(f"Atualizador de Unidades:","green"))
-            print(f"{msg}")
-            print(colored("="*30, "yellow"))
-
-
-        unidades = Wialon.unidades_simples_05(sid,  flags=flags)
-        if not unidades:
-            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-            return
-
-        comm(f'Unidades encontradas: {len(unidades)}')
-        #coloca os dados em um dataframe
-        df_unidades = pd.DataFrame(unidades)
-        comm(f'Unidades encontradas: {len(df_unidades)}')
-        comm(f'Unidades: {df_unidades}')
-
-        for unidade in df_unidades.itertuples(index=False):
-            id=unidade.unit_id
-            nome=unidade.unit_name
-            marca=unidade.brand
-            modelo=unidade.model
-            ano=unidade.year
-            cor=unidade.color
-            placa=unidade.registration_plate
-            cls = 'Veículo'
-            id_criador_unidade = unidade.id_criador
-            if id_criador_unidade == id_criador:
-                print(f'A unidade {nome} pertence à empresa CARGO POLO.')
-                empresa = Empresa.objects.get(id_criador=id_criador)
-                print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
-                empresa_nome = empresa.nome
-                unidade_id = f"{empresa.nome}_{id}"
-
-
-                comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
-                #+---
-                # Atualiza a unidade no banco de dados
-                Veiculo.objects.update_or_create(
-                    id=unidade_id,
-                    defaults={
-                        'nm': nome,
-                        'placa': placa,
-                        'marca': marca,
-                        'cls': cls,
-                        'empresa': empresa,
-                        'cor': cor,
-                        'modelo': modelo,
-                        'id_wialon': id,
-                    }
-                )
-                comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
-            else:
-                comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
-
-            #adiciona também os motoristas
-
-            motoristas = Wialon.motoristas_simples_03(sid, flags=5)
-            df_motoristas = pd.DataFrame(motoristas)
-            comm(f'Motoristas encontrados: {len(df_motoristas)}')
-            comm(f'Motoristas: {df_motoristas}')
-
-
-            for motorista in df_motoristas.itertuples(index=False):
-                motorista_id = motorista.driver_id
-                motorista_nome = motorista.driver_name
-                cls = 'Motorista'
-                id_criador_unidade = unidade.id_criador
-                if id_criador_unidade == id_criador:
-                    print(f'A unidade {nome} pertence à empresa CARGO POLO.')
-                    empresa = Empresa.objects.get(id_criador=id_criador)
-                    print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
-                    empresa_nome = empresa.nome
-                    unidade_id = f"{empresa.nome}_{id}"
-
-
-                    motorista_id = f"{empresa}_{motorista_id}"
-
-                    comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa}')
-
-                    # Atualiza o motorista no banco de dados
-                    Unidade.objects.update_or_create(
-                        id=motorista_id,
-                        defaults={
-                            'nm': motorista_nome,
-                            'cls': cls,
-                            'empresa': empresa,
-                            'id_wialon': motorista_id,
-                        }
-                        
-                    )
-                else:
-                    comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
-
-
-
-    def atualizador_04(self,sid,id_criador,  flags=8388613):
+    def atualizador(self,sid,id_criador,  flags=8388613):
         
 
         def comm(msg):
@@ -623,157 +198,218 @@ class Command(BaseCommand):
         )
 
 
-    def atualizador_teste(self, sid, nome="atualizador_unidades_04", flags=8388613):
+    def CLTDR_TESTE_01(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
         def comm(msg):
-            print(colored("="*30, "yellow"))
-            print(colored(f"{nome}:", "green"))
+            print(colored("="*30, cor1))
+            print(colored(tool, cor2))
             print(f"{msg}")
-            print(colored("="*30, "yellow"))
+            print(colored("="*30, cor1))
+        comm("Iniciando processamento global...")
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                return
 
-        unidades = Wialon.unidades_simples_05(sid, flags=flags)
-        if not unidades:
-            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-            return
+        Wialon.set_locale()
+        #busca os relatorios
+        usuários = Wialon.buscadora_reports(sid)
+        comm(usuários)
 
-        comm(f'Unidades encontradas: {len(unidades)}')
+        ###__ATUALIZADOR_UNIDADES__###
+        self.ATUALIZADOR_01(sid)
+
+        ###__CARGO__POLO__###
+        comm("Processando CARGO POLO...")
+        self.CARGO_POLO(sid, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr,)
+        comm("CARGO POLO processado.")
+
+        ###__PLACIDO__###
+        comm("Processando PLACIDO...")
+        self.PLACIDO(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac)
+        comm("PLACIDO processado.")
+
+        ###__SFRESGATE__###
+        comm("Processando SFRESGATE...")
+        self.SFRESGATE(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre)
+        comm("SFRESGATE processado.")
+
+        ###__PETITTO__###
+        comm("Processando PETITTO...")
+        self.PETITTO(sid, recurso=401756219, template=59, flag=16777218, Objeto=401904974)
+        comm("PETITTO processado.")
+
+        ###__checkpoints e infrações__###
+        self.CH_INFRA(sid)
         
-        # Coloca os dados em um dataframe
-        df_unidades = pd.DataFrame(unidades)
-        comm(f'Unidades encontradas: {len(df_unidades)}')
+
+        Wialon.wialon_logout(sid)
+
+
+
+
+
+#checa se o banco de dados for completamente atualizado
+    def Checagem_01(self):
+        #imprime todos os dados
+
+        unidades = Unidade.objects.all()
+        infrações = Infrações.objects.all()
+        checkpoints = CheckPoint.objects.all()
+        viagens_base = Viagem_Base.objects.all()
+        viagens_detalhadas = Viagem_Detalhada.objects.all()
+        viagens_eco = Viagem_eco.objects.all()
+
+        print(f'Unidades: {unidades.count()}')
+        print(f'Infrações: {infrações.count()}')
+        print(f'CheckPoints: {checkpoints.count()}')
+        print(f'Viagens Base: {viagens_base.count()}')
+        print(f'Viagens Detalhadas: {viagens_detalhadas.count()}')
+        print(f'Viagens Econômicas: {viagens_eco.count()}')
+        print("--------------------------------------------------")
+
+        #self.Checagem_Detalhada(unidades, infrações, checkpoints, viagens_base, viagens_detalhadas, viagens_eco)
+
+    def Checagem_Detalhada(self, unidades, infrações, checkpoints, viagens_base, viagens_detalhadas, viagens_eco):
+        print("Unidades:")
+        for unidade in unidades:
+            print(f' - {unidade}')  
+        print("--------------------------------------------------")
+        print("Infrações:")
+        for infração in infrações:
+            print(f' - {infração}')
+        print("--------------------------------------------------")
+        print("CheckPoints:")
+        for checkpoint in checkpoints:
+            print(f' - {checkpoint}')
+        print("--------------------------------------------------")
+        print("Viagens Base:")
+        for viagem in viagens_base:
+            print(f' - {viagem}')
+        print("--------------------------------------------------")
+        print("Viagens Detalhadas:")
+        for viagem in viagens_detalhadas:
+            print(f' - {viagem}')
+        print("--------------------------------------------------")
+        print("Viagens Econômicas:")
+        for viagem in viagens_eco:
+            print(f' - {viagem}')
+        print("--------------------------------------------------")
+    ############################################################################################
+
+    def CLTDR_UMBRELLA_02(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
+        def comm(msg):
+            print(colored("="*30, cor1))
+            print(colored(tool, cor2))
+            print(f"{msg}")
+            print(colored("="*30, cor1))
+        comm("Iniciando processamento global...")
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                return
+
+        Wialon.set_locale()
+        #busca os relatorios
+        usuários = Wialon.buscadora_reports(sid)
+        print(usuários)
+
+
+        ###__CARGO__POLO__###
+        comm("Processando CARGO POLO...")
+        self.CARGO_POLO(sid, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr)
+        comm("CARGO POLO processado.")
+        ###__PLACIDO__###
+        comm("Processando PLACIDO...")
+        self.PLACIDO(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac)
+        comm("PLACIDO processado.")
+        ###__SFRESGATE__###
+        comm("Processando SFRESGATE...")
+        self.SFRESGATE(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre)
+        comm("SFRESGATE processado.")
+
+        ###__checkpoints e infrações__###
+        processamento_df = pd.DataFrame()
+        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
+        processamento_df = pd.DataFrame()
+        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
+        processamento_df = pd.DataFrame()
+
+        print("Usuários encontrados:", colored(f'{len(usuários)}', 'green'))
+        print("Usuários:", usuários)
+    
+        Wialon.wialon_logout(sid)
+
+    def CLTDR_UMBRELLA_03(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
+        def comm(msg):
+            print(colored("="*30, cor1))
+            print(colored(tool, cor2))
+            print(f"{msg}")
+            print(colored("="*30, cor1))
+        comm("Iniciando processamento global...")
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                return
+
+        Wialon.set_locale()
+        #busca os relatorios
+        usuários = Wialon.buscadora_reports(sid)
+        comm(usuários)
+
+        ###__ATUALIZADOR_UNIDADES__###
+        self.ATUALIZADOR_01(sid)
+
+
+
+        ###__CARGO__POLO__###
+        comm("Processando CARGO POLO...")
+        self.CARGO_POLO(sid, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr,)
+        comm("CARGO POLO processado.")
+
+        ###__PLACIDO__###
+        comm("Processando PLACIDO...")
+        self.PLACIDO(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac)
+        comm("PLACIDO processado.")
+
+        ###__SFRESGATE__###
+        comm("Processando SFRESGATE...")
+        self.SFRESGATE(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre)
+        comm("SFRESGATE processado.")
+
+        ###__PETITTO__###
+        comm("Processando PETITTO...")
+        self.PETITTO(sid, recurso=401756219, template=59, flag=16777218, Objeto=401904974)
+        comm("PETITTO processado.")
+
+        ###__checkpoints e infrações__###
+        self.CH_INFRA(sid)
         
-        # Busca todas as empresas cadastradas com seus id_criador
-        empresas_dict = {}
-        empresas = Empresa.objects.all()
+
         
-        for empresa in empresas:
-            if empresa.id_criador:
-                empresas_dict[empresa.id_criador] = empresa
-                comm(f'Empresa cadastrada: {empresa.nome} - ID Criador: {empresa.id_criador}')
 
-        if not empresas_dict:
-            comm("⚠️ Nenhuma empresa com id_criador encontrada. Verifique o cadastro das empresas.")
-            return
+        comm(f'{colored("Resumo:", "magenta")}\n'
+            f'Usuários encontrados: {colored(len(usuários), "green")}\n'
+            f'Usuários: {usuários}'
+        )
 
-        # Contadores para estatísticas
-        unidades_processadas = 0
-        unidades_vinculadas = 0
-        unidades_sem_empresa = 0
+        Wialon.wialon_logout(sid)
 
-        for unidade in df_unidades.itertuples(index=False):
-            unidades_processadas += 1
-            
-            # Extrai dados da unidade
-            unit_id = unidade.unit_id
-            unit_name = unidade.unit_name
-            id_criador_unidade = unidade.id_criador
-            
-            # Extrai campos do profile se existirem
-            brand = getattr(unidade, 'brand', '')
-            model = getattr(unidade, 'model', '')
-            year = getattr(unidade, 'year', '')
-            color = getattr(unidade, 'color', '')
-            registration_plate = getattr(unidade, 'registration_plate', '')
-            
-            # Verifica se a unidade pertence a alguma empresa cadastrada
-            empresa_vinculada = empresas_dict.get(id_criador_unidade)
-            
-            if empresa_vinculada:
-                unidades_vinculadas += 1
-                cls = 'Veículo'
-                
-                # Cria o ID único da unidade
-                unidade_id = f"{empresa_vinculada.nome}_{unit_id}"
-                
-                comm(f'✅ Unidade {unit_name} pertence à empresa {empresa_vinculada.nome}')
-                comm(f'   Marca: {brand}, Modelo: {model}, Ano: {year}, Cor: {color}, Placa: {registration_plate}')
-                
-                # Atualiza/cria a unidade no banco de dados
-                try:
-                    veiculo, created = Veiculo.objects.update_or_create(
-                        id=unidade_id,
-                        defaults={
-                            'nm': unit_name,
-                            'placa': registration_plate,
-                            'marca': brand,
-                            'cls': cls,
-                            'empresa': empresa_vinculada,
-                            'cor': color,
-                            'modelo': model,
-                            'ano': int(year) if year and str(year).isdigit() else None,
-                            'id_wialon': unit_id,
-                            'id_criador': id_criador_unidade,
-                        }
-                    )
-                    
-                    action = "criado" if created else "atualizado"
-                    comm(f'✅ Veículo {unit_name} {action} com ID {unidade_id}')
-                    
-                except Exception as e:
-                    comm(f'❌ Erro ao processar veículo {unit_name}: {e}')
-                    
-            else:
-                unidades_sem_empresa += 1
-                comm(f'⚠️ Unidade {unit_name} (ID Criador: {id_criador_unidade}) não pertence a nenhuma empresa cadastrada')
+    def ATUALIZADOR_01(self, sid):
+        self.atualizador(sid, id_criador=401756218)
+        self.atualizador(sid, id_criador=401768998)
+        self.atualizador(sid, id_criador=401872802)
+        self.atualizador(sid, id_criador=401824174)
 
-        # Processamento dos motoristas (se necessário)
-        comm("Processando motoristas...")
-        motoristas = Wialon.motoristas_simples2(sid)
-        df_motoristas = pd.DataFrame(motoristas)
-        
-        motoristas_processados = 0
-        motoristas_vinculados = 0
-        
-        for motorista in df_motoristas.itertuples(index=False):
-            motoristas_processados += 1
-            
-            motorista_id_wialon = motorista.driver_id
-            motorista_nome = motorista.driver_name
-            resource_id = motorista.resource_id
-            
-            # Tenta identificar a empresa do motorista pelo resource_id
-            # (assumindo que o resource corresponde ao id_criador da empresa)
-            empresa_motorista = empresas_dict.get(str(resource_id))
-            
-            if empresa_motorista:
-                motoristas_vinculados += 1
-                cls = 'Motorista'
-                motorista_id = f"{empresa_motorista.nome}_{motorista_id_wialon}"
+    def CH_INFRA(self, sid):
+        processamento_df = pd.DataFrame()
+        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
+        processamento_df = pd.DataFrame()
+        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
+        processamento_df = pd.DataFrame()
 
-                comm(f'✅ Motorista {motorista_nome} pertence à empresa {empresa_motorista.nome}')
 
-                try:
-                    unidade, created = Unidade.objects.update_or_create(
-                        id=motorista_id,
-                        defaults={
-                            'nm': motorista_nome,
-                            'cls': cls,
-                            'empresa': empresa_motorista,
-                            'id_wialon': motorista_id_wialon,
-                        }
-                    )
-                    
-                    action = "criado" if created else "atualizado"
-                    comm(f'✅ Motorista {motorista_nome} {action} com ID {motorista_id}')
-                    
-                except Exception as e:
-                    comm(f'❌ Erro ao processar motorista {motorista_nome}: {e}')
-            else:
-                comm(f'⚠️ Motorista {motorista_nome} (Resource ID: {resource_id}) não pertence a nenhuma empresa cadastrada')
 
-        # Relatório final
-        comm("="*50)
-        comm("RELATÓRIO FINAL:")
-        comm(f"📊 Unidades processadas: {unidades_processadas}")
-        comm(f"✅ Unidades vinculadas: {unidades_vinculadas}")
-        comm(f"⚠️ Unidades sem empresa: {unidades_sem_empresa}")
-        comm(f"📊 Motoristas processados: {motoristas_processados}")
-        comm(f"✅ Motoristas vinculados: {motoristas_vinculados}")
-        comm("="*50)
 
-        # Salva log detalhado se necessário
-        if unidades_sem_empresa > 0:
-            comm(f"⚠️ {unidades_sem_empresa} unidades não puderam ser vinculadas.")
-            comm("Verifique se os id_criador das empresas estão corretos no banco de dados.")
 
     ############################################################################################
 
@@ -783,6 +419,7 @@ class Command(BaseCommand):
         #
         self.prsr_mtr(sid, flag)
         #
+        self.TESTE_01(sid, flag)
 
 
     def teste(self, sid, recurso, template, flag, Objeto):
@@ -797,11 +434,24 @@ class Command(BaseCommand):
         self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=flag, dias=7, periodo="Últimos 7 dias")
         self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=flag, dias=30, periodo="Últimos 30 dias")
 
+
+
     def prsr_vcl(self, sid, recurso, template, flag, Objeto):
         processamento_df = pd.DataFrame()
         self.CLTDR_04(sid, processamento_df, recurso=recurso, template=template, flag=flag, Objeto=Objeto, dias=1, periodo="Ontem")
         self.CLTDR_04(sid, processamento_df, recurso=recurso, template=template, flag=flag, Objeto=Objeto, dias=7, periodo="Últimos 7 dias")
         self.CLTDR_04(sid, processamento_df, recurso=recurso, template=template, flag=flag, Objeto=Objeto, dias=30, periodo="Últimos 30 dias")
+
+
+    def TESTE_01(self, sid, flag):
+        processamento_df = pd.DataFrame()
+        # pega dos ultimos 30 dias usando um loop for
+        #dias = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+        # dias de testes
+        dias = range(1,10)
+        for dia in dias:
+            self.CLTDR_MOT_01_teste(sid, processamento_df, Objeto=401756219, flag=16777216, dias=dia, periodo=str(dia))
+
 
 ### ############################################################################################
 
@@ -857,121 +507,9 @@ class Command(BaseCommand):
         CheckPoint.objects.all().delete()
         Viagem_Base.objects.all().delete()
         Viagem_eco.objects.all().delete()
+        Viagem_Detalhada.objects.all().delete()
 
 
-    #+---
-    def atualizar_01(self):
-        #lista as empresas registradas
-        empresas = Empresa.objects.all()
-        for empresa in empresas:
-            print(f'Empresa: {empresa.nome}')
-            # Inicia a sessão Wialon para cada empresa
-            sid=Wialon.authenticate_with_wialon(empresa.token)
-            print(f'Sessão Wialon iniciada para {empresa.nome}, ID de recurso: {empresa.id_recurso}')
-            if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                continue
-
-            Wialon.set_locale()
-
-            #busca relatórios
-            relatórios = Wialon.buscadora_reports(sid)
-            print(f'Relatórios encontrados: {colored(len(relatórios), "green")}')
-            relatórios = json.dumps(relatórios, indent=4)
-            print(f'Relatórios: {relatórios}')
-            #-------
-            #salva os relatorios em .txt no deposito
-            #with open(f'{deposito}/{empresa.nome}_relatorios.txt', 'w') as f:
-            #    f.write(json.dumps(relatórios, indent=4))
-            #-------
-            unidades = Wialon.unidades_simples(sid)
-            print(f'Unidades encontradas: {colored(len(unidades), "green")}')
-            #-------
-            #for unidade in unidades:
-            #    print(f'Unidade: {unidade}')
-            #-------
-            df_unidades = pd.DataFrame(unidades)
-            print(f'Unidades: {df_unidades}')
-
-
-            motoristas = Wialon.motoristas_simples2(sid)
-            df_motoristas = pd.DataFrame(motoristas)
-            print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
-            print(f'Motoristas: {df_motoristas}')
-            
-            # Atualiza as unidades
-            self.atualiza_unidades(sid, empresa.nome)
-            ###
-
-            #faz logout
-            Wialon.wialon_logout(sid)
-    #+---
-
-
-    def processamento_global(self):
-        print("Iniciando processamento global...")
-        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        Wialon.set_locale()
-        processamento_df = pd.DataFrame()
-
-        ###__UNIDADES__TODAS__###
-        print("Processando Unidades...")
-        self.processador_unidades_totais(sid, processamento_df)
-        print("Unidades processadas.")
-        ###
-
-        processamento_df = pd.DataFrame()
-
-        ###__CARGO__POLO__###
-        #motoristas 
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-        processamento_df = pd.DataFrame()
-
-        ###__PLACIDO__###
-        #Motoristas 
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-        processamento_df = pd.DataFrame()
-
-
-        ###__SFRESGATE__###
-        #motoristas 
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777224, dias=1, periodo="Últimos 30 dias")
-        processamento_df = pd.DataFrame()
-
-        #checkpoints e infrações
-        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
-        processamento_df = pd.DataFrame()   
-
-        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
-        processamento_df = pd.DataFrame()
-
-    def processador_unidades_totais(self, sid, processamento_df):
-        print("Processando Unidades...")
-        # Coleta de dados para o relatório
-        
-        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=7, periodo="Últimos 7 dias")
-        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=30, periodo="Últimos 30 dias")
-        #
-        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401939410, dias=1, periodo="Últimos 30 dias")
-        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401939414, dias=1, periodo="Últimos 30 dias")
-        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401929585, dias=1, periodo="Últimos 30 dias")
-        #
-        processamento_df = pd.DataFrame()
-
-        
 #######################################################################################
     def CLTDR_01(self, sid, processamento_df, flag, dias, periodo):
         print(colored("="*30,'yellow'))
@@ -1097,12 +635,33 @@ class Command(BaseCommand):
 
         if relatorio is not None:
             #----
-            #print(f'Relatório coletado: {relatorio}')
+            print(f'Relatório coletado: {relatorio}')
             #---
             processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
 
             print(processamento_df)
             self.update_or_create_trip(processamento_df)
+            Wialon.clean_up_result(sid)
+
+    def CLTDR_MOT_01_teste(self, sid, processamento_df, Objeto, flag, dias, periodo):
+        print(f'Coletando dados de relatório para ({periodo})')
+
+        relatorio = Wialon.Colheitadeira_JSON_03_EX(sid, flag, reportResourceId=401756219, reportTemplateId=58, reportObjectId=Objeto, reportObjectSecId=2, unit_id="CLTDR_MOT_01",  tempo_dias=dias, periodo=periodo)
+
+        if relatorio is not None:
+            #----
+            #print(f'Relatório coletado: {relatorio}')
+            #---
+            
+            processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
+            #printa o dataframe completo
+            print(processamento_df)
+            #+---
+            # salva como excel
+            #processamento_df.to_excel(f'{deposito}/CLTDR_MOT_01_teste.xlsx', index=False)
+            #+---
+            
+            self.update_or_create_trip_02(processamento_df)
             Wialon.clean_up_result(sid)
     
     def CLTDR_MOT_02(self, sid, processamento_df, recurso, template, Objeto, flag, dias, periodo):
@@ -1143,124 +702,17 @@ class Command(BaseCommand):
 
 
 
-    def processamento_teste(self, empresa):
-        if empresa.nome == 'CPBRACELL':
-        #processa as unidades
-            processamento_df = pd.DataFrame()
-            self.CLTDR_02(sid, processamento_df, flag=16777218, Objeto=401756235, dias=1, periodo="Ontem")
-            self.CLTDR_02(sid, processamento_df, flag=16777220, Objeto=401756235, dias=1, periodo="Últimos 7 dias")
-            self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401756235, dias=1, periodo="Últimos 30 dias")
-
-        #processa os motoristas
-            processamento_df = pd.DataFrame()
-            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
-            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
-            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-        elif empresa.nome == 'PLACIDO':
-            #processa as unidades
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777218, Objeto=401756235, dias=1, periodo="Ontem")
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777220, Objeto=401756235, dias=1, periodo="Últimos 7 dias")
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777224, Objeto=401756235, dias=1, periodo="Últimos 30 dias")
-            
-
-        elif empresa.nome == 'São Francisco Resgate':
-            #processa as unidades
-            processamento_df = pd.DataFrame()
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777218, Objeto=401756235, dias=1, periodo="Ontem")
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777220, Objeto=401756235, dias=1, periodo="Últimos 7 dias")
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777224, Objeto=401756235, dias=1, periodo="Últimos 30 dias")
 
 
 
+########################################################################################
 
-        #######################################################################################
 
-    def atualiza_unidades(self, sid, empresa_nome):
-                 # Busca unidades
-        unidades = unidades_simples(sid)
-        if not unidades:
-            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-            return
-        
-        #coloca os dados em um dataframe
-        df_unidades = pd.DataFrame(unidades)
-        print(f'Unidades encontradas:' , colored(f'{len(df_unidades)}', 'green'))
-        print(f'Unidades: {df_unidades}')
-        for unidade in df_unidades.itertuples(index=False):
-            unidade_id = unidade.id
-            unidade_nome = unidade.nm
-            #separa o nome da unidade por delimitadores '_'(underline). a primeira parte antes do primeiro underline é a placa, que devemos considerar como o novo nome do veículo.
-            partes_nome = unidade_nome.split('_')
-            placa = partes_nome[0].strip() if partes_nome else ''
-            restante_nome = ' '.join([parte.strip() for parte in partes_nome[1:]]) if len(partes_nome) > 1 else ''
-    
-            #checa se 'restante_nome' possui o valor 'Scania', se sim, define 'marca' como Scania
-            if 'Scania' in restante_nome:
-                marca = 'Scania'
-            else:
-                marca = 'Volvo'
-
-            cls = 'Veículo'
-            #retorna a instância da empresa correspondente
-            empresa = Empresa.objects.filter(nome=empresa_nome).first()
-            if not empresa:
-                self.stdout.write(self.style.ERROR(f'Empresa {empresa_nome} não encontrada no banco de dados.'))
-                return
-            if empresa.nome == 'PLACIDO':
-                marca = 'DAF'
-            if empresa.nome == 'São Francisco Resgate':
-                marca = 'Fiat'
-            unidade_id = f"{empresa_nome}_{unidade_id}"
-
-            #+---
-            print(f'Unidade: {placa} | ID: {unidade_id} | Restante do nome: {restante_nome} | Marca: {marca} | Classe: {cls} | Empresa: {empresa.nome}')
-            #+---
-
-            # Atualiza a unidade no banco de dados
-            Unidade.objects.update_or_create(
-                id=unidade_id,
-                defaults={
-                    'nm': unidade_nome,
-                    'placa': placa,
-                    'marca': marca,
-                    'cls': cls,
-                    'descricao': restante_nome if restante_nome else placa,
-                    'empresa': empresa
-                }
-            )
-        #adiciona também os motoristas
-
-        motoristas = Wialon.motoristas_simples2(sid)
-        df_motoristas = pd.DataFrame(motoristas)
-        print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
-        print(f'Motoristas: {df_motoristas}')
-        for motorista in df_motoristas.itertuples(index=False):
-            motorista_id = motorista.driver_id
-            motorista_nome = motorista.driver_name
-            cls = 'Motorista'
-            empresa = Empresa.objects.filter(nome=empresa_nome).first()
-            if not empresa:
-                self.stdout.write(self.style.ERROR(f'Empresa {empresa_nome} não encontrada no banco de dados.'))
-                return
-
-            motorista_id = f"{empresa_nome}_{motorista_id}"
-
-            print(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
-
-            # Atualiza o motorista no banco de dados
-            Unidade.objects.update_or_create(
-                id=motorista_id,
-                defaults={
-                    'nm': motorista_nome,
-                    'cls': cls,
-                    'empresa': empresa,
-                }
-            )
+########################################################################################
 
 
 
-
+    #######################################################################################
 
     def update_or_create_trip(self, processamento_df):
         if not processamento_df.empty:
@@ -1328,6 +780,87 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
                     continue
 
+
+
+    def update_or_create_trip_02(self, processamento_df):
+        if not processamento_df.empty:
+            for index, row in processamento_df.iterrows():
+                try:
+                    
+                    unidades = Unidade.objects.filter(nm=row['Motorista'])
+                    
+                    if not unidades.exists():
+                        self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
+                        continue
+                    
+                    if unidades.count() > 1:
+                        self.stdout.write(self.style.WARNING(f'Múltiplas unidades encontradas com nome "{colored(row["Grouping"], "red")}". Usando a primeira.'))
+                        # Log das unidades duplicadas para análise
+                        for unidade in unidades:
+                            self.stdout.write(self.style.WARNING(f'  - ID: {unidade.id}, Empresa: {unidade.empresa.nome if unidade.empresa else "N/A"}'))
+                    
+                    unidade_instance = unidades.first()
+
+                   
+                    # Processa os valores numericos
+                    quilometragem = self.processar_valor_numerico(row.get('Quilometragem', '0'))
+                    consumo = self.processar_valor_numerico(row.get('Consumido por AbsFCS', '0'))
+                    km_media = self.processar_valor_numerico(row.get('Quilometragem média por unidade de combustível por AbsFCS', '0'))
+                    velocidade_media = self.processar_valor_numerico(row.get('Velocidade média', '0'))
+                    rpm_medio = self.processar_valor_numerico(row.get('RPM médio do motor', '0'))
+                    temperatura_media = self.processar_valor_numerico(row.get('Temperatura média', '0'))
+                    co2 = self.processar_valor_numerico(row.get('Emissões de CO2', '0'))
+                    timestamp_inicial = row.get('timestamp_from', None)
+                    timestamp_final = row.get('timestamp_to', None)
+                    veiculo = row.get('Unidade', None)
+                    periodo = row.get('periodo', None)
+
+
+                    try:
+                        quilometragem_value = float(quilometragem)
+                        consumo_value = float(consumo)
+                        km_media_value = Decimal(km_media)
+                        velocidade_media_value = float(velocidade_media)
+                        rpm_medio_value = float(rpm_medio)
+                        temperatura_media_value = float(temperatura_media)
+                        co2_value = float(co2)
+                    except (ValueError, TypeError):
+                        quilometragem_value = 0.00
+                        consumo_value = 0.00
+                        km_media_value = 0.00
+                        velocidade_media_value = 0.00
+                        rpm_medio_value = 0.00
+                        temperatura_media_value = 0.00
+                        co2_value = 0.00
+
+                    
+                    Viagem_Detalhada.objects.update_or_create(
+                        unidade=unidade_instance,
+                        quilometragem = quilometragem_value,
+
+                    
+
+                        
+                        defaults={
+                            'quilometragem': quilometragem_value,
+                            'Consumido': consumo_value,
+                            'Quilometragem_média': km_media_value,
+                            'Velocidade_média': velocidade_media_value,
+                            'RPM_médio': rpm_medio_value,
+                            'Temperatura_média': temperatura_media_value,
+                            'Emissões_CO2': co2_value,
+                            'timestamp_inicial': timestamp_inicial,
+                            'timestamp_final': timestamp_final,
+                            'veiculo': veiculo,
+                            'período': periodo,
+
+                        }
+                    )
+                    self.stdout.write(self.style.SUCCESS(f'Viagem: {colored(row["Motorista"], "cyan")} - {colored(row["periodo"], "magenta")} - {colored(row["Unidade"], "light_cyan")}- {colored(quilometragem_value, "green")} '))
+
+                except Unidade.DoesNotExist:
+                    self.stdout.write(self.style.ERROR(f'Unidade com nome "{row["Grouping"]}" não encontrada no banco de dados.'))
+                    continue
 
 
     def viagem(self, processamento_df):
@@ -2194,7 +1727,7 @@ class Command(BaseCommand):
         Wialon.wialon_logout(sid)
 
 
-    def TESTE_MENSAGENS_03(self, tempo):
+    def MENSAGENS_03(self, tempo):
         import threading
         import time
         
@@ -2202,6 +1735,9 @@ class Command(BaseCommand):
         # procura apenas unidade com nome que inclua "PRO"
         #lista_unidades = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
         lista_unidades = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+        #adiciona a lista as primeiras 10 unidades da empresa "CPBRACELL"
+        lista_unidades = list(lista_unidades) + list(Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)[:5])
+        
         #lista_unidades = Veiculo.objects.filter(nm__icontains="1023").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
         #lista todos os veículos
         #lista_unidades = Veiculo.objects.all().values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas

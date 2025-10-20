@@ -890,8 +890,8 @@ def login_view(request):
             # Salvar a empresa na sessão
             request.session['empresa_logada'] = empresa.id
             request.session['empresa_nome'] = empresa.nome
-            # Redirecionar para o relatório global
-            return HttpResponseRedirect(reverse('report_empresa'))
+            # Redirecionar para o index
+            return HttpResponseRedirect(reverse('index'))
         except Empresa.DoesNotExist:
             context = {
                 'error': 'Empresa ou senha incorreta.',
@@ -2213,6 +2213,8 @@ def export_cercas_pdf(request, unidade_id):
     return response
 
 
+
+
 def performance_frota(request):
     """View para análise de performance de RPM da frota toda - TODOS OS DADOS"""
     # Verificar se há empresa logada
@@ -2245,36 +2247,54 @@ def performance_frota(request):
                 unidade = Unidade.objects.select_related('empresa').get(id=unidade_id)
                 viagens_unidade = viagens_eco_query.filter(unidade_id=unidade_id)
                 
-                # Calcular dados de RPM (todos os dados históricos)
+                # 🔥 CÁLCULO DE RPM E MOTOR OCIOSO
                 rpms = []
-                for v in viagens_unidade:
-                    if v.rpm and float(v.rpm/8) <= 3500:
-                        rpms.append(float(v.rpm/8))
+                motor_ocioso_count = 0  # 🔥 NOVO: Contador para motor ocioso
+                total_registros = 0     # 🔥 NOVO: Total de registros processados
                 
-                if rpms:
-                    total_pontos = len(rpms)
-                    rpm_medio = sum(rpms) / total_pontos
-                    rpm_maximo = max(rpms)
-                    rpm_minimo = min(rpms)
+                for v in viagens_unidade:
+                    # Verificar se há dados válidos de RPM e velocidade
+                    rpm_valor = float(v.rpm/8) if v.rpm else 0
+                    velocidade_valor = float(v.velocidade) if v.velocidade else 0
                     
-                    # Calcular faixas de RPM
+                    total_registros += 1
+                    
+                    # 🔥 NOVO: Condição para motor ocioso (RPM = 0 e velocidade > 0)
+                    if rpm_valor > 0 and velocidade_valor == 0:
+                        motor_ocioso_count += 1
+                    
+                    # Filtrar RPMs válidos (acima de 0 e abaixo de 3500)
+                    if rpm_valor > 0 and rpm_valor <= 3500:
+                        rpms.append(rpm_valor)
+                
+                if rpms or total_registros > 0:
+                    total_pontos_rpm = len(rpms)  # Total de pontos com RPM válido
+                    
+                    # Calcular estatísticas de RPM
+                    rpm_medio = sum(rpms) / total_pontos_rpm if total_pontos_rpm > 0 else 0
+                    rpm_maximo = max(rpms) if rpms else 0
+                    rpm_minimo = min(rpms) if rpms else 0
+                    
+                    # Calcular faixas de RPM (apenas para RPMs válidos > 0)
                     faixa_azul = len([r for r in rpms if 350 <= r < 799])
                     faixa_verde = len([r for r in rpms if 800 <= r < 1300])
                     faixa_amarela = len([r for r in rpms if 1301 <= r < 2300])
                     faixa_vermelha = len([r for r in rpms if r >= 2301])
                     
-                    # Calcular percentuais
-                    perc_azul = (faixa_azul / total_pontos * 100) if total_pontos > 0 else 0
-                    perc_verde = (faixa_verde / total_pontos * 100) if total_pontos > 0 else 0
-                    perc_amarela = (faixa_amarela / total_pontos * 100) if total_pontos > 0 else 0
-                    perc_vermelha = (faixa_vermelha / total_pontos * 100) if total_pontos > 0 else 0
+                    # 🔥 NOVO: Calcular percentuais baseados no total de registros
+                    perc_azul = (faixa_azul / total_registros * 100) if total_registros > 0 else 0
+                    perc_verde = (faixa_verde / total_registros * 100) if total_registros > 0 else 0
+                    perc_amarela = (faixa_amarela / total_registros * 100) if total_registros > 0 else 0
+                    perc_vermelha = (faixa_vermelha / total_registros * 100) if total_registros > 0 else 0
+                    perc_ocioso = (motor_ocioso_count / total_registros * 100) if total_registros > 0 else 0  # 🔥 NOVO
                     
-                    # Score de performance (mais verde e azul = melhor)
-                    score = (perc_verde * 1.0) + (perc_azul * 0.8) - (perc_amarela * 0.5) - (perc_vermelha * 1.0)
+                    # Score de performance (mais verde e azul = melhor, motor ocioso penaliza)
+                    score = (perc_verde * 1.0) + (perc_azul * 0.8) - (perc_amarela * 0.5) - (perc_vermelha * 1.0) - (perc_ocioso * 0.3)  # 🔥 NOVO: penalizar motor ocioso
                     
                     unidades_performance.append({
                         'unidade': unidade,
-                        'total_pontos': total_pontos,
+                        'total_pontos': total_registros,  # 🔥 ALTERADO: usar total de registros
+                        'total_pontos_rpm': total_pontos_rpm,  # 🔥 NOVO: pontos com RPM válido
                         'rpm_medio': rpm_medio,
                         'rpm_maximo': rpm_maximo,
                         'rpm_minimo': rpm_minimo,
@@ -2282,10 +2302,12 @@ def performance_frota(request):
                         'faixa_verde': faixa_verde,
                         'faixa_amarela': faixa_amarela,
                         'faixa_vermelha': faixa_vermelha,
+                        'motor_ocioso': motor_ocioso_count,  # 🔥 NOVO: quantidade de registros com motor ocioso
                         'perc_azul': perc_azul,
                         'perc_verde': perc_verde,
                         'perc_amarela': perc_amarela,
                         'perc_vermelha': perc_vermelha,
+                        'perc_ocioso': perc_ocioso,  # 🔥 NOVO: percentual de motor ocioso
                         'score': score,
                     })
             except Unidade.DoesNotExist:
@@ -2303,6 +2325,7 @@ def performance_frota(request):
         'perc_vermelha_frota': sum(u['perc_vermelha'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
         'perc_azul_frota': sum(u['perc_azul'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
         'perc_amarela_frota': sum(u['perc_amarela'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
+        'perc_ocioso_frota': sum(u['perc_ocioso'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,  # 🔥 NOVO
     }
     
     context = {
