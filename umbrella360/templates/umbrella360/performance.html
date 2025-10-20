@@ -34,18 +34,9 @@
 
       <!-- Estatísticas Gerais da Frota -->
       <div class="stats-overview" style="background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; color: white;">
-        <h2 style="text-align: center; color: white; margin-bottom: 1.5rem; font-size: 1.8rem;">
-          📈 Resumo Executivo da Frota
-        </h2>
+
 
         <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-          <div class="stat-card" style="background: rgba(255, 255, 255, 0.15); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);">
-            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: white; margin: 0.5rem 0;">
-              {{ stats_gerais.total_unidades }}
-            </div>
-            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">Total de Unidades</div>
-          </div>
-          
           <div class="stat-card" style="background: rgba(255, 255, 255, 0.15); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);">
             <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: white; margin: 0.5rem 0;">
               {{ stats_gerais.total_pontos|floatformat:0 }}
@@ -87,14 +78,17 @@
             </div>
             <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">🔴 Faixa Vermelha (Crítico)</div>
           </div>
+          <div class="stat-card" style="background: rgba(220, 53, 69, 0.3); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
+            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: #f8d7da; margin: 0.5rem 0;">
+              {{ stats_gerais.perc_ocioso_frota|floatformat:1 }}%
+            </div>
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">Ociosidade</div>
+          </div>
         </div>
       </div>
 
       <!-- Legenda das Faixas de RPM -->
       <div style="background: white; border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-        <h3 style="text-align: center; color: #2c3e50; margin-bottom: 1rem;">
-          📖 Legenda das Faixas de RPM
-        </h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
           <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196F3;">
             <span style="font-size: 1.5rem;">🔵</span>
@@ -133,17 +127,12 @@
       <!-- Tabela de Performance por Unidade -->
       {% if unidades_performance %}
       <div style="background: white; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-        <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
-          🎯 Ranking de Performance por Unidade
-        </h2>
-        
         <div style="overflow-x: auto;">
           <table class="sortable-table" style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
             <thead>
               <tr style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Ranking</th>
                 <th style="padding: 1rem; text-align: left; border: 1px solid #dee2e6;">Unidade</th>
-                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Classe</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Marca</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Pontos Analisados</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">RPM Médio</th>
@@ -151,6 +140,7 @@
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">🟢 Verde</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">🟡 Amarela</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">🔴 Vermelha</th>
+                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Ociosidade</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Score</th>
               </tr>
             </thead>
@@ -172,11 +162,6 @@
                   <a href="{% url 'detalhes_unidade' item.unidade.id %}" style="color: #667eea; text-decoration: none; font-weight: 600;">
                     {{ item.unidade.nm|default:item.unidade.id }}
                   </a>
-                </td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
-                  <span style="padding: 0.25rem 0.75rem; background: #e9ecef; border-radius: 15px; font-size: 0.85rem;">
-                    {{ item.unidade.cls }}
-                  </span>
                 </td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
                   {{ item.unidade.marca|default:"-" }}
@@ -219,6 +204,10 @@
                     ({{ item.faixa_vermelha }})
                   </div>
                 </td>
+                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
+                  <div style="padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 1.1rem;">
+                    {{ item.perc_ocioso|floatformat:1 }}%
+                  </div>
                 <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
                   <div style="padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 1.1rem;
                     {% if item.score >= 70 %}

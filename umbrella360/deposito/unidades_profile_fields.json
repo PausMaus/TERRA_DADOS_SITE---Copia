@@ -203,7 +203,7 @@
       "uacl": 4178867978239
     },
     {
-      "nm": "1005_DKU5655_JOSE ROBERTO_PETITTO_Ruptela Pro5",
+      "nm": "1005_DKU5655_OFICINA_PETITTO_Ruptela Pro5",
       "cls": 2,
       "id": 401925962,
       "crt": 401824174,
@@ -435,7 +435,7 @@
       "uacl": 4178867978239
     },
     {
-      "nm": "1017_FFI3I74_PETITTO_JOÃO_Ruptela Pro5",
+      "nm": "1017_FFI3I74_PETITTO_JOSE ROBERTO_Ruptela Pro5",
       "cls": 2,
       "id": 401938139,
       "crt": 401824174,
@@ -12637,6 +12637,88 @@
       "uacl": 4178867978239
     },
     {
+      "nm": "RNH0G45_CF",
+      "cls": 2,
+      "id": 402018722,
+      "crt": 401844215,
+      "bact": 401844216,
+      "mu": 0,
+      "pflds": {
+        "1": {
+          "id": 1,
+          "n": "vehicle_class",
+          "v": "refrigerator_van",
+          "ct": 1760383174,
+          "mt": 1760383174
+        },
+        "2": {
+          "id": 2,
+          "n": "effective_capacity",
+          "v": "10",
+          "ct": 1760383174,
+          "mt": 1760383174
+        },
+        "3": {
+          "id": 3,
+          "n": "carrying_capacity",
+          "v": "0.1",
+          "ct": 1760383174,
+          "mt": 1760383174
+        },
+        "4": {
+          "id": 4,
+          "n": "brand",
+          "v": "Volkswagen",
+          "ct": 1760383174,
+          "mt": 1760383174
+        },
+        "5": {
+          "id": 5,
+          "n": "model",
+          "v": "VW/SAVEIRO CS RB MPI",
+          "ct": 1760383174,
+          "mt": 1760383174
+        },
+        "6": {
+          "id": 6,
+          "n": "vin",
+          "v": "9BWKL45U0PP059043",
+          "ct": 1760383174,
+          "mt": 1760383174
+        },
+        "7": {
+          "id": 7,
+          "n": "registration_plate",
+          "v": "EXL6C13",
+          "ct": 1760383174,
+          "mt": 1760383174
+        },
+        "8": {
+          "id": 8,
+          "n": "year",
+          "v": "2023",
+          "ct": 1760383174,
+          "mt": 1760383174
+        },
+        "9": {
+          "id": 9,
+          "n": "color",
+          "v": "Branco",
+          "ct": 1760383174,
+          "mt": 1760383174
+        },
+        "10": {
+          "id": 10,
+          "n": "primary_fuel_type",
+          "v": "Flex",
+          "ct": 1760383174,
+          "mt": 1760383174
+        }
+      },
+      "pfldsmax": 0,
+      "uacl": 4178867978239
+    },
+    {
       "nm": "SFRESGATE_0727 TESTE",
       "cls": 2,
       "id": 401943217,
@@ -19771,88 +19853,6 @@
           "v": "FIORINO",
           "ct": 1755171916,
           "mt": 1755171916
-        }
-      },
-      "pfldsmax": 0,
-      "uacl": 4178867978239
-    },
-    {
-      "nm": "Teste_PIONEERX3_CF",
-      "cls": 2,
-      "id": 402018722,
-      "crt": 401844215,
-      "bact": 401844216,
-      "mu": 0,
-      "pflds": {
-        "1": {
-          "id": 1,
-          "n": "vehicle_class",
-          "v": "refrigerator_van",
-          "ct": 1760383174,
-          "mt": 1760383174
-        },
-        "2": {
-          "id": 2,
-          "n": "effective_capacity",
-          "v": "10",
-          "ct": 1760383174,
-          "mt": 1760383174
-        },
-        "3": {
-          "id": 3,
-          "n": "carrying_capacity",
-          "v": "0.1",
-          "ct": 1760383174,
-          "mt": 1760383174
-        },
-        "4": {
-          "id": 4,
-          "n": "brand",
-          "v": "Volkswagen",
-          "ct": 1760383174,
-          "mt": 1760383174
-        },
-        "5": {
-          "id": 5,
-          "n": "model",
-          "v": "VW/SAVEIRO CS RB MPI",
-          "ct": 1760383174,
-          "mt": 1760383174
-        },
-        "6": {
-          "id": 6,
-          "n": "vin",
-          "v": "9BWKL45U0PP059043",
-          "ct": 1760383174,
-          "mt": 1760383174
-        },
-        "7": {
-          "id": 7,
-          "n": "registration_plate",
-          "v": "EXL6C13",
-          "ct": 1760383174,
-          "mt": 1760383174
-        },
-        "8": {
-          "id": 8,
-          "n": "year",
-          "v": "2023",
-          "ct": 1760383174,
-          "mt": 1760383174
-        },
-        "9": {
-          "id": 9,
-          "n": "color",
-          "v": "Branco",
-          "ct": 1760383174,
-          "mt": 1760383174
-        },
-        "10": {
-          "id": 10,
-          "n": "primary_fuel_type",
-          "v": "Flex",
-          "ct": 1760383174,
-          "mt": 1760383174
         }
       },
       "pfldsmax": 0,

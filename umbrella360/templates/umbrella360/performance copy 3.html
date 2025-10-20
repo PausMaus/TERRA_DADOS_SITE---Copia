@@ -1,0 +1,306 @@
+{% load static %}
+{% load umbrella_tags %}
+<link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=9">
+<link rel="stylesheet" href="{% static 'umbrella360/style_refatorado.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'umbrella360/report_novo.css' %}?v=1">
+<script src="{% static 'umbrella360/theme-toggle.js' %}?v=2"></script>
+<script src="{% static 'umbrella360/table-sort.js' %}?v=1"></script>
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance da Frota - Umbrella360</title>
+  </head>
+  <body>
+    <!-- Botão de alternância de tema -->
+    <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
+      <span class="theme-icon">◐</span> Noite de Verão
+    </button>
+    
+    <div class="header">
+      <div class="menu-buttons">
+            <a href="{% url 'index' %}" class="btn btn-primary">Início</a>
+            <a href="{% url 'report_empresa' %}" class="btn btn-secondary">Painel</a>
+            <a href="{% url 'ranking_empresa' %}" class="btn btn-secondary">Ranking</a>
+      </div>
+    </div>
+
+    <main style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
+
+      <!-- Cabeçalho -->
+
+
+      <!-- Estatísticas Gerais da Frota -->
+      <div class="stats-overview" style="background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; color: white;">
+        <h2 style="text-align: center; color: white; margin-bottom: 1.5rem; font-size: 1.8rem;">
+          📈 Resumo Executivo da Frota
+        </h2>
+
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+          <div class="stat-card" style="background: rgba(255, 255, 255, 0.15); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);">
+            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: white; margin: 0.5rem 0;">
+              {{ stats_gerais.total_unidades }}
+            </div>
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">Total de Unidades</div>
+          </div>
+          
+          <div class="stat-card" style="background: rgba(255, 255, 255, 0.15); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);">
+            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: white; margin: 0.5rem 0;">
+              {{ stats_gerais.total_pontos|floatformat:0 }}
+            </div>
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">Total de Pontos Analisados</div>
+          </div>
+          
+          <div class="stat-card" style="background: rgba(255, 255, 255, 0.15); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);">
+            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: white; margin: 0.5rem 0;">
+              {{ stats_gerais.rpm_medio_frota|floatformat:0 }}
+            </div>
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">RPM Médio da Frota</div>
+          </div>
+          
+          <div class="stat-card" style="background: rgba(33, 150, 243, 0.3); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
+            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: #bbdefb; margin: 0.5rem 0;">
+              {{ stats_gerais.perc_azul_frota|floatformat:1 }}%
+            </div>
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">🔵 Faixa Azul (Econômica)</div>
+          </div>
+          
+          <div class="stat-card" style="background: rgba(40, 167, 69, 0.3); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
+            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: #d4edda; margin: 0.5rem 0;">
+              {{ stats_gerais.perc_verde_frota|floatformat:1 }}%
+            </div>
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">🟢 Faixa Verde (Ideal)</div>
+          </div>
+          
+          <div class="stat-card" style="background: rgba(255, 152, 0, 0.3); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
+            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: #ffe0b2; margin: 0.5rem 0;">
+              {{ stats_gerais.perc_amarela_frota|floatformat:1 }}%
+            </div>
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">🟡 Faixa Amarela (Atenção)</div>
+          </div>
+          
+          <div class="stat-card" style="background: rgba(220, 53, 69, 0.3); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
+            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: #f8d7da; margin: 0.5rem 0;">
+              {{ stats_gerais.perc_vermelha_frota|floatformat:1 }}%
+            </div>
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">🔴 Faixa Vermelha (Crítico)</div>
+          </div>
+          <div class="stat-card" style="background: rgba(220, 53, 69, 0.3); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
+            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: #f8d7da; margin: 0.5rem 0;">
+              {{ stats_gerais.perc_ocioso_frota|floatformat:1 }}%
+            </div>
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">Ociosidade</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legenda das Faixas de RPM -->
+      <div style="background: white; border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <h3 style="text-align: center; color: #2c3e50; margin-bottom: 1rem;">
+          📖 Legenda das Faixas de RPM
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196F3;">
+            <span style="font-size: 1.5rem;">🔵</span>
+            <div>
+              <strong>Azul (350-799 RPM)</strong>
+              <p style="margin: 0; font-size: 0.85rem; color: #555;">Econômica</p>
+            </div>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: #e8f5e9; border-radius: 8px; border-left: 4px solid #4CAF50;">
+            <span style="font-size: 1.5rem;">🟢</span>
+            <div>
+              <strong>Verde (800-1300 RPM)</strong>
+              <p style="margin: 0; font-size: 0.85rem; color: #555;">Ideal</p>
+            </div>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: #fff3e0; border-radius: 8px; border-left: 4px solid #FF9800;">
+            <span style="font-size: 1.5rem;">🟡</span>
+            <div>
+              <strong>Amarela (1301-2300 RPM)</strong>
+              <p style="margin: 0; font-size: 0.85rem; color: #555;">Atenção</p>
+            </div>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: #ffebee; border-radius: 8px; border-left: 4px solid #f44336;">
+            <span style="font-size: 1.5rem;">🔴</span>
+            <div>
+              <strong>Vermelha (≥2301 RPM)</strong>
+              <p style="margin: 0; font-size: 0.85rem; color: #555;">Crítica</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela de Performance por Unidade -->
+      {% if unidades_performance %}
+      <div style="background: white; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+        <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
+          🎯 Ranking de Performance por Unidade
+        </h2>
+        
+        <div style="overflow-x: auto;">
+          <table class="sortable-table" style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+            <thead>
+              <tr style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Ranking</th>
+                <th style="padding: 1rem; text-align: left; border: 1px solid #dee2e6;">Unidade</th>
+                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Classe</th>
+                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Marca</th>
+                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Pontos Analisados</th>
+                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">RPM Médio</th>
+                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">🔵 Azul</th>
+                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">🟢 Verde</th>
+                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">🟡 Amarela</th>
+                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">🔴 Vermelha</th>
+                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in unidades_performance %}
+              <tr style="{% cycle 'background: #f8f9fa;' 'background: white;' %} transition: all 0.3s ease;" onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='{% cycle '#f8f9fa' 'white' %}'">
+                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6; font-weight: 700; font-size: 1.2rem;">
+                  {% if forloop.counter == 1 %}
+                    🥇
+                  {% elif forloop.counter == 2 %}
+                    🥈
+                  {% elif forloop.counter == 3 %}
+                    🥉
+                  {% else %}
+                    {{ forloop.counter }}
+                  {% endif %}
+                </td>
+                <td style="padding: 1rem; border: 1px solid #dee2e6;">
+                  <a href="{% url 'detalhes_unidade' item.unidade.id %}" style="color: #667eea; text-decoration: none; font-weight: 600;">
+                    {{ item.unidade.nm|default:item.unidade.id }}
+                  </a>
+                </td>
+                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
+                  <span style="padding: 0.25rem 0.75rem; background: #e9ecef; border-radius: 15px; font-size: 0.85rem;">
+                    {{ item.unidade.cls }}
+                  </span>
+                </td>
+                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
+                  {{ item.unidade.marca|default:"-" }}
+                </td>
+                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6; font-weight: 600;">
+                  {{ item.total_pontos }}
+                </td>
+                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6; font-weight: 600;">
+                  {{ item.rpm_medio|floatformat:0 }}
+                </td>
+                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
+                  <div style="font-weight: 600; color: #2196F3; font-size: 1.1rem;">
+                    {{ item.perc_azul|floatformat:1 }}%
+                  </div>
+                  <div style="font-size: 0.85rem; color: #666;">
+                    ({{ item.faixa_azul }})
+                  </div>
+                </td>
+                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
+                  <div style="font-weight: 600; color: #4CAF50; font-size: 1.1rem;">
+                    {{ item.perc_verde|floatformat:1 }}%
+                  </div>
+                  <div style="font-size: 0.85rem; color: #666;">
+                    ({{ item.faixa_verde }})
+                  </div>
+                </td>
+                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
+                  <div style="font-weight: 600; color: #FF9800; font-size: 1.1rem;">
+                    {{ item.perc_amarela|floatformat:1 }}%
+                  </div>
+                  <div style="font-size: 0.85rem; color: #666;">
+                    ({{ item.faixa_amarela }})
+                  </div>
+                </td>
+                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
+                  <div style="font-weight: 600; color: #f44336; font-size: 1.1rem;">
+                    {{ item.perc_vermelha|floatformat:1 }}%
+                  </div>
+                  <div style="font-size: 0.85rem; color: #666;">
+                    ({{ item.faixa_vermelha }})
+                  </div>
+                </td>
+                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
+                  <div style="padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 1.1rem;
+                    {% if item.score >= 70 %}
+                      background: linear-gradient(135deg, #4CAF50, #8BC34A); color: white;
+                    {% elif item.score >= 40 %}
+                      background: linear-gradient(135deg, #FF9800, #FFC107); color: white;
+                    {% else %}
+                      background: linear-gradient(135deg, #f44336, #e91e63); color: white;
+                    {% endif %}
+                  ">
+                    {{ item.score|floatformat:1 }}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <div style="background: white; border-radius: 15px; padding: 3rem; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
+        <h3 style="color: #6c757d; margin-bottom: 1rem;">Nenhum dado disponível</h3>
+        <p style="color: #6c757d;">
+          Não há dados de performance disponíveis no sistema.
+          <br>Verifique se há dados de Viagem_eco cadastrados.
+        </p>
+      </div>
+      {% endif %}
+
+    </main>
+    
+    <footer class="footer">
+      <p>&copy; 2025 Umbrella360. Transformando o Brasil através da logística inteligente.</p>
+      <p><em>"Nós enxergamos um mundo mais justo, mais humano e mais sustentável."</em></p>
+    </footer>
+
+    <style>
+    /* Estilos adicionais para responsividade */
+    @media (max-width: 768px) {
+      main {
+        padding: 1rem !important;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr !important;
+      }
+      
+      table {
+        font-size: 0.75rem !important;
+      }
+      
+      th, td {
+        padding: 0.5rem !important;
+      }
+    }
+
+    /* Animações de hover para cards */
+    .stat-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+
+    /* Estilo para links na tabela */
+    .sortable-table a {
+      transition: color 0.3s ease;
+    }
+    
+    .sortable-table a:hover {
+      color: #764ba2 !important;
+      text-decoration: underline;
+    }
+    </style>
+  </body>
+</html>

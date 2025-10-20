@@ -126,12 +126,7 @@
             
             <div class="form-group">
               <label for="empresa">Empresa:</label>
-              <select id="empresa" name="empresa" required>
-                <option value="">Selecione sua empresa</option>
-                {% for empresa in empresas %}
-                  <option value="{{ empresa.nome }}">{{ empresa.nome }}</option>
-                {% endfor %}
-              </select>
+              <input type="text" id="empresa" name="empresa" placeholder="Empresa" required>
             </div>
             
             <div class="form-group">
@@ -146,23 +141,7 @@
         </div>
       </section>
 
-      <section class="data-importance" style="margin-top: 3rem;">
-        <h2>Acesso Seguro</h2>
-        <div class="importance-grid">
-          <div class="importance-item">
-            <strong>Dashboard Exclusivo:</strong>
-            <p>Acesse seu dashboard personalizado com dados exclusivos da sua empresa.</p>
-          </div>
-          <div class="importance-item">
-            <strong>Relatórios Personalizados:</strong>
-            <p>Análises específicas para sua frota e operações logísticas.</p>
-          </div>
-          <div class="importance-item">
-            <strong>Gestão Inteligente:</strong>
-            <p>Métricas e indicadores exclusivos para tomada de decisão estratégica.</p>
-          </div>
-        </div>
-      </section>
+
     </main>
 
     <footer class="footer">
