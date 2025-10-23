@@ -1,0 +1,73 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Laboratorium</title>
+    <link rel="stylesheet" href="{% static 'lab_01/style.css' %}">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>Laboratorium</h1>
+            <p>Área de Login</p>
+        </div>
+        <nav class="menu-buttons">
+            <a href="{% url 'lab_01:index' %}" class="btn btn-secondary">Voltar</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Mensagens -->
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" style="background: {% if message.tags == 'success' %}#d4edda{% else %}#f8d7da{% endif %}; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Formulário de Login -->
+        <section class="hero">
+            <div style="max-width: 400px; margin: 0 auto;">
+                <h2 style="text-align: center; margin-bottom: 2rem;">Acesso ao Sistema</h2>
+                
+                <form method="post" style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    {% csrf_token %}
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="username" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+                            Usuário
+                        </label>
+                        <input type="text" name="username" id="username" required autofocus
+                               style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                    </div>
+                    
+                    <div style="margin-bottom: 2rem;">
+                        <label for="password" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+                            Senha
+                        </label>
+                        <input type="password" name="password" id="password" required
+                               style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+                        Entrar
+                    </button>
+                </form>
+                
+                <div style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                    <p style="color: #6c757d; margin: 0;">
+                        <strong>Nota:</strong> Usuários cadastrados no sistema Laboratorium
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Terra Dados - Laboratorium</p>
+    </footer>
+</body>
+</html>

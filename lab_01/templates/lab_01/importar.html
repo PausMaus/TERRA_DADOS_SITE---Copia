@@ -1,0 +1,64 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importar CSV - Laboratorium</title>
+    <link rel="stylesheet" href="{% static 'lab_01/style.css' %}">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>Laboratorium</h1>
+            <p>Importar Dados CSV</p>
+        </div>
+        <nav class="menu-buttons">
+            <a href="{% url 'lab_01:index' %}" class="btn btn-secondary">Voltar</a>
+        </nav>
+    </header>
+
+    <main>
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" style="background: {% if message.tags == 'success' %}#d4edda{% else %}#f8d7da{% endif %}; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <section class="hero">
+            <h2>Importar Dados do Google Trends</h2>
+            <p>Faça upload de um arquivo CSV no formato Google Trends</p>
+        </section>
+
+        <section class="status-section">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div style="text-align: center;">
+                    <input type="file" name="csv_file" accept=".csv" required
+                           style="padding: 1rem; border: 2px dashed #667eea; border-radius: 8px; margin-bottom: 1rem; width: 100%; max-width: 500px;">
+                    <br>
+                    <button type="submit" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2rem;">
+                        Importar Dados
+                    </button>
+                </div>
+            </form>
+
+            <div style="margin-top: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px;">
+                <h3 style="margin-bottom: 1rem;">Formato Esperado:</h3>
+                <pre style="background: white; padding: 1rem; border-radius: 5px; overflow-x: auto;">Categoria: Todas as categorias
+
+Região,termo: (dd/mm/aaaa – dd/mm/aaaa)
+São Paulo,100
+Rio de Janeiro,95
+...</pre>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Terra Dados - Laboratorium</p>
+    </footer>
+</body>
+</html>

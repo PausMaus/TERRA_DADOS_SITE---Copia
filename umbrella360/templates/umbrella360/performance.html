@@ -33,6 +33,66 @@
 
 
       <!-- Estatísticas Gerais da Frota -->
+            <!-- 🔥 NOVO: Formulário de Filtros -->
+      <div style="background: white; border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <form method="get" id="filterForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+          
+          <!-- Seletor de Período Rápido -->
+          <div>
+            <label for="periodo_dias" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+              📅 Período Rápido
+            </label>
+            <select name="periodo_dias" id="periodo_dias" onchange="toggleDateInputs(this.value)" 
+                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+              <option value="7" {% if periodo_dias == '7' %}selected{% endif %}>Últimos 7 dias</option>
+              <option value="15" {% if periodo_dias == '15' %}selected{% endif %}>Últimos 15 dias</option>
+              <option value="30" {% if periodo_dias == '30' or not periodo_dias %}selected{% endif %}>Últimos 30 dias</option>
+              <option value="60" {% if periodo_dias == '60' %}selected{% endif %}>Últimos 60 dias</option>
+              <option value="90" {% if periodo_dias == '90' %}selected{% endif %}>Últimos 90 dias</option>
+              <option value="todos" {% if periodo_dias == 'todos' %}selected{% endif %}>Todos os dados</option>
+              <option value="personalizado" {% if data_inicio and data_fim %}selected{% endif %}>📆 Personalizado</option>
+            </select>
+          </div>
+          
+          <!-- Data Início (oculto por padrão) -->
+          <div id="dataInicioDiv" style="{% if not data_inicio %}display: none;{% endif %}">
+            <label for="data_inicio" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+              Data Início
+            </label>
+            <input type="date" name="data_inicio" id="data_inicio" value="{{ data_inicio }}"
+                  style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+          </div>
+          
+          <!-- Data Fim (oculto por padrão) -->
+          <div id="dataFimDiv" style="{% if not data_fim %}display: none;{% endif %}">
+            <label for="data_fim" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+              Data Fim
+            </label>
+            <input type="date" name="data_fim" id="data_fim" value="{{ data_fim }}"
+                  style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+          </div>
+          
+          <!-- Botão Aplicar -->
+          <div>
+            <button type="submit" style="width: 100%; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); 
+                    color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem; 
+                    transition: transform 0.2s;">
+              🔍 Aplicar Filtro
+            </button>
+          </div>
+          
+          <!-- Botão Limpar -->
+          <div>
+            <a href="{% url 'performance_frota' %}" style="display: block; width: 100%; padding: 0.75rem 1.5rem; 
+              background: #6c757d; color: white; border: none; border-radius: 8px; font-weight: 600; 
+              text-align: center; text-decoration: none; transition: transform 0.2s;">
+              🔄 Limpar Filtros
+            </a>
+          </div>
+          
+        </form>
+      </div>
+
       <div class="stats-overview" style="background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; color: white;">
 
 
@@ -285,5 +345,33 @@
       text-decoration: underline;
     }
     </style>
+    <script>
+    // Função para mostrar/ocultar campos de data personalizada
+    function toggleDateInputs(value) {
+      const dataInicioDiv = document.getElementById('dataInicioDiv');
+      const dataFimDiv = document.getElementById('dataFimDiv');
+      
+      if (value === 'personalizado') {
+        dataInicioDiv.style.display = 'block';
+        dataFimDiv.style.display = 'block';
+      } else {
+        dataInicioDiv.style.display = 'none';
+        dataFimDiv.style.display = 'none';
+        // Limpar valores se não for personalizado
+        document.getElementById('data_inicio').value = '';
+        document.getElementById('data_fim').value = '';
+      }
+    }
+    
+    // Aplicar estilo hover aos botões
+    document.querySelectorAll('button, a[href*="performance"]').forEach(el => {
+      el.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-2px)';
+      });
+      el.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+      });
+    });
+  </script>
   </body>
 </html>

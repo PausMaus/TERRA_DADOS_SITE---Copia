@@ -434,7 +434,12 @@ def lista_unidades(request):
 def detalhes_unidade(request, unidade_id):
     """View para mostrar detalhes completos de uma unidade específica"""
     unidade = get_object_or_404(Unidade, id=unidade_id)
-
+    
+    # 🔥 NOVO: Obter filtros de data
+    data_inicio = request.GET.get('data_inicio', '')
+    data_fim = request.GET.get('data_fim', '')
+    periodo_dias = request.GET.get('periodo_dias', '1')  # Padrão: dia atual
+    
     
     # Obter todas as viagens da unidade
     viagens = Viagem_Base.objects.filter(unidade=unidade).order_by('-período')
@@ -481,6 +486,44 @@ def detalhes_unidade(request, unidade_id):
     viagens_eco = Viagem_eco.objects.filter(
         unidade_id=unidade.id
     ).order_by('-timestamp')  # Limitar para performance
+
+
+    
+    # 🔥 NOVO: Aplicar filtros de data
+    if data_inicio and data_fim:
+        try:
+            dt_inicio = datetime.strptime(data_inicio, '%Y-%m-%d')
+            dt_fim = datetime.strptime(data_fim, '%Y-%m-%d')
+            timestamp_inicio = int(dt_inicio.timestamp())
+            timestamp_fim = int(dt_fim.replace(hour=23, minute=59, second=59).timestamp())
+            viagens_eco = viagens_eco.filter(
+                timestamp__gte=timestamp_inicio,
+                timestamp__lte=timestamp_fim
+            )
+        except ValueError:
+            pass
+    elif periodo_dias and periodo_dias != 'todos':
+        try:
+            dias = int(periodo_dias)
+            if dias == 0:  # Dia atual
+                hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+                timestamp_inicio = int(hoje.timestamp())
+                timestamp_fim = int(datetime.now().timestamp())
+            else:
+                data_limite = datetime.now() - timedelta(days=dias)
+                timestamp_inicio = int(data_limite.timestamp())
+                timestamp_fim = int(datetime.now().timestamp())
+            
+            viagens_eco = viagens_eco.filter(
+                timestamp__gte=timestamp_inicio,
+                timestamp__lte=timestamp_fim
+            )
+        except ValueError:
+            pass
+    
+
+
+
     viagens_detalhadas = Viagem_Detalhada.objects.filter(
         unidade_id=unidade.id
     ).order_by('-timestamp_final')
@@ -689,7 +732,13 @@ def detalhes_unidade(request, unidade_id):
         'timeline_stats': timeline_stats,
         'timeline_data_json': timeline_data_json,
         'consumo_data_json': consumo_data_json,  # Novo
-}
+                # 🔥 NOVO: Passar filtros para o template
+        'data_inicio': data_inicio,
+        'data_fim': data_fim,
+        'periodo_dias': periodo_dias,
+    }
+    
+
     
     return render(request, 'umbrella360/detalhes_unidade.html', context)
 
@@ -2216,7 +2265,9 @@ def export_cercas_pdf(request, unidade_id):
 
 
 def performance_frota(request):
-    """View para análise de performance de RPM da frota toda - TODOS OS DADOS"""
+    """View para análise de performance de RPM da frota toda - COM FILTROS DE DATA"""
+    from datetime import datetime, timedelta
+    
     # Verificar se há empresa logada
     empresa_logada_id = request.session.get('empresa_logada')
     empresa_logada = None
@@ -2227,7 +2278,12 @@ def performance_frota(request):
         except Empresa.DoesNotExist:
             return HttpResponseRedirect(reverse('login_view'))
     
-    # Buscar TODAS as viagens eco da empresa (sem filtro de data)
+    # 🔥 NOVO: Obter filtros de data
+    data_inicio = request.GET.get('data_inicio', '')
+    data_fim = request.GET.get('data_fim', '')
+    periodo_dias = request.GET.get('periodo_dias', '30')  # Padrão: últimos 30 dias
+    
+    # Buscar viagens eco da empresa
     from .models import Viagem_eco
     
     viagens_eco_query = Viagem_eco.objects.select_related('unidade', 'unidade__empresa')
@@ -2235,6 +2291,29 @@ def performance_frota(request):
     if empresa_logada_id:
         viagens_eco_query = viagens_eco_query.filter(unidade__empresa_id=empresa_logada_id)
     
+        # 🔥 NOVO: Aplicar filtros de data
+    if data_inicio and data_fim:
+        try:
+            dt_inicio = datetime.strptime(data_inicio, '%Y-%m-%d')
+            dt_fim = datetime.strptime(data_fim, '%Y-%m-%d')
+            timestamp_inicio = int(dt_inicio.timestamp())
+            timestamp_fim = int(dt_fim.replace(hour=23, minute=59, second=59).timestamp())
+            viagens_eco_query = viagens_eco_query.filter(
+                timestamp__gte=timestamp_inicio,
+                timestamp__lte=timestamp_fim
+            )
+        except ValueError:
+            pass
+    elif periodo_dias and periodo_dias != 'todos':
+        # Filtrar pelos últimos N dias
+        try:
+            dias = int(periodo_dias)
+            data_limite = datetime.now() - timedelta(days=dias)
+            timestamp_limite = int(data_limite.timestamp())
+            viagens_eco_query = viagens_eco_query.filter(timestamp__gte=timestamp_limite)
+        except ValueError:
+            pass
+
     # Processar todos os dados de uma vez
     unidades_performance = []
     
@@ -2256,12 +2335,15 @@ def performance_frota(request):
                     # Verificar se há dados válidos de RPM e velocidade
                     rpm_valor = float(v.rpm/8) if v.rpm else 0
                     velocidade_valor = float(v.velocidade) if v.velocidade else 0
+                    energia_valor = float(v.energia) if v.energia else 0
                     
                     total_registros += 1
                     
                     # 🔥 NOVO: Condição para motor ocioso (RPM = 0 e velocidade > 0)
-                    if rpm_valor > 0 and velocidade_valor == 0:
+                    if rpm_valor > 0 and velocidade_valor == 0 or energia_valor > 12900 and velocidade_valor == 0:
                         motor_ocioso_count += 1
+                        
+
                     
                     # Filtrar RPMs válidos (acima de 0 e abaixo de 3500)
                     if rpm_valor > 0 and rpm_valor <= 3500:

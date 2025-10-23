@@ -62,6 +62,11 @@
                   <strong>Cor:</strong> {{ unidade.cor }}
                 </p>
               {% endif %}
+              {% if unidade.modelo %}
+                <p style="margin: 0.25rem 0 0 0; color: #495057;">
+                  <strong>Modelo:</strong> {{ unidade.modelo }}
+                </p>
+              {% endif %}
             </div>
             <div style="text-align: center;">
               {% if stats_gerais.total_viagens > 0 %}
@@ -192,6 +197,67 @@
     <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
     Timeline de Performance
     </h2>
+    
+    <!-- 🔥 NOVO: Formulário de Filtros -->
+    <div style="background: white; border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <form method="get" id="timelineFilterForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+          
+          <!-- Seletor de Período Rápido -->
+          <div>
+            <label for="periodo_dias_timeline" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+              📅 Período
+            </label>
+            <select name="periodo_dias" id="periodo_dias_timeline" onchange="toggleTimelineDateInputs(this.value)" 
+                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+              <option value="0" {% if periodo_dias == '0' or not periodo_dias or periodo_dias == '1' %}selected{% endif %}>Hoje</option>
+              <option value="1" {% if periodo_dias == '1' %}selected{% endif %}>Últimas 24h</option>
+              <option value="7" {% if periodo_dias == '7' %}selected{% endif %}>Últimos 7 dias</option>
+              <option value="15" {% if periodo_dias == '15' %}selected{% endif %}>Últimos 15 dias</option>
+              <option value="30" {% if periodo_dias == '30' %}selected{% endif %}>Últimos 30 dias</option>
+              <option value="todos" {% if periodo_dias == 'todos' %}selected{% endif %}>Todos os dados</option>
+              <option value="personalizado" {% if data_inicio and data_fim %}selected{% endif %}>📆 Personalizado</option>
+            </select>
+          </div>
+          
+          <!-- Data Início (oculto por padrão) -->
+          <div id="timelineDataInicioDiv" style="{% if not data_inicio %}display: none;{% endif %}">
+            <label for="data_inicio_timeline" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+              Data Início
+            </label>
+            <input type="date" name="data_inicio" id="data_inicio_timeline" value="{{ data_inicio }}"
+                  style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+          </div>
+          
+          <!-- Data Fim (oculto por padrão) -->
+          <div id="timelineDataFimDiv" style="{% if not data_fim %}display: none;{% endif %}">
+            <label for="data_fim_timeline" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+              Data Fim
+            </label>
+            <input type="date" name="data_fim" id="data_fim_timeline" value="{{ data_fim }}"
+                  style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+          </div>
+          
+          <!-- Botão Aplicar -->
+          <div>
+            <button type="submit" style="width: 100%; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); 
+                    color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem; 
+                    transition: transform 0.2s;">
+              🔍 Aplicar
+            </button>
+          </div>
+          
+          <!-- Botão Limpar -->
+          <div>
+            <a href="{% url 'detalhes_unidade' unidade.id %}" style="display: block; width: 100%; padding: 0.75rem 1.5rem; 
+              background: #6c757d; color: white; border: none; border-radius: 8px; font-weight: 600; 
+              text-align: center; text-decoration: none; transition: transform 0.2s;">
+              🔄 Limpar
+            </a>
+          </div>
+          
+        </form>
+    </div>
+
     
     <!-- Estatísticas do gráfico -->
     <div class="stats-overview" style="background: linear-gradient(135deg, #e8f5e8, #d4edda); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
@@ -841,6 +907,25 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    
+    <script>
+    // 🔥 NOVO: Função para mostrar/ocultar campos de data do timeline
+    function toggleTimelineDateInputs(value) {
+        const dataInicioDiv = document.getElementById('timelineDataInicioDiv');
+        const dataFimDiv = document.getElementById('timelineDataFimDiv');
+        
+        if (value === 'personalizado') {
+            dataInicioDiv.style.display = 'block';
+            dataFimDiv.style.display = 'block';
+        } else {
+            dataInicioDiv.style.display = 'none';
+            dataFimDiv.style.display = 'none';
+            document.getElementById('data_inicio_timeline').value = '';
+            document.getElementById('data_fim_timeline').value = '';
+        }
+    }
+    </script>
+
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Dados do gráfico vindos do Django
@@ -885,7 +970,8 @@
                             pointBorderWidth: 2,
                             pointRadius: 0,
                             pointHoverRadius: 6,
-                            hidden: false
+                            hidden: false,
+                            order: 0
                         },
                         {
                             label: 'Velocidade (km/h)',
@@ -901,7 +987,8 @@
                             pointBorderWidth: 2,
                             pointRadius: 0,
                             pointHoverRadius: 6,
-                            hidden: false
+                            hidden: false,
+                            order: 0
                         },
                         {
                             label: 'Altitude (m)',
@@ -917,7 +1004,70 @@
                             pointBorderWidth: 2,
                             pointRadius: 0,
                             pointHoverRadius: 6,
-                            hidden: false
+                            hidden: false,
+                            order: 0
+                        },
+                        // 🔥 NOVA LINHA: RPM = 500 (Linha de referência)
+                        {
+                            //label: 'RPM 500 (Referência)',
+                            data: Array(labels.length).fill(500), // Cria array com valor 500 para todos os pontos
+                            borderColor: '#1900FF',
+                            backgroundColor: 'rgba(25, 0, 255, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5], // Linha tracejada
+                            fill: false,
+                            tension: 0,
+                            yAxisID: 'y',
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            hidden: false,
+                            order: 1// Garante que a linha apareça atrás dos outros dados
+                        },
+                        // 🔥 NOVA LINHA: RPM = 500 (Linha de referência)
+                        {
+                            //label: 'RPM 800 (Referência)',
+                            data: Array(labels.length).fill(800), // Cria array com valor 500 para todos os pontos
+                            borderColor: '#00FF40',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5], // Linha tracejada
+                            fill: false,
+                            tension: 0,
+                            yAxisID: 'y',
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            hidden: false,
+                            order: 1 // Garante que a linha apareça atrás dos outros dados
+                        },
+                        {
+                            //label: 'RPM 1300 (Referência)',
+                            data: Array(labels.length).fill(1300), // Cria array com valor 500 para todos os pontos
+                            borderColor: '#FFE100',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5], // Linha tracejada
+                            fill: false,
+                            tension: 0,
+                            yAxisID: 'y',
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            hidden: false,
+                            order: 1 // Garante que a linha apareça atrás dos outros dados
+                        },
+                        {
+                            //label: 'RPM 2300 (Referência)',
+                            data: Array(labels.length).fill(2300), // Cria array com valor 500 para todos os pontos
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5], // Linha tracejada
+                            fill: false,
+                            tension: 0,
+                            yAxisID: 'y',
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            hidden: false,
+                            order: 2 // Garante que a linha apareça atrás dos outros dados
                         }
                     ]
                 },
@@ -1162,6 +1312,9 @@
             document.getElementById('toggle-rpm').addEventListener('change', function() {
                 const meta = rpmChart.getDatasetMeta(0);
                 meta.hidden = !this.checked;
+                // 🔥 NOVO: Também controlar a linha de referência junto com RPM
+                const refMeta = rpmChart.getDatasetMeta(3);
+                refMeta.hidden = !this.checked;
                 updateAxisVisibility();
             });
             

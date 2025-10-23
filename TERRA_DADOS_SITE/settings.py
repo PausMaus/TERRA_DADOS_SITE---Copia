@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'umbrella360.apps.Umbrella360Config',
     'polls.apps.PollsConfig',
     'academia_virtual.apps.AcademiaVirtualConfig',
+    'lab_01.apps.Lab01Config',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

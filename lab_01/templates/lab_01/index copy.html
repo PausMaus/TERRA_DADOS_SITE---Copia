@@ -1,0 +1,85 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ titulo }} - Terra Dados</title>
+    <link rel="stylesheet" href="{% static 'lab_01/style.css' %}">
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <header class="header">
+        <div class="header-content">
+            <h1>{{ titulo }}</h1>
+            <p>{{ subtitulo }}</p>
+        </div>
+        <nav class="menu-buttons">
+            <a href="{% url 'lab_01:index' %}" class="btn btn-primary">Início</a>
+            <a href="{% url 'lab_01:importar' %}" class="btn btn-primary">Importar CSV</a>
+            <a href="{% url 'lab_01:correlacao' %}" class="btn btn-primary">Correlação</a>
+            <a href="/umbrella/" class="btn btn-secondary">Umbrella360</a>
+            <a href="/admin/" class="btn btn-secondary">Admin</a>
+        </nav>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <h2>Bem-vindo ao Laboratorium</h2>
+                <p>Plataforma experimental para análise de dados e descoberta de correlações</p>
+            </div>
+        </section>
+
+        <!-- Cards de Funcionalidades -->
+        <section class="features">
+            <div class="feature-card">
+                <h3>Análise de Dados</h3>
+                <p>Processe e analise grandes volumes de dados com facilidade</p>
+            </div>
+
+            <div class="feature-card">
+                <h3>Correlações</h3>
+                <p>Descubra relações ocultas entre diferentes conjuntos de dados</p>
+            </div>
+
+            <div class="feature-card">
+                <h3>Visualizações</h3>
+                <p>Gráficos interativos para melhor compreensão dos dados</p>
+            </div>
+
+            <div class="feature-card">
+                <h3>Experimentos</h3>
+                <p>Teste hipóteses e valide teorias com dados reais</p>
+            </div>
+        </section>
+
+        <!-- Status Section -->
+        <section class="status-section">
+            <h2>Status do Sistema</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">Operacional</div>
+                    <div class="stat-label">Sistema</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Datasets Carregados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Experimentos Ativos</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="footer">
+        <p>&copy; 2025 Terra Dados - Laboratorium</p>
+        <p><em>"Transformando dados em conhecimento"</em></p>
+    </footer>
+</body>
+</html>
