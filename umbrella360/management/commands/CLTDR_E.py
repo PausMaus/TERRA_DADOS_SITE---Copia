@@ -14,6 +14,11 @@ import decimal
 from django.utils import timezone
 from datetime import timedelta
 import pytz
+import sqlite3
+conn = sqlite3.connect('db.sqlite3')
+conn.execute('PRAGMA journal_mode=WAL;')
+conn.close()
+
 
 
 
@@ -44,11 +49,11 @@ class Command(BaseCommand):
         # PRINCIPAL #
         #self.Limpeza() 
 
-        self.CLTDR_TESTE_01(cor1="blue", cor2="green")
+        #self.CLTDR_TESTE_01(cor1="blue", cor2="green")
         ##################################################
-        # TESTE #
+        # MENSAGENS #
         
-        self.MENSAGENS_03(3)
+        self.MENSAGENS_03(1)
 
         ##################################################
         # ESTUDO #
@@ -1386,7 +1391,7 @@ class Command(BaseCommand):
                             can_rpm_readable = float(row['can_rpm_readable']) if 'can_rpm_readable' in row and pd.notna(row['can_rpm_readable']) else 0.0
                             speed = float(row['speed']) if 'speed' in row and pd.notna(row['speed']) else 0.0
                             altitude = float(row['altitude']) if 'altitude' in row and pd.notna(row['altitude']) else 0.0
-
+                            
                             # Atualiza ou cria a viagem correspondente
                             Viagem_eco.objects.update_or_create(
                                 unidade_id=unidade_obj.id,
@@ -1615,15 +1620,15 @@ class Command(BaseCommand):
         import time
         
         counter = 0
-        # procura apenas unidade com nome que inclua "PRO"
-        #lista_unidades = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        lista_unidades = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        #adiciona a lista as primeiras 10 unidades da empresa "CPBRACELL"
-        lista_unidades = list(lista_unidades) + list(Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)[:5])
-        
+
+        lista_cpbracell = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+        lista_petitto = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+        lista_sfresgate = Veiculo.objects.filter(empresa__nome="São Francisco Resgate").values_list('id_wialon', flat=True)
+
         #lista_unidades = Veiculo.objects.filter(nm__icontains="1023").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
         #lista todos os veículos
         #lista_unidades = Veiculo.objects.all().values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+        lista_unidades = list(lista_sfresgate) + list(lista_petitto) + list(lista_cpbracell)
 
         n_unidades = len(lista_unidades)
         print(f"lista_unidades: {n_unidades} unidades.")
@@ -1774,6 +1779,7 @@ class Command(BaseCommand):
                                         'rpm': float(row['can_rpm']) if 'can_rpm' in row and pd.notna(row['can_rpm']) else 0.0,
                                         'velocidade': float(row['speed']) if 'speed' in row and pd.notna(row['speed']) else 0.0,
                                         'altitude': float(row['altitude']) if 'altitude' in row and pd.notna(row['altitude']) else 0.0,
+                                        'energia': float(row['power']) if 'power' in row and pd.notna(row['power']) else 0.0,
                                     }
                                 )
                                 

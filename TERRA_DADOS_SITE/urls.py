@@ -24,6 +24,7 @@ urlpatterns = [
     path("polls/", include("polls.urls")),
     path("admin/", admin.site.urls),
     path("academia_virtual/", include("academia_virtual.urls")),
+    path("lab_01/", include("lab_01.urls")),
 ]
 
 # Servir arquivos de mídia durante o desenvolvimento

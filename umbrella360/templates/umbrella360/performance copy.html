@@ -29,37 +29,74 @@
 
     <main style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
 
+      <!-- Cabeçalho -->
 
-      <!-- Seletor de Data -->
-      <div class="date-selector" style="background: #f8f9fa; border-radius: 10px; padding: 1rem; margin-bottom: 2rem; display: flex; justify-content: center; align-items: center; gap: 1rem; flex-wrap: wrap;">
-        <label style="font-weight: 600; color: #495057; display: flex; align-items: center; gap: 0.5rem;">
-          <span style="font-size: 1.2rem;">📅</span>
-          Selecionar Data:
-        </label>
-        
-        <select id="dataSeletor" onchange="filtrarPorData(this.value)" style="padding: 0.5rem 1rem; border-radius: 8px; border: 2px solid #667eea; font-size: 1rem; cursor: pointer; background: white; min-width: 200px;">
-          {% for data in datas_disponiveis %}
-          <option value="{{ data }}" {% if data == data_selecionada %}selected{% endif %}>
-            {{ data|date:"d/m/Y (D)" }}
-          </option>
-          {% empty %}
-          <option value="">Nenhuma data disponível</option>
-          {% endfor %}
-        </select>
-
-      </div>
 
       <!-- Estatísticas Gerais da Frota -->
-      <div class="stats-overview" style="background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; color: white;">
-
-        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-          <div class="stat-card" style="background: rgba(255, 255, 255, 0.15); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);">
-            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: white; margin: 0.5rem 0;">
-              {{ stats_gerais.total_unidades }}
-            </div>
-            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">Total de Unidades</div>
+            <!-- 🔥 NOVO: Formulário de Filtros -->
+      <div style="background: white; border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <form method="get" id="filterForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+          
+          <!-- Seletor de Período Rápido -->
+          <div>
+            <label for="periodo_dias" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+              📅 Período Rápido
+            </label>
+            <select name="periodo_dias" id="periodo_dias" onchange="toggleDateInputs(this.value)" 
+                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+              <option value="7" {% if periodo_dias == '7' %}selected{% endif %}>Últimos 7 dias</option>
+              <option value="15" {% if periodo_dias == '15' %}selected{% endif %}>Últimos 15 dias</option>
+              <option value="30" {% if periodo_dias == '30' or not periodo_dias %}selected{% endif %}>Últimos 30 dias</option>
+              <option value="60" {% if periodo_dias == '60' %}selected{% endif %}>Últimos 60 dias</option>
+              <option value="90" {% if periodo_dias == '90' %}selected{% endif %}>Últimos 90 dias</option>
+              <option value="todos" {% if periodo_dias == 'todos' %}selected{% endif %}>Todos os dados</option>
+              <option value="personalizado" {% if data_inicio and data_fim %}selected{% endif %}>📆 Personalizado</option>
+            </select>
           </div>
           
+          <!-- Data Início (oculto por padrão) -->
+          <div id="dataInicioDiv" style="{% if not data_inicio %}display: none;{% endif %}">
+            <label for="data_inicio" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+              Data Início
+            </label>
+            <input type="date" name="data_inicio" id="data_inicio" value="{{ data_inicio }}"
+                  style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+          </div>
+          
+          <!-- Data Fim (oculto por padrão) -->
+          <div id="dataFimDiv" style="{% if not data_fim %}display: none;{% endif %}">
+            <label for="data_fim" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+              Data Fim
+            </label>
+            <input type="date" name="data_fim" id="data_fim" value="{{ data_fim }}"
+                  style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+          </div>
+          
+          <!-- Botão Aplicar -->
+          <div>
+            <button type="submit" style="width: 100%; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); 
+                    color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem; 
+                    transition: transform 0.2s;">
+              🔍 Aplicar Filtro
+            </button>
+          </div>
+          
+          <!-- Botão Limpar -->
+          <div>
+            <a href="{% url 'performance_frota' %}" style="display: block; width: 100%; padding: 0.75rem 1.5rem; 
+              background: #6c757d; color: white; border: none; border-radius: 8px; font-weight: 600; 
+              text-align: center; text-decoration: none; transition: transform 0.2s;">
+              🔄 Limpar Filtros
+            </a>
+          </div>
+          
+        </form>
+      </div>
+
+      <div class="stats-overview" style="background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; color: white;">
+
+
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
           <div class="stat-card" style="background: rgba(255, 255, 255, 0.15); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);">
             <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: white; margin: 0.5rem 0;">
               {{ stats_gerais.total_pontos|floatformat:0 }}
@@ -74,11 +111,25 @@
             <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">RPM Médio da Frota</div>
           </div>
           
+          <div class="stat-card" style="background: rgba(33, 150, 243, 0.3); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
+            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: #bbdefb; margin: 0.5rem 0;">
+              {{ stats_gerais.perc_azul_frota|floatformat:1 }}%
+            </div>
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">🔵 Faixa Azul (Econômica)</div>
+          </div>
+          
           <div class="stat-card" style="background: rgba(40, 167, 69, 0.3); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
             <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: #d4edda; margin: 0.5rem 0;">
               {{ stats_gerais.perc_verde_frota|floatformat:1 }}%
             </div>
             <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">🟢 Faixa Verde (Ideal)</div>
+          </div>
+          
+          <div class="stat-card" style="background: rgba(255, 152, 0, 0.3); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
+            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: #ffe0b2; margin: 0.5rem 0;">
+              {{ stats_gerais.perc_amarela_frota|floatformat:1 }}%
+            </div>
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">🟡 Faixa Amarela (Atenção)</div>
           </div>
           
           <div class="stat-card" style="background: rgba(220, 53, 69, 0.3); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
@@ -87,14 +138,17 @@
             </div>
             <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">🔴 Faixa Vermelha (Crítico)</div>
           </div>
+          <div class="stat-card" style="background: rgba(220, 53, 69, 0.3); padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
+            <div class="stat-value" style="font-size: 2.5rem; font-weight: 700; color: #f8d7da; margin: 0.5rem 0;">
+              {{ stats_gerais.perc_ocioso_frota|floatformat:1 }}%
+            </div>
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500; text-transform: uppercase;">Ociosidade</div>
+          </div>
         </div>
       </div>
 
       <!-- Legenda das Faixas de RPM -->
       <div style="background: white; border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-        <h3 style="text-align: center; color: #2c3e50; margin-bottom: 1rem;">
-          📖 Legenda das Faixas de RPM
-        </h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
           <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196F3;">
             <span style="font-size: 1.5rem;">🔵</span>
@@ -133,17 +187,12 @@
       <!-- Tabela de Performance por Unidade -->
       {% if unidades_performance %}
       <div style="background: white; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-        <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
-          🎯 Ranking de Performance por Unidade
-        </h2>
-        
         <div style="overflow-x: auto;">
           <table class="sortable-table" style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
             <thead>
               <tr style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Ranking</th>
                 <th style="padding: 1rem; text-align: left; border: 1px solid #dee2e6;">Unidade</th>
-                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Classe</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Marca</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Pontos Analisados</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">RPM Médio</th>
@@ -151,6 +200,7 @@
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">🟢 Verde</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">🟡 Amarela</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">🔴 Vermelha</th>
+                <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Ociosidade</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">Score</th>
               </tr>
             </thead>
@@ -172,11 +222,6 @@
                   <a href="{% url 'detalhes_unidade' item.unidade.id %}" style="color: #667eea; text-decoration: none; font-weight: 600;">
                     {{ item.unidade.nm|default:item.unidade.id }}
                   </a>
-                </td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
-                  <span style="padding: 0.25rem 0.75rem; background: #e9ecef; border-radius: 15px; font-size: 0.85rem;">
-                    {{ item.unidade.cls }}
-                  </span>
                 </td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
                   {{ item.unidade.marca|default:"-" }}
@@ -220,6 +265,10 @@
                   </div>
                 </td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
+                  <div style="padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 1.1rem;">
+                    {{ item.perc_ocioso|floatformat:1 }}%
+                  </div>
+                <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
                   <div style="padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 1.1rem;
                     {% if item.score >= 70 %}
                       background: linear-gradient(135deg, #4CAF50, #8BC34A); color: white;
@@ -243,8 +292,8 @@
         <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
         <h3 style="color: #6c757d; margin-bottom: 1rem;">Nenhum dado disponível</h3>
         <p style="color: #6c757d;">
-          Não há dados de performance para a data selecionada.
-          <br>Tente selecionar outra data ou verifique se há dados disponíveis no sistema.
+          Não há dados de performance disponíveis no sistema.
+          <br>Verifique se há dados de Viagem_eco cadastrados.
         </p>
       </div>
       {% endif %}
@@ -274,15 +323,6 @@
       th, td {
         padding: 0.5rem !important;
       }
-      
-      .date-selector {
-        flex-direction: column;
-      }
-      
-      .date-selector select,
-      .date-selector button {
-        width: 100%;
-      }
     }
 
     /* Animações de hover para cards */
@@ -305,23 +345,33 @@
       text-decoration: underline;
     }
     </style>
-
     <script>
-    // Função para filtrar por data
-    function filtrarPorData(data) {
-      if (data) {
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('data_performance', data);
-        window.location.href = currentUrl.toString();
+    // Função para mostrar/ocultar campos de data personalizada
+    function toggleDateInputs(value) {
+      const dataInicioDiv = document.getElementById('dataInicioDiv');
+      const dataFimDiv = document.getElementById('dataFimDiv');
+      
+      if (value === 'personalizado') {
+        dataInicioDiv.style.display = 'block';
+        dataFimDiv.style.display = 'block';
+      } else {
+        dataInicioDiv.style.display = 'none';
+        dataFimDiv.style.display = 'none';
+        // Limpar valores se não for personalizado
+        document.getElementById('data_inicio').value = '';
+        document.getElementById('data_fim').value = '';
       }
     }
     
-    // Função para resetar filtro
-    function resetarData() {
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.delete('data_performance');
-      window.location.href = currentUrl.toString();
-    }
-    </script>
+    // Aplicar estilo hover aos botões
+    document.querySelectorAll('button, a[href*="performance"]').forEach(el => {
+      el.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-2px)';
+      });
+      el.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+      });
+    });
+  </script>
   </body>
 </html>

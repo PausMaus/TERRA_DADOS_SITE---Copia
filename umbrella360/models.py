@@ -249,6 +249,7 @@ class Viagem_eco(models.Model):
     rpm = models.PositiveIntegerField(verbose_name="RPM do Motor", blank=True, null=True)
     velocidade = models.FloatField(verbose_name="Velocidade (km/h)", blank=True, null=True)
     altitude = models.FloatField(verbose_name="Altitude (m)", blank=True, null=True)
+    energia = models.PositiveIntegerField(verbose_name="Energia (V)", blank=True, null=True)
     
     def __str__(self):
         return f"{self.unidade.nm} - {self.timestamp}"

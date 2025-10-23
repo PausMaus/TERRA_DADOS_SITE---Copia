@@ -1,0 +1,168 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Correlação de Dados - Laboratorium</title>
+    <link rel="stylesheet" href="{% static 'lab_01/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>Laboratorium</h1>
+            <p>Análise de Correlação</p>
+        </div>
+        <nav class="menu-buttons">
+            <a href="{% url 'lab_01:index' %}" class="btn btn-secondary">Voltar</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Formulário de Seleção -->
+        <section class="hero">
+            <h2>Comparar Termos</h2>
+            <form method="get" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: end; max-width: 900px; margin: 2rem auto;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Termo 1</label>
+                    <select name="termo1" required style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                        <option value="">Selecione...</option>
+                        {% for termo in termos %}
+                        <option value="{{ termo }}" {% if termo == termo1 %}selected{% endif %}>{{ termo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Termo 2</label>
+                    <select name="termo2" required style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                        <option value="">Selecione...</option>
+                        {% for termo in termos %}
+                        <option value="{{ termo }}" {% if termo == termo2 %}selected{% endif %}>{{ termo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem;">
+                    Analisar
+                </button>
+            </form>
+        </section>
+
+        {% if stats %}
+        <!-- Estatísticas -->
+        <section class="status-section">
+            <h2>Estatísticas</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.correlacao }}</div>
+                    <div class="stat-label">Correlação de Pearson</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.regioes_analisadas }}</div>
+                    <div class="stat-label">Regiões Analisadas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.media_termo1 }}</div>
+                    <div class="stat-label">Média {{ termo1 }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.media_termo2 }}</div>
+                    <div class="stat-label">Média {{ termo2 }}</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gráfico de Dispersão -->
+        <section class="status-section">
+            <h2>Gráfico de Dispersão</h2>
+            <div style="background: white; padding: 2rem; border-radius: 10px; max-width: 800px; margin: 0 auto;">
+                <canvas id="scatterChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Tabela de Comparação -->
+        <section class="status-section">
+            <h2>Comparação por Região</h2>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden;">
+                    <thead style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                        <tr>
+                            <th style="padding: 1rem; text-align: left;">Região</th>
+                            <th style="padding: 1rem; text-align: center;">{{ termo1 }}</th>
+                            <th style="padding: 1rem; text-align: center;">{{ termo2 }}</th>
+                            <th style="padding: 1rem; text-align: center;">Diferença</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in comparacao %}
+                        <tr style="border-bottom: 1px solid #e0e0e0;">
+                            <td style="padding: 0.75rem;">{{ item.regiao }}</td>
+                            <td style="padding: 0.75rem; text-align: center; font-weight: 600;">{{ item.termo1_interesse }}</td>
+                            <td style="padding: 0.75rem; text-align: center; font-weight: 600;">{{ item.termo2_interesse }}</td>
+                            <td style="padding: 0.75rem; text-align: center; color: {% if item.diferenca < 10 %}#28a745{% elif item.diferenca < 30 %}#ffc107{% else %}#dc3545{% endif %};">
+                                {{ item.diferenca }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <script>
+        const chartData = {{ chart_data|safe }};
+        
+        const ctx = document.getElementById('scatterChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: '{{ termo1 }} vs {{ termo2 }}',
+                    data: chartData.x_values.map((x, i) => ({x: x, y: chartData.y_values[i]})),
+                    backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const idx = context.dataIndex;
+                                return chartData.labels[idx] + ': (' + context.parsed.x + ', ' + context.parsed.y + ')';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '{{ termo1 }}'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '{{ termo2 }}'
+                        }
+                    }
+                }
+            }
+        });
+        </script>
+        {% endif %}
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Terra Dados - Laboratorium</p>
+    </footer>
+</body>
+</html>

@@ -20,7 +20,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from .models import (
     Motorista, Caminhao, Viagem_MOT, Viagem_CAM,
-    Empresa, Unidade, Viagem_Base, CheckPoint, Veiculo
+    Empresa, Unidade, Viagem_Base, CheckPoint, Veiculo, Viagem_Detalhada
 )
 from .config import Config, ConfiguracaoManager
 import pandas as pd
@@ -469,6 +469,116 @@ def detalhes_unidade(request, unidade_id):
         pior_eficiencia=Min('Quilometragem_média')
     )
 
+    # GRÁFICO TIMELINE RPM vs TEMPO
+    # Buscar dados do Viagem_eco para a unidade
+    from .models import Viagem_eco
+    from datetime import datetime, timedelta
+    import json
+    
+    # Buscar dados dos últimos 7 dias ou últimos 1000 registros (o que for menor)
+    #data_limite = timezone.now() - timedelta(days=7)
+    
+    viagens_eco = Viagem_eco.objects.filter(
+        unidade_id=unidade.id
+    ).order_by('-timestamp')  # Limitar para performance
+    viagens_detalhadas = Viagem_Detalhada.objects.filter(
+        unidade_id=unidade.id
+    ).order_by('-timestamp_final')
+    
+    # Preparar dados para o gráfico, remove rpm acima de 3500
+
+    
+    timeline_data = []
+    if viagens_eco.exists():
+        for viagem_eco in reversed(viagens_eco):  # Reverter para ordem cronológica
+            try:
+                # Converter timestamp unix para datetime
+                timestamp_int = int(viagem_eco.timestamp)
+                dt = datetime.fromtimestamp(timestamp_int)
+
+
+                # Filtrar valores de RPM muito altos (acima de 3500)
+
+                if float(viagem_eco.rpm) and float(viagem_eco.rpm/8) <= 3500:
+                    timeline_data.append({
+                        'timestamp': dt.strftime('%Y-%m-%d %H:%M:%S'),
+                        'rpm': float(viagem_eco.rpm/8) if viagem_eco.rpm else 0,
+                        'velocidade': float(viagem_eco.velocidade) if hasattr(viagem_eco, 'velocidade') and viagem_eco.velocidade else 0,
+                    'altitude': float(viagem_eco.altitude) if hasattr(viagem_eco, 'altitude') and viagem_eco.altitude else 0,
+                    'temperatura': float(viagem_eco.temperatura_motor) if hasattr(viagem_eco, 'temperatura_motor') and viagem_eco.temperatura_motor else 0,
+                    'odometro': float(viagem_eco.odometro) if hasattr(viagem_eco, 'odometro') and viagem_eco.odometro else 0,
+                    'consumo': None,  # Não disponível em Viagem_eco
+                    'source': 'eco'
+                })
+            except (ValueError, TypeError, OSError):
+                continue  # Pular timestamps inválidos
+
+            # Depois, processar dados do Viagem_Detalhada (dados de consumo)
+    consumo_data = []
+    if viagens_detalhadas.exists():
+        for viagem_det in viagens_detalhadas:
+            try:
+                if viagem_det.timestamp_inicial:
+                    # Converter timestamp inicial para datetime
+                    dt_inicial = datetime.fromtimestamp(viagem_det.timestamp_inicial)
+                    
+                    # Adicionar ponto inicial da viagem
+                    consumo_data.append({
+                        'timestamp': dt_inicial.strftime('%Y-%m-%d %H:%M:%S'),
+                        'consumo': 0,  # Início da viagem, consumo zero
+                        'consumo_acumulado': 0,
+                        'eficiencia': float(viagem_det.Quilometragem_média) if viagem_det.Quilometragem_média else 0,
+                        'source': 'detalhada'
+                    })
+                    
+                    # Se houver timestamp final, adicionar ponto final
+                    if viagem_det.timestamp_final:
+                        dt_final = datetime.fromtimestamp(viagem_det.timestamp_final)
+                        
+                        consumo_data.append({
+                            'timestamp': dt_final.strftime('%Y-%m-%d %H:%M:%S'),
+                            'consumo': float(viagem_det.Consumido) if viagem_det.Consumido else 0,
+                            'consumo_acumulado': float(viagem_det.Consumido) if viagem_det.Consumido else 0,
+                            'eficiencia': float(viagem_det.Quilometragem_média) if viagem_det.Quilometragem_média else 0,
+                            'source': 'detalhada'
+                        })
+                    else:
+                        # Se não houver timestamp final, usar o inicial + duração estimada
+                        # ou apenas marcar como ponto único
+                        consumo_data[-1]['consumo'] = float(viagem_det.Consumido) if viagem_det.Consumido else 0
+                        consumo_data[-1]['consumo_acumulado'] = float(viagem_det.Consumido) if viagem_det.Consumido else 0
+                        
+            except (ValueError, TypeError, OSError):
+                continue  # Pular timestamps inválidos
+    
+    # Combinar os dados (se necessário) ou manter separados
+    # Para o gráfico, vamos manter os dados de timeline_data para RPM/velocidade/altitude
+    # E criar um dataset separado para consumo
+    
+    # Converter dados para JSON para uso no template
+    timeline_data_json = json.dumps(timeline_data)
+    consumo_data_json = json.dumps(consumo_data)
+    
+    # Estatísticas do gráfico
+    timeline_stats = {
+        'total_pontos': len(timeline_data),
+        'rpm_medio': sum(d['rpm'] for d in timeline_data) / len(timeline_data) if timeline_data else 0,
+        'rpm_maximo': max(d['rpm'] for d in timeline_data) if timeline_data else 0,
+        'rpm_minimo': min(d['rpm'] for d in timeline_data) if timeline_data else 0,
+        'velocidade_media': sum(d['velocidade'] for d in timeline_data) / len(timeline_data) if timeline_data else 0,
+        'periodo_inicio': timeline_data[0]['timestamp'] if timeline_data else None,
+        'periodo_fim': timeline_data[-1]['timestamp'] if timeline_data else None,
+        #faixas de RPM, excluidos valores abaixo de 500 rpm
+        'faixas_rpm': {
+            'azul': len([d for d in timeline_data if 350 <= d['rpm'] < 799]),
+            'verde': len([d for d in timeline_data if 800 <= d['rpm'] < 1300]),
+            'amarela': len([d for d in timeline_data if 1301 <= d['rpm'] < 2300]),
+            'vermelha': len([d for d in timeline_data if d['rpm'] >= 2301]),
+        },
+        'total_viagens_consumo': len(consumo_data),
+        'consumo_total': sum(d['consumo'] for d in consumo_data) if consumo_data else 0,
+        'eficiencia_media': sum(d['eficiencia'] for d in consumo_data) / len(consumo_data) if consumo_data else 0,
+    }
 
     # Estatísticas por período
     stats_por_periodo = viagens.values('período').annotate(
@@ -574,7 +684,12 @@ def detalhes_unidade(request, unidade_id):
         'infracoes_detalhadas_unidade': infracoes_detalhadas_unidade,
         #
         'odometro_unidade': unidade.odometro,
-    }
+        # Dados do gráfico timeline
+        'timeline_data_json': timeline_data_json,
+        'timeline_stats': timeline_stats,
+        'timeline_data_json': timeline_data_json,
+        'consumo_data_json': consumo_data_json,  # Novo
+}
     
     return render(request, 'umbrella360/detalhes_unidade.html', context)
 
@@ -775,8 +890,8 @@ def login_view(request):
             # Salvar a empresa na sessão
             request.session['empresa_logada'] = empresa.id
             request.session['empresa_nome'] = empresa.nome
-            # Redirecionar para o relatório global
-            return HttpResponseRedirect(reverse('report_empresa'))
+            # Redirecionar para o index
+            return HttpResponseRedirect(reverse('index'))
         except Empresa.DoesNotExist:
             context = {
                 'error': 'Empresa ou senha incorreta.',
@@ -958,12 +1073,12 @@ def ranking_empresa(request):
     # Top 10 Motoristas por eficiência
     top_motoristas = viagens_filtradas.filter(
         unidade__cls__icontains='motorista'
-    ).order_by('-Quilometragem_média')[:10]
+    ).order_by('-Quilometragem_média')
     
     # Top 10 Veículos por eficiência
     top_veiculos = viagens_filtradas.filter(
         unidade__cls__icontains='veículo'
-    ).order_by('-Quilometragem_média')[:10]
+    ).order_by('-Quilometragem_média')
     
     # Estatísticas gerais da empresa
     stats_empresa = viagens_filtradas.aggregate(
@@ -1510,6 +1625,409 @@ def export_cercas_excel(request, unidade_id):
     
     return response
 
+def viagem_diaria(request):
+    """View para planilha de viagem diária - navegação entre dias disponíveis, agrupado por motorista com veículos discriminados"""
+    from datetime import datetime, timedelta
+    from django.db.models import Sum, Avg, F, Case, When, FloatField
+    from collections import defaultdict
+    
+    # Verificar se há empresa logada
+    empresa_logada_id = request.session.get('empresa_logada')
+    empresa_logada = None
+    if empresa_logada_id:
+        try:
+            empresa_logada = Empresa.objects.get(id=empresa_logada_id)
+        except Empresa.DoesNotExist:
+            pass
+    
+    # Obter parâmetro de data da URL (formato: YYYY-MM-DD)
+    data_param = request.GET.get('data')
+    
+    # Buscar viagens detalhadas dos motoristas
+    viagens_query = Viagem_Detalhada.objects.select_related('unidade', 'unidade__empresa')
+    viagens_query = viagens_query.filter(unidade__cls__icontains='motorista')
+    
+    # Aplicar filtro de empresa se necessário
+    if empresa_logada:
+        viagens_query = viagens_query.filter(unidade__empresa=empresa_logada)
+    
+    # Obter todas as datas disponíveis nos dados (convertendo timestamps para datas)
+    datas_disponiveis = set()
+    for viagem in viagens_query.filter(timestamp_inicial__isnull=False):
+        try:
+            data_viagem = datetime.fromtimestamp(viagem.timestamp_inicial).date()
+            datas_disponiveis.add(data_viagem)
+        except (ValueError, OSError):
+            continue
+    
+    datas_disponiveis = sorted(list(datas_disponiveis), reverse=True)  # Mais recente primeiro
+    
+    # Determinar qual data usar
+    if data_param:
+        try:
+            data_selecionada = datetime.strptime(data_param, '%Y-%m-%d').date()
+            # Verificar se a data está disponível
+            if data_selecionada not in datas_disponiveis:
+                data_selecionada = datas_disponiveis[0] if datas_disponiveis else timezone.now().date()
+        except (ValueError, IndexError):
+            data_selecionada = datas_disponiveis[0] if datas_disponiveis else timezone.now().date()
+    else:
+        # Usar a data mais recente disponível
+        data_selecionada = datas_disponiveis[0] if datas_disponiveis else timezone.now().date()
+    
+    # Calcular timestamps do dia selecionado (início e fim do dia)
+    inicio_dia = datetime.combine(data_selecionada, datetime.min.time())
+    fim_dia = datetime.combine(data_selecionada, datetime.max.time())
+    
+    timestamp_inicio = int(inicio_dia.timestamp())
+    timestamp_fim = int(fim_dia.timestamp())
+    
+    # Filtrar viagens do dia selecionado
+    viagens_do_dia = viagens_query.filter(
+        timestamp_inicial__gte=timestamp_inicio,
+        timestamp_inicial__lte=timestamp_fim
+    )
+    
+    # Aplicar filtros de qualidade dos dados
+    viagens_do_dia = viagens_do_dia.filter(
+        quilometragem__gt=0,
+        Consumido__gt=0,
+        Quilometragem_média__gte=1.0,
+        Quilometragem_média__lte=5.0
+    )
+    
+    # Agrupar por motorista E veículo
+    viagens_agrupadas = viagens_do_dia.values(
+        'unidade',
+        'unidade__nm',
+        'veiculo'
+    ).annotate(
+        total_quilometragem=Sum('quilometragem'),
+        total_consumido=Sum('Consumido'),
+        media_velocidade=Avg('Velocidade_média'),
+        media_rpm=Avg('RPM_médio'),
+        media_temperatura=Avg('Temperatura_média'),
+        total_emissoes=Sum('Emissões_CO2'),
+        eficiencia_media=Case(
+            When(total_consumido__gt=0, then=F('total_quilometragem') / F('total_consumido')),
+            default=0.0,
+            output_field=FloatField()
+        ),
+        numero_viagens=Count('id')
+    ).order_by('unidade__nm', 'veiculo')
+    
+    # 🔥 REORGANIZAR DADOS PARA AGRUPAMENTO VISUAL POR MOTORISTA
+    motoristas_agrupados = defaultdict(list)
+    
+    for viagem in viagens_agrupadas:
+        motorista_key = viagem['unidade__nm'] or viagem['unidade']
+        motoristas_agrupados[motorista_key].append({
+            'veiculo': viagem['veiculo'] or 'N/A',
+            'total_quilometragem': viagem['total_quilometragem'],
+            'total_consumido': viagem['total_consumido'],
+            'eficiencia_media': viagem['eficiencia_media'],
+            'numero_viagens': viagem['numero_viagens'],
+            'media_velocidade': viagem['media_velocidade'],
+        })
+    
+    # Transformar em lista ordenada para o template
+    motoristas_lista = [
+        {
+            'nome': motorista,
+            'veiculos': veiculos,
+            'rowspan': len(veiculos)  # Número de linhas que o nome ocupará
+        }
+        for motorista, veiculos in sorted(motoristas_agrupados.items())
+    ]
+    
+    # Calcular estatísticas do dia
+    stats = {
+        'total_unidades': len(motoristas_agrupados),  # Número único de motoristas
+        'total_veiculos': viagens_agrupadas.values('veiculo').distinct().count(),
+        'total_registros': viagens_agrupadas.count(),
+        'total_km': sum(item['total_quilometragem'] for item in viagens_agrupadas if item['total_quilometragem']),
+        'total_combustivel': sum(item['total_consumido'] for item in viagens_agrupadas if item['total_consumido']),
+        'media_geral': (sum(item['total_quilometragem'] for item in viagens_agrupadas if item['total_quilometragem']) /
+                        sum(item['total_consumido'] for item in viagens_agrupadas if item['total_consumido'])) if 
+                       sum(item['total_consumido'] for item in viagens_agrupadas if item['total_consumido']) > 0 else 0
+    }
+    
+    # Classificar por eficiência
+    unidades_eficientes = sum(1 for motorista in motoristas_lista 
+                              for veiculo in motorista['veiculos'] 
+                              if veiculo['eficiencia_media'] >= 1.78)
+    unidades_regulares = sum(1 for motorista in motoristas_lista 
+                             for veiculo in motorista['veiculos'] 
+                             if 1.5 <= veiculo['eficiencia_media'] < 1.78)
+    unidades_ineficientes = sum(1 for motorista in motoristas_lista 
+                                for veiculo in motorista['veiculos'] 
+                                if veiculo['eficiencia_media'] < 1.5)
+    
+    # Navegação entre datas
+    data_anterior = None
+    data_proxima = None
+    
+    if data_selecionada in datas_disponiveis:
+        indice_atual = datas_disponiveis.index(data_selecionada)
+        
+        if indice_atual > 0:
+            data_anterior = datas_disponiveis[indice_atual - 1]
+        
+        if indice_atual < len(datas_disponiveis) - 1:
+            data_proxima = datas_disponiveis[indice_atual + 1]
+    
+    context = {
+        'motoristas': motoristas_lista,  # 🔥 Nova estrutura agrupada
+        'data_selecionada': data_selecionada,
+        'data_anterior': data_anterior,
+        'data_proxima': data_proxima,
+        'datas_disponiveis': datas_disponiveis[:10],
+        'total_unidades': stats['total_unidades'],
+        'total_veiculos': stats['total_veiculos'],
+        'total_registros': stats['total_registros'],
+        'total_km': stats['total_km'],
+        'total_combustivel': stats['total_combustivel'],
+        'media_geral': stats['media_geral'],
+        'unidades_eficientes': unidades_eficientes,
+        'unidades_regulares': unidades_regulares,
+        'unidades_ineficientes': unidades_ineficientes,
+        'empresa_logada': empresa_logada,
+    }
+    
+    return render(request, 'umbrella360/Planilhas/viagem_diaria.html', context)
+
+def export_viagem_diaria_excel(request):
+    """
+    Exporta relatório de viagem diária para Excel - agora com somatório por motorista E veículo
+    """
+    from datetime import datetime, timedelta
+    from django.db.models import Sum, Avg, F, Case, When, FloatField, Count
+    
+    # ========== MESMA LÓGICA DA VIEW PRINCIPAL ==========
+    # Verificar se há empresa logada
+    empresa_logada_id = request.session.get('empresa_logada')
+    empresa_logada = None
+    if empresa_logada_id:
+        try:
+            empresa_logada = Empresa.objects.get(id=empresa_logada_id)
+        except Empresa.DoesNotExist:
+            pass
+
+    # Obter parâmetro de data da URL
+    data_param = request.GET.get('data')
+    
+    # ========== OBTENÇÃO DOS DADOS ==========
+    viagens_query = Viagem_Detalhada.objects.select_related('unidade', 'unidade__empresa')
+    viagens_query = viagens_query.filter(unidade__cls__icontains='motorista')
+    
+    if empresa_logada:
+        viagens_query = viagens_query.filter(unidade__empresa=empresa_logada)
+    
+    # Obter todas as datas disponíveis
+    datas_disponiveis = set()
+    for viagem in viagens_query.filter(timestamp_inicial__isnull=False):
+        try:
+            data_viagem = datetime.fromtimestamp(viagem.timestamp_inicial).date()
+            datas_disponiveis.add(data_viagem)
+        except (ValueError, OSError):
+            continue
+    
+    datas_disponiveis = sorted(list(datas_disponiveis), reverse=True)
+    
+    # Determinar qual data usar
+    if data_param:
+        try:
+            data_selecionada = datetime.strptime(data_param, '%Y-%m-%d').date()
+            if data_selecionada not in datas_disponiveis:
+                data_selecionada = datas_disponiveis[0] if datas_disponiveis else timezone.now().date()
+        except (ValueError, IndexError):
+            data_selecionada = datas_disponiveis[0] if datas_disponiveis else timezone.now().date()
+    else:
+        data_selecionada = datas_disponiveis[0] if datas_disponiveis else timezone.now().date()
+    
+    # Calcular timestamps do dia selecionado
+    inicio_dia = datetime.combine(data_selecionada, datetime.min.time())
+    fim_dia = datetime.combine(data_selecionada, datetime.max.time())
+    
+    timestamp_inicio = int(inicio_dia.timestamp())
+    timestamp_fim = int(fim_dia.timestamp())
+    
+    # Filtrar viagens do dia selecionado
+    viagens_do_dia = viagens_query.filter(
+        timestamp_inicial__gte=timestamp_inicio,
+        timestamp_inicial__lte=timestamp_fim
+    )
+    
+    # Aplicar filtros de qualidade
+    viagens_do_dia = viagens_do_dia.filter(
+        quilometragem__gt=0,
+        Consumido__gt=0,
+        Quilometragem_média__gte=1.0,
+        Quilometragem_média__lte=5.0
+    )
+    
+    # Agrupar por motorista E veículo
+    viagens_agrupadas = viagens_do_dia.values(
+        'unidade',
+        'unidade__nm',
+        'veiculo'  # INCLUÍDO NO AGRUPAMENTO
+    ).annotate(
+        total_quilometragem=Sum('quilometragem'),
+        total_consumido=Sum('Consumido'),
+        media_velocidade=Avg('Velocidade_média'),
+        eficiencia_media=Case(
+            When(total_consumido__gt=0, then=F('total_quilometragem') / F('total_consumido')),
+            default=0.0,
+            output_field=FloatField()
+        ),
+        numero_viagens=Count('id')
+    ).order_by('unidade__nm', 'veiculo')
+    
+    # Calcular estatísticas
+    stats = {
+        'total_unidades': viagens_agrupadas.values('unidade').distinct().count(),
+        'total_veiculos': viagens_agrupadas.values('veiculo').distinct().count(),
+        'total_registros': viagens_agrupadas.count(),
+        'total_km': sum(item['total_quilometragem'] for item in viagens_agrupadas if item['total_quilometragem']),
+        'total_combustivel': sum(item['total_consumido'] for item in viagens_agrupadas if item['total_consumido']),
+        'media_geral': (sum(item['total_quilometragem'] for item in viagens_agrupadas if item['total_quilometragem']) /
+                        sum(item['total_consumido'] for item in viagens_agrupadas if item['total_consumido'])) if 
+                       sum(item['total_consumido'] for item in viagens_agrupadas if item['total_consumido']) > 0 else 0
+    }
+    
+    # ========== CRIAÇÃO DO EXCEL ==========
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Viagem Diária"
+    
+    # ========== ESTILOS ==========
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="667eea", end_color="667eea", fill_type="solid")
+    title_font = Font(bold=True, size=16, color="2c3e50")
+    stats_font = Font(bold=True, color="2c3e50")
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # ========== CABEÇALHO PRINCIPAL ==========
+    ws.merge_cells('A1:G1')
+    ws['A1'] = f"📋 Relatório de Viagem Diária - {data_selecionada.strftime('%d/%m/%Y')} (Por Motorista e Veículo)"
+    ws['A1'].font = title_font
+    ws['A1'].alignment = Alignment(horizontal='center')
+    
+    # Informações gerais
+    ws.merge_cells('A2:G2')
+    ws['A2'] = f"Gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}"
+    ws['A2'].alignment = Alignment(horizontal='center')
+    
+    if empresa_logada:
+        ws.merge_cells('A3:G3')
+        ws['A3'] = f"Empresa: {empresa_logada.nome}"
+        ws['A3'].alignment = Alignment(horizontal='center')
+        start_row = 5
+    else:
+        start_row = 4
+    
+    # ========== ESTATÍSTICAS RESUMO ==========
+    ws.merge_cells(f'A{start_row}:G{start_row}')
+    ws[f'A{start_row}'] = "📊 RESUMO EXECUTIVO"
+    ws[f'A{start_row}'].font = stats_font
+    ws[f'A{start_row}'].alignment = Alignment(horizontal='center')
+    
+    stats_row = start_row + 1
+    
+    # Linha 1 de estatísticas
+    ws[f'A{stats_row}'] = "Motoristas:"
+    ws[f'B{stats_row}'] = stats['total_unidades']
+    ws[f'C{stats_row}'] = "Veículos:"
+    ws[f'D{stats_row}'] = stats['total_veiculos']
+    ws[f'E{stats_row}'] = "Registros:"
+    ws[f'F{stats_row}'] = stats['total_registros']
+    
+    # Linha 2 de estatísticas
+    stats_row += 1
+    ws[f'A{stats_row}'] = "KM Total:"
+    ws[f'B{stats_row}'] = round(stats['total_km'], 2)
+    ws[f'C{stats_row}'] = "Combustível:"
+    ws[f'D{stats_row}'] = f"{round(stats['total_combustivel'], 2)} L"
+    ws[f'E{stats_row}'] = "Média Geral:"
+    ws[f'F{stats_row}'] = f"{round(stats['media_geral'], 2)} km/L"
+    
+    # ========== CABEÇALHOS DA TABELA ==========
+    table_start = stats_row + 3
+    
+    headers = ['Motorista', 'Veículo', 'KM Total', 'Consumo Total (L)', 'Eficiência (km/L)', 'Viagens', 'Observações']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=table_start, column=col)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = border
+        cell.alignment = Alignment(horizontal='center')
+    
+    # ========== DADOS DA TABELA ==========
+    current_row = table_start + 1
+    
+    for viagem in viagens_agrupadas:
+        # Motorista
+        ws.cell(row=current_row, column=1).value = viagem['unidade__nm'] or viagem['unidade']
+        
+        # Veículo
+        ws.cell(row=current_row, column=2).value = viagem['veiculo'] or 'N/A'
+        
+        # KM Total
+        ws.cell(row=current_row, column=3).value = round(viagem['total_quilometragem'], 2)
+        
+        # Consumo Total
+        ws.cell(row=current_row, column=4).value = round(viagem['total_consumido'], 1)
+        
+        # Eficiência
+        ws.cell(row=current_row, column=5).value = round(viagem['eficiencia_media'], 2)
+        
+        # Número de Viagens
+        ws.cell(row=current_row, column=6).value = viagem['numero_viagens']
+        
+        # Observações
+        eficiencia = viagem['eficiencia_media']
+        if eficiencia >= 2.0:
+            obs = "Excelente"
+        elif eficiencia >= 1.78:
+            obs = "Boa"
+        elif eficiencia >= 1.5:
+            obs = "Regular"
+        else:
+            obs = "Ruim - Requer atenção"
+            
+        ws.cell(row=current_row, column=7).value = obs
+        
+        # Aplicar bordas
+        for col in range(1, 8):
+            ws.cell(row=current_row, column=col).border = border
+            
+        current_row += 1
+    
+    # ========== CONFIGURAÇÕES FINAIS ==========
+    column_widths = [25, 20, 12, 15, 15, 10, 30]
+    for i, width in enumerate(column_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+    
+    # ========== RESPOSTA HTTP ==========
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"viagem_diaria_detalhada_{data_selecionada.strftime('%Y%m%d')}_{timestamp}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    wb.save(response)
+    
+    return response
+# ...existing code...
+
 def export_cercas_pdf(request, unidade_id):
     """Exporta checkpoints de uma unidade para PDF"""
     unidade = get_object_or_404(Unidade, id=unidade_id)
@@ -1693,3 +2211,130 @@ def export_cercas_pdf(request, unidade_id):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     return response
+
+
+
+
+def performance_frota(request):
+    """View para análise de performance de RPM da frota toda - TODOS OS DADOS"""
+    # Verificar se há empresa logada
+    empresa_logada_id = request.session.get('empresa_logada')
+    empresa_logada = None
+    
+    if empresa_logada_id:
+        try:
+            empresa_logada = Empresa.objects.get(id=empresa_logada_id)
+        except Empresa.DoesNotExist:
+            return HttpResponseRedirect(reverse('login_view'))
+    
+    # Buscar TODAS as viagens eco da empresa (sem filtro de data)
+    from .models import Viagem_eco
+    
+    viagens_eco_query = Viagem_eco.objects.select_related('unidade', 'unidade__empresa')
+    
+    if empresa_logada_id:
+        viagens_eco_query = viagens_eco_query.filter(unidade__empresa_id=empresa_logada_id)
+    
+    # Processar todos os dados de uma vez
+    unidades_performance = []
+    
+    if viagens_eco_query.exists():
+        # Agrupar por unidade e calcular faixas de RPM
+        unidades_ids = viagens_eco_query.values_list('unidade_id', flat=True).distinct()
+        
+        for unidade_id in unidades_ids:
+            try:
+                unidade = Unidade.objects.select_related('empresa').get(id=unidade_id)
+                viagens_unidade = viagens_eco_query.filter(unidade_id=unidade_id)
+                
+                # 🔥 CÁLCULO DE RPM E MOTOR OCIOSO
+                rpms = []
+                motor_ocioso_count = 0  # 🔥 NOVO: Contador para motor ocioso
+                total_registros = 0     # 🔥 NOVO: Total de registros processados
+                
+                for v in viagens_unidade:
+                    # Verificar se há dados válidos de RPM e velocidade
+                    rpm_valor = float(v.rpm/8) if v.rpm else 0
+                    velocidade_valor = float(v.velocidade) if v.velocidade else 0
+                    energia_valor = float(v.energia) if v.energia else 0
+                    
+                    total_registros += 1
+                    
+                    # 🔥 NOVO: Condição para motor ocioso (RPM = 0 e velocidade > 0)
+                    if rpm_valor > 0 and velocidade_valor == 0 or energia_valor > 12900 and velocidade_valor == 0:
+                        motor_ocioso_count += 1
+                        
+
+                    
+                    # Filtrar RPMs válidos (acima de 0 e abaixo de 3500)
+                    if rpm_valor > 0 and rpm_valor <= 3500:
+                        rpms.append(rpm_valor)
+                
+                if rpms or total_registros > 0:
+                    total_pontos_rpm = len(rpms)  # Total de pontos com RPM válido
+                    
+                    # Calcular estatísticas de RPM
+                    rpm_medio = sum(rpms) / total_pontos_rpm if total_pontos_rpm > 0 else 0
+                    rpm_maximo = max(rpms) if rpms else 0
+                    rpm_minimo = min(rpms) if rpms else 0
+                    
+                    # Calcular faixas de RPM (apenas para RPMs válidos > 0)
+                    faixa_azul = len([r for r in rpms if 350 <= r < 799])
+                    faixa_verde = len([r for r in rpms if 800 <= r < 1300])
+                    faixa_amarela = len([r for r in rpms if 1301 <= r < 2300])
+                    faixa_vermelha = len([r for r in rpms if r >= 2301])
+                    
+                    # 🔥 NOVO: Calcular percentuais baseados no total de registros
+                    perc_azul = (faixa_azul / total_registros * 100) if total_registros > 0 else 0
+                    perc_verde = (faixa_verde / total_registros * 100) if total_registros > 0 else 0
+                    perc_amarela = (faixa_amarela / total_registros * 100) if total_registros > 0 else 0
+                    perc_vermelha = (faixa_vermelha / total_registros * 100) if total_registros > 0 else 0
+                    perc_ocioso = (motor_ocioso_count / total_registros * 100) if total_registros > 0 else 0  # 🔥 NOVO
+                    
+                    # Score de performance (mais verde e azul = melhor, motor ocioso penaliza)
+                    score = (perc_verde * 1.0) + (perc_azul * 0.8) - (perc_amarela * 0.5) - (perc_vermelha * 1.0) - (perc_ocioso * 0.3)  # 🔥 NOVO: penalizar motor ocioso
+                    
+                    unidades_performance.append({
+                        'unidade': unidade,
+                        'total_pontos': total_registros,  # 🔥 ALTERADO: usar total de registros
+                        'total_pontos_rpm': total_pontos_rpm,  # 🔥 NOVO: pontos com RPM válido
+                        'rpm_medio': rpm_medio,
+                        'rpm_maximo': rpm_maximo,
+                        'rpm_minimo': rpm_minimo,
+                        'faixa_azul': faixa_azul,
+                        'faixa_verde': faixa_verde,
+                        'faixa_amarela': faixa_amarela,
+                        'faixa_vermelha': faixa_vermelha,
+                        'motor_ocioso': motor_ocioso_count,  # 🔥 NOVO: quantidade de registros com motor ocioso
+                        'perc_azul': perc_azul,
+                        'perc_verde': perc_verde,
+                        'perc_amarela': perc_amarela,
+                        'perc_vermelha': perc_vermelha,
+                        'perc_ocioso': perc_ocioso,  # 🔥 NOVO: percentual de motor ocioso
+                        'score': score,
+                    })
+            except Unidade.DoesNotExist:
+                continue
+    
+    # Ordenar por score (melhor performance primeiro)
+    unidades_performance = sorted(unidades_performance, key=lambda x: x['score'], reverse=True)
+    
+    # Calcular estatísticas gerais da frota
+    stats_gerais = {
+        'total_unidades': len(unidades_performance),
+        'total_pontos': sum(u['total_pontos'] for u in unidades_performance),
+        'rpm_medio_frota': sum(u['rpm_medio'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
+        'perc_verde_frota': sum(u['perc_verde'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
+        'perc_vermelha_frota': sum(u['perc_vermelha'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
+        'perc_azul_frota': sum(u['perc_azul'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
+        'perc_amarela_frota': sum(u['perc_amarela'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,
+        'perc_ocioso_frota': sum(u['perc_ocioso'] * u['total_pontos'] for u in unidades_performance) / sum(u['total_pontos'] for u in unidades_performance) if unidades_performance and sum(u['total_pontos'] for u in unidades_performance) > 0 else 0,  # 🔥 NOVO
+    }
+    
+    context = {
+        'empresa_logada': empresa_logada,
+        'unidades_performance': unidades_performance,
+        'stats_gerais': stats_gerais,
+    }
+    
+    return render(request, 'umbrella360/performance.html', context)
