@@ -268,6 +268,10 @@
                   <div style="padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 1.1rem;">
                     {{ item.perc_ocioso|floatformat:1 }}%
                   </div>
+                  <div style="font-size: 0.85rem; color: #666;">
+                    ({{ item.motor_ocioso}})
+                  </div>
+                  
                 <td style="padding: 1rem; text-align: center; border: 1px solid #dee2e6;">
                   <div style="padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 1.1rem;
                     {% if item.score >= 70 %}

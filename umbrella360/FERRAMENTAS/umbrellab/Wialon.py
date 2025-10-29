@@ -982,6 +982,7 @@ def motoristas_simples_03(session_id, flags):
                         "creator_id": creator_id,
                         "driver_id": driver_data.get("id", 0),
                         "driver_name": driver_data.get("n", "Nome não disponível"),
+                        "driver_code": driver_data.get("c",0)
                     }
                     motoristas_lista.append(motorista_info)
         #+---

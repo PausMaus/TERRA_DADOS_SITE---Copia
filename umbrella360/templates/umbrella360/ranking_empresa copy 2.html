@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking {{ empresa_logada.nome }} - Umbrella360</title>
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'umbrella360/style.css' %}?v=9">
+    <link rel="stylesheet" href="{% static 'umbrella360/style_refatorado.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'umbrella360/theme-fixes.css' %}?v=1">
+    <script src="{% static 'umbrella360/theme-toggle.js' %}?v=2"></script>
+    
+    <style>
+      .ranking-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+      
+      .ranking-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 3rem;
+      }
+      
+      .ranking-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        border: 1px solid #dee2e6;
+      }
+      
+      .ranking-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e9ecef;
+      }
+      
+      .ranking-header h3 {
+        color: #2c3e50;
+        font-size: 1.5rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+      
+      .ranking-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      
+      .ranking-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+      }
+      
+      .ranking-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        border-color: #007bff;
+      }
+      
+      .ranking-position {
+        font-size: 1.2rem;
+        font-weight: 700;
+        min-width: 40px;
+        text-align: center;
+        margin-right: 1rem;
+      }
+      
+      .ranking-position.top3 {
+        color: #ffd700;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+      }
+      
+      .ranking-position.gold { color: #ffd700; }
+      .ranking-position.silver { color: #c0c0c0; }
+      .ranking-position.bronze { color: #cd7f32; }
+      
+      .ranking-name {
+        flex: 1;
+        font-weight: 600;
+        color: #495057;
+        font-size: 1rem;
+      }
+      
+      .ranking-value {
+        font-weight: 700;
+        color: #28a745;
+        font-size: 1.1rem;
+        padding: 0.25rem 0.75rem;
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        border-radius: 20px;
+        border: 1px solid #28a745;
+      }
+      
+      .stats-overview {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 3rem;
+        border: 1px solid #dee2e6;
+      }
+      
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+      }
+      
+      .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid #e9ecef;
+        transition: transform 0.3s ease;
+      }
+      
+      .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      }
+      
+      .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0.5rem 0;
+      }
+      
+      .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .filter-section {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        border: 1px solid #dee2e6;
+      }
+      
+      .filter-form {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      
+      .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .filter-group label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.9rem;
+      }
+      
+      .filter-group select {
+        padding: 0.5rem 1rem;
+        border: 2px solid #ced4da;
+        border-radius: 6px;
+        background: white;
+        color: #495057;
+        font-size: 0.9rem;
+        transition: border-color 0.3s ease;
+      }
+      
+      .filter-group select:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      }
+      
+      .podium {
+        display: flex;
+        justify-content: center;
+        align-items: end;
+        margin: 2rem 0;
+        gap: 1rem;
+      }
+      
+      .podium-place {
+        text-align: center;
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 2px solid #e9ecef;
+        min-width: 150px;
+      }
+      
+      .podium-place.first {
+        order: 2;
+        border-color: #ffd700;
+        transform: scale(1.1);
+      }
+      
+      .podium-place.second {
+        order: 1;
+        border-color: #c0c0c0;
+      }
+      
+      .podium-place.third {
+        order: 3;
+        border-color: #cd7f32;
+      }
+      
+      .podium-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+      
+      .podium-number.first { color: #ffd700; }
+      .podium-number.second { color: #c0c0c0; }
+      .podium-number.third { color: #cd7f32; }
+      
+      @media (max-width: 768px) {
+        .ranking-grid {
+          grid-template-columns: 1fr;
+        }
+        
+        .stats-grid {
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+        
+        .filter-form {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        
+        .podium {
+          flex-direction: column;
+          align-items: center;
+        }
+        
+        .podium-place {
+          order: initial !important;
+          transform: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    {% block content %}
+
+    <!-- Botão de alternância de tema -->
+    <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
+      <span class="theme-icon">◐</span> Noite de Verão
+    </button>
+
+    <div class="header">
+        <div class="menu-buttons">
+          <a href="{% url 'index' %}" class="btn btn-secondary">Início</a>
+          <a href="{% url 'report_empresa' %}" class="btn btn-secondary">Painel</a>
+          <a href="{% url 'ranking_empresa' %}" class="btn btn-primary">Ranking</a>
+        </div>
+    </div>
+    
+
+    <main class="ranking-container">
+      <!-- Filtro por Período -->
+      <div class="filter-section">
+        <form method="get" class="filter-form">
+          <div class="filter-group">
+            <label for="periodo">Período:</label>
+            <select name="periodo" id="periodo" onchange="this.form.submit()">
+              <option value="todos" {% if periodo_selecionado == 'todos' %}selected{% endif %}>Todos os Períodos</option>
+              {% for periodo in periodos_disponiveis %}
+                <option value="{{ periodo }}" {% if periodo_selecionado == periodo %}selected{% endif %}>{{ periodo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if periodo_selecionado != 'todos' %}
+            <a href="{% url 'ranking_empresa' %}" class="btn btn-primary">Limpar Filtro</a>
+          {% endif %}
+        </form>
+      </div>
+
+
+      <!-- Rankings -->
+      <div class="ranking-grid">
+        <!-- Ranking Motoristas -->
+        <div class="ranking-card">
+          <div class="ranking-header">
+            <h3>Ranking Motoristas</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por eficiência de combustível</p>
+          </div>
+          
+          {% if top_motoristas %}
+            <ul class="ranking-list">
+              {% for viagem in top_motoristas %}
+                <li class="ranking-item">
+                  <div class="ranking-position {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+                    {% if forloop.counter == 1 %}1º{% elif forloop.counter == 2 %}2º{% elif forloop.counter == 3 %}3º{% else %}{{ forloop.counter }}º{% endif %}
+                  </div>
+                  <div class="ranking-name">
+                    <a href="{% url 'detalhes_unidade' viagem.unidade.id %}" style="text-decoration: none; color: inherit;">
+                      {{ viagem.unidade.nm|default:viagem.unidade.id }}
+                    </a>
+                  </div>
+                  <div class="ranking-value">{{ viagem.Quilometragem_média|floatformat:2 }} km/L</div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>Nenhum motorista encontrado</strong></p>
+              <p>Não há dados de motoristas para o período selecionado.</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Ranking Veículos -->
+        <div class="ranking-card">
+          <div class="ranking-header">
+            <h3>Ranking Veículos</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por eficiência de combustível</p>
+          </div>
+          
+          {% if top_veiculos %}
+            <ul class="ranking-list">
+              {% for viagem in top_veiculos %}
+                <li class="ranking-item">
+                  <div class="ranking-position {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+                    {% if forloop.counter == 1 %}1º{% elif forloop.counter == 2 %}2º{% elif forloop.counter == 3 %}3º{% else %}{{ forloop.counter }}º{% endif %}
+                  </div>
+                  <div class="ranking-name">
+                    <a href="{% url 'detalhes_unidade' viagem.unidade.id %}" style="text-decoration: none; color: inherit;">
+                      {{ viagem.unidade.nm|default:viagem.unidade.id }}
+                    </a>
+                    {% if viagem.unidade.marca %}
+                      <small style="color: #6c757d;">({{ viagem.unidade.marca }})</small>
+                    {% endif %}
+                  </div>
+                  <div class="ranking-value">{{ viagem.Quilometragem_média|floatformat:2 }} km/L</div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>Nenhum veículo encontrado</strong></p>
+              <p>Não há dados de veículos para o período selecionado.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+
+    </main>
+
+    <!-- Seção de CheckPoints -->
+    <section class="checkpoints-section" style="background: rgba(255, 255, 255, 0.95); margin: 2rem auto; max-width: 1200px; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+      <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
+        CheckPoints da Empresa
+      </h2>
+      
+      <!-- Estatísticas dos CheckPoints -->
+      <div class="stats-overview" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">{{ total_checkpoints }}</div>
+            <div class="stat-label">Total de Passagens</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ cercas_ativas }}</div>
+            <div class="stat-label">Cercas Ativas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ unidades_com_checkpoint }}</div>
+            <div class="stat-label">Unidades Monitoradas</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de CheckPoints -->
+      <div class="ranking-grid">
+        <!-- Cercas Mais Utilizadas -->
+        <div class="ranking-card">
+          <div class="ranking-header">
+            <h3>Cercas Mais Utilizadas</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por número de passagens</p>
+          </div>
+          
+          {% if cercas_populares %}
+            <ul class="ranking-list">
+              {% for cerca in cercas_populares %}
+                <li class="ranking-item">
+                  <div class="ranking-position {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+                    {{ forloop.counter }}º
+                  </div>
+                  <div class="ranking-name">
+                    {{ cerca.cerca|truncatechars:30 }}
+                  </div>
+                  <div class="ranking-value" style="background: linear-gradient(135deg, #cce5ff, #99d6ff);">
+                    {{ cerca.total_passagens }}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>Nenhuma cerca encontrada</strong></p>
+              <p>Não há dados de checkpoints para o período selecionado.</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Unidades Mais Ativas -->
+        <div class="ranking-card">
+          <div class="ranking-header">
+            <h3>Unidades Mais Ativas</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por passagens em checkpoints</p>
+          </div>
+          
+          {% if unidades_ativas_checkpoint %}
+            <ul class="ranking-list">
+              {% for unidade in unidades_ativas_checkpoint %}
+                <li class="ranking-item">
+                  <div class="ranking-position {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+                    {{ forloop.counter }}º
+                  </div>
+                  <div class="ranking-name">
+                    <a href="{% url 'detalhes_unidade' unidade.unidade__id %}" style="text-decoration: none; color: inherit;">
+                      {{ unidade.unidade__nm|default:unidade.unidade__id }}
+                    </a>
+                    <small style="color: #6c757d;">({{ unidade.unidade__cls }})</small>
+                  </div>
+                  <div class="ranking-value" style="background: linear-gradient(135deg, #ffe6cc, #ffcc99);">
+                    {{ unidade.total_passagens }}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>Nenhuma unidade encontrada</strong></p>
+              <p>Não há dados de checkpoints para o período selecionado.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Histórico Recente de CheckPoints -->
+      <div class="ranking-card" style="margin-top: 2rem;">
+        <div class="ranking-header">
+          <h3>📋 Histórico Recente de Passagens</h3>
+          <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Últimas 50 passagens registradas</p>
+        </div>
+        
+        {% if checkpoints_recentes %}
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+              <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Unidade</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Cerca</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Entrada</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Saída</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Duração</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for checkpoint in checkpoints_recentes|slice:":50" %}
+                  <tr style="border-bottom: 1px solid #e9ecef; {% cycle 'background: white;' 'background: #f8f9fa;' %}">
+                    <td style="padding: 0.75rem;">
+                      <a href="{% url 'detalhes_unidade' checkpoint.unidade.id %}" style="text-decoration: none; color: #007bff; font-weight: 500;">
+                        {{ checkpoint.unidade.nm|default:checkpoint.unidade.id }}
+                      </a>
+                      <br>
+                      <small style="color: #6c757d;">{{ checkpoint.unidade.cls }}</small>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      <span style="background: #e7f3ff; color: #0066cc; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem;">
+                        {{ checkpoint.cerca|truncatechars:25 }}
+                      </span>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      {% if checkpoint.data_entrada %}
+                        {{ checkpoint.data_entrada|date:"d/m/Y H:i" }}
+                      {% else %}
+                        <span style="color: #6c757d;">-</span>
+                      {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      {% if checkpoint.data_saida %}
+                        {{ checkpoint.data_saida|date:"d/m/Y H:i" }}
+                      {% else %}
+                        <span style="color: #6c757d;">-</span>
+                      {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      {% if checkpoint.duracao %}
+                        <span style="color: #28a745; font-weight: 500;">{{ checkpoint.duracao }}</span>
+                      {% else %}
+                        <span style="color: #6c757d;">-</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div style="text-align: center; padding: 3rem; color: #6c757d;">
+            <p><strong>Nenhum checkpoint encontrado</strong></p>
+            <p>Não há registros de checkpoints para o período selecionado.</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- Seção de Infrações -->
+    <section class="infracoes-section" style="background: rgba(255, 255, 255, 0.95); margin: 2rem auto; max-width: 1200px; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+      <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">
+        Infrações de Velocidade
+      </h2>
+      
+      <!-- Estatísticas das Infrações -->
+      <div class="stats-overview" style="background: linear-gradient(135deg, #ffebee, #ffcdd2); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">{{ total_infracoes }}</div>
+            <div class="stat-label">Total de Infrações</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ unidades_com_infracoes }}</div>
+            <div class="stat-label">Unidades Infratoras</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ velocidade_media_infracoes|floatformat:1 }} km/h</div>
+            <div class="stat-label">Velocidade Média das Infrações</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ limite_medio_infracoes|floatformat:1 }} km/h</div>
+            <div class="stat-label">Limite Médio Infringido</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de Infrações -->
+      <div class="ranking-grid">
+        <!-- Unidades com Mais Infrações -->
+        <div class="ranking-card">
+          <div class="ranking-header">
+            <h3>Unidades com Mais Infrações</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por número de infrações cometidas</p>
+          </div>
+          
+          {% if unidades_mais_infracoes %}
+            <ul class="ranking-list">
+              {% for unidade in unidades_mais_infracoes %}
+                <li class="ranking-item">
+                  <div class="ranking-position {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+                    {{ forloop.counter }}º
+                  </div>
+                  <div class="ranking-name">
+                    <a href="{% url 'detalhes_unidade' unidade.unidade__id %}" style="text-decoration: none; color: inherit;">
+                      {{ unidade.unidade__nm|default:unidade.unidade__id }}
+                    </a>
+                    <small style="color: #6c757d;">({{ unidade.unidade__cls }})</small>
+                    {% if unidade.velocidade_maxima %}
+                      <br><small style="color: #dc3545; font-weight: 500;">Máx: {{ unidade.velocidade_maxima|floatformat:0 }} km/h</small>
+                    {% endif %}
+                  </div>
+                  <div class="ranking-value" style="background: linear-gradient(135deg, #ffcccc, #ff9999); border-color: #dc3545; color: #dc3545;">
+                    {{ unidade.total_infracoes }}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>🎉 Nenhuma infração encontrada</strong></p>
+              <p>Parabéns! Sua frota está respeitando os limites de velocidade.</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Limites Mais Infringidos -->
+        <div class="ranking-card">
+          <div class="ranking-header">
+            <h3>Limites Mais Infringidos</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Por número de ocorrências</p>
+          </div>
+          
+          {% if limites_mais_infringidos %}
+            <ul class="ranking-list">
+              {% for limite in limites_mais_infringidos %}
+                <li class="ranking-item">
+                  <div class="ranking-position {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+                    {{ forloop.counter }}º
+                  </div>
+                  <div class="ranking-name">
+                    Limite de {{ limite.limite|floatformat:0 }} km/h
+                  </div>
+                  <div class="ranking-value" style="background: linear-gradient(135deg, #fff3cd, #ffeaa7); border-color: #ffc107; color: #856404;">
+                    {{ limite.total_ocorrencias }}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <p><strong>Nenhum limite infringido</strong></p>
+              <p>Não há dados de infrações para o período selecionado.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Histórico Recente de Infrações -->
+      <div class="ranking-card" style="margin-top: 2rem;">
+        <div class="ranking-header">
+          <h3>📋 Histórico Recente de Infrações</h3>
+          <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Últimas 20 infrações registradas</p>
+        </div>
+        
+        {% if infracoes_recentes %}
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+              <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Unidade</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Data/Hora</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Limite</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Velocidade</th>
+                  <th style="padding: 0.75rem; text-align: left; font-weight: 600; color: #495057;">Local</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for infracao in infracoes_recentes|slice:":20" %}
+                  <tr style="border-bottom: 1px solid #e9ecef; {% cycle 'background: white;' 'background: #f8f9fa;' %}">
+                    <td style="padding: 0.75rem;">
+                      <a href="{% url 'detalhes_unidade' infracao.unidade.id %}" style="text-decoration: none; color: #007bff; font-weight: 500;">
+                        {{ infracao.unidade.nm|default:infracao.unidade.id }}
+                      </a>
+                      <br>
+                      <small style="color: #6c757d;">{{ infracao.unidade.cls }}</small>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      {% if infracao.data %}
+                        {{ infracao.data|date:"d/m/Y H:i" }}
+                      {% else %}
+                        <span style="color: #6c757d;">-</span>
+                      {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      <span style="background: #e7f3ff; color: #0066cc; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; font-weight: 500;">
+                        {{ infracao.limite|floatformat:0 }} km/h
+                      </span>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      <span style="background: #ffebee; color: #c62828; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">
+                        {{ infracao.velocidade|floatformat:0 }} km/h
+                      </span>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                      {% if infracao.localizacao %}
+                        <a href="{{ infracao.localizacao }}" target="_blank" style="color: #28a745; text-decoration: none; font-size: 0.875rem;">
+                          Ver no Mapa
+                        </a>
+                      {% else %}
+                        <span style="color: #6c757d;">-</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div style="text-align: center; padding: 3rem; color: #6c757d;">
+            <p><strong>🎉 Nenhuma infração encontrada</strong></p>
+            <p>Não há registros de infrações para o período selecionado.</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>&copy; 2025 Umbrella360</p>
+      <p><em>"Reconhecendo a excelência operacional em cada quilômetro"</em></p>
+      <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+
+    </footer>
+  </body>
+  {% endblock %}
+</html>

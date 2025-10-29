@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from umbrella360.FERRAMENTAS.umbrellab import Wialon
 from umbrella360.FERRAMENTAS.umbrellab.Wialon import *
-from umbrella360.models import Empresa, Unidade, Viagem_Base, CheckPoint, Infrações, Veiculo, ConfiguracaoSistema, Viagem_eco, Viagem_Detalhada
+from umbrella360.models import Empresa, Unidade, Viagem_Base, CheckPoint, Infrações, Veiculo, ConfiguracaoSistema, Viagem_eco, Viagem_Detalhada, Driver
 import json
 import pandas as pd
 import time
@@ -15,6 +15,9 @@ from django.utils import timezone
 from datetime import timedelta
 import pytz
 import sqlite3
+import numbers
+import threading
+import time
 conn = sqlite3.connect('db.sqlite3')
 conn.execute('PRAGMA journal_mode=WAL;')
 conn.close()
@@ -50,17 +53,18 @@ class Command(BaseCommand):
         #self.Limpeza() 
 
         #self.CLTDR_TESTE_01(cor1="blue", cor2="green")
+        #   self.CLTDR_TESTE_02(cor1="blue", cor2="green")
         ##################################################
         # MENSAGENS #
+
+        #Viagem_eco.objects.all().delete()
+        self.MENSAGENS(1,"Petitto")
+        self.MENSAGENS(1,"CPBRACELL")
         
-        self.MENSAGENS_03(1)
 
         ##################################################
         # ESTUDO #
 
-        #self.ESTUDO_01()
-        #self.ESTUDO_02()
-        #self.ESTUDO_03()
         ##################################################
         # CHECAGEM #
         self.Checagem_01()
@@ -77,6 +81,211 @@ class Command(BaseCommand):
     #######################################################################################
     
 ################################################################################################
+
+
+
+
+
+
+
+    def atualizador_04(self,sid,id_criador,  flags=8388613):
+        
+
+        def comm(msg):
+            print(colored("="*30, "yellow"))
+            print(colored(f"Atualizador de Unidades V4:","green"))
+            print(f"{msg}")
+            print(colored("="*30, "yellow"))
+
+        def driver_code_to_avl(codigo_motorista: int) -> int:
+            # converte para hex e garante 8 caracteres
+            hex_code = f'{codigo_motorista}'
+            # cria uma string de 16 bytes com o código no meio
+            # exemplo: prefixo + hex_code + sufixo
+            # aqui usamos um padrão que gera o mesmo resultado
+            reversed_bytes = '000000' + hex_code + '000000'
+            # inverte os bytes novamente
+            bytes_list = [reversed_bytes[i:i+2] for i in range(0, len(reversed_bytes), 2)]
+            original_hex = ''.join(bytes_list[::-1])
+            # converte para decimal
+            return int(original_hex, 16)
+
+                
+                
+        empresa = Empresa.objects.get(id_criador=id_criador)
+
+        vcl_processados = 0
+        vcl_excludentes = 0
+        mtr_processados = 0
+        mtr_excludentes = 0
+
+
+        unidades = Wialon.unidades_simples_05(sid,  flags=flags)
+        if not unidades:
+            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
+            return
+
+        #coloca os dados em um dataframe
+        df_unidades = pd.DataFrame(unidades)
+        #+---
+        #comm(f'Unidades encontradas: {len(df_unidades)}')
+        #comm(f'Unidades: {df_unidades}')
+        #+---
+
+        for unidade in df_unidades.itertuples(index=False):
+            id=unidade.unit_id
+            nome=unidade.unit_name
+            marca=unidade.brand
+            modelo=unidade.model
+            ano=unidade.year
+            cor=unidade.color
+            placa=unidade.registration_plate
+            cls = 'Veículo'
+            id_criador_unidade = unidade.id_criador
+            if id_criador_unidade == id_criador:
+
+                #+---
+                #print(f'A unidade {nome} pertence à empresa {empresa.nome}')
+                #print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
+                #+---
+                #+---   
+                #comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
+                #+---
+                
+                # Atualiza a unidade no banco de dados
+                Veiculo.objects.update_or_create(
+                    id=f"{empresa.nome}_{id}",
+                    defaults={
+                        'nm': nome,
+                        'placa': placa,
+                        'marca': marca,
+                        'cls': cls,
+                        'empresa': empresa,
+                        'cor': cor,
+                        'modelo': modelo,
+                        'id_wialon': id,
+                        
+                    }
+                )
+                vcl_processados += 1
+                #+---
+                #comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
+                #+---
+
+            else:
+                vcl_excludentes += 1
+                #+---
+                #comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
+                #+---
+
+        #adiciona também os motoristas
+
+        motoristas = Wialon.motoristas_simples_03(sid, flags=261)
+        df_motoristas = pd.DataFrame(motoristas)
+
+        #+---
+        #comm(f'Motoristas encontrados: {len(df_motoristas)}')
+        #comm(f'Motoristas: {df_motoristas}')
+        #+---
+
+        
+
+        for motorista in df_motoristas.itertuples(index=False):
+            if motorista.creator_id == id_criador:
+                #+---
+                #comm(f'O motorista {motorista.driver_name} pertence à empresa CARGO POLO.')
+                #+---
+                Driver.objects.update_or_create(
+                    id=f"{empresa.nome}_{motorista.driver_id}",
+                    defaults={
+                        'nm': motorista.driver_name,
+                        'cls': 'Motorista',
+                        'empresa': empresa,
+                        'id_wialon': f"{motorista.driver_name}_{motorista.driver_id}",
+                        'codigo': motorista.driver_code if motorista.driver_code.isnumeric() else 0,
+                        #'avl_driver': driver_code_to_avl(motorista.driver_code) if motorista.driver_code.isnumeric() else 0,
+                    }
+                )
+                mtr_processados += 1
+                #+---
+                #comm(f'Motorista {motorista.driver_name} atualizado/criado com ID {empresa.nome}_{motorista.driver_id}.')
+                #+---
+                
+
+            else:
+                mtr_excludentes += 1
+                #+---
+                #comm(f'O motorista {motorista.driver_name} não pertence à empresa CARGO POLO. ID Criador: {motorista.creator_id}')
+                #+---
+                
+            
+
+        comm(f'{colored("Resumo:", "magenta")}\n'
+            f'Veículos processados: {colored(vcl_processados, "green")}\n'
+            f'Veículos excluídos: {colored(vcl_excludentes, "red")}\n'
+            f'Motoristas processados: {colored(mtr_processados, "green")}\n'
+            f'Motoristas excluídos: {colored(mtr_excludentes, "red")}\n'
+            f'Motoristas encontrados: {len(df_motoristas)}\n'
+            f'{df_motoristas.head()}'
+        )
+
+
+
+
+    def CLTDR_TESTE_02(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
+        def comm(msg):
+            print(colored("="*30, cor1))
+            print(colored(tool, cor2))
+            print(f"{msg}")
+            print(colored("="*30, cor1))
+        comm("Iniciando processamento global...")
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                return
+
+        Wialon.set_locale()
+        #busca os relatorios
+        usuários = Wialon.buscadora_reports(sid)
+        comm(usuários)
+
+        ###__ATUALIZADOR_UNIDADES__###
+        self.ATUALIZADOR_01(sid)
+
+        ###__CLTDR_empresas__###
+        self.CLTDR_empresas(sid, cor1="blue" , cor2="white", tool= "CLTDR_empresas")
+
+        Wialon.wialon_logout(sid)
+
+    def CLTDR_empresas(self, sid, cor1, cor2, tool):
+        def comm(msg):
+            print(colored("="*30, cor1))
+            print(colored(tool, cor2))
+            print(f"{msg}")
+            print(colored("="*30, cor1))
+        ###__CARGO__POLO__###
+        comm("Processando CARGO POLO...")
+        self.CARGO_POLO(sid, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr,)
+        comm("CARGO POLO processado.")
+
+        ###__PLACIDO__###
+        comm("Processando PLACIDO...")
+        self.PLACIDO(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac)
+        comm("PLACIDO processado.")
+
+        ###__SFRESGATE__###
+        comm("Processando SFRESGATE...")
+        self.SFRESGATE(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre)
+        comm("SFRESGATE processado.")
+
+        ###__PETITTO__###
+        comm("Processando PETITTO...")
+        self.PETITTO(sid, recurso=401756219, template=59, flag=16777218, Objeto=401904974)
+        comm("PETITTO processado.")
+
+        ###__checkpoints e infrações__###
+        self.CH_INFRA(sid)
+
 
 
     def CLTDR_TESTE_01(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
@@ -281,6 +490,8 @@ class Command(BaseCommand):
         self.atualizador_04(sid, id_criador=401872802)
         self.atualizador_04(sid, id_criador=401824174)
 
+
+
     def CH_INFRA(self, sid):
         processamento_df = pd.DataFrame()
         self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
@@ -329,7 +540,7 @@ class Command(BaseCommand):
         # pega dos ultimos 30 dias usando um loop for
         #dias = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
         # dias de testes
-        dias = range(1,10)
+        dias = range(1,15)
         for dia in dias:
             self.CLTDR_MOT_01_teste(sid, processamento_df, Objeto=401756219, flag=16777216, dias=dia, periodo=str(dia))
 
@@ -733,7 +944,7 @@ class Command(BaseCommand):
                             'timestamp_inicial': timestamp_inicial,
                             'timestamp_final': timestamp_final,
                             'veiculo': veiculo,
-                            'período': periodo,
+                            #'período': periodo,
 
                         }
                     )
@@ -1269,7 +1480,7 @@ class Command(BaseCommand):
             
             # Converte RPM e velocidade CAN para valores mais legíveis
             if 'can_rpm' in df.columns:
-                df['can_rpm_readable'] = df['can_rpm'] * 0.25  # Ajuste conforme necessário
+                df['can_rpm_readable'] = df['can_rpm'] / 8  # Ajuste conforme necessário
         
             if 'can_speed' in df.columns:
                 df['can_speed_kmh'] = df['can_speed'] / 256  # Ajuste conforme necessário
@@ -1614,48 +1825,91 @@ class Command(BaseCommand):
 
         Wialon.wialon_logout(sid)
 
+    def MENSAGENS(self, tempo, empresa):
+        
+        def avl_to_driver_code(avl_driver: int) -> int:
+            """Converte código AVL para código do motorista"""
+            try:
+                if not avl_driver or avl_driver == 0:
+                    return 0
+                
+                hex_str = hex(avl_driver)[2:]
+                if len(hex_str) % 2 != 0:
+                    hex_str = '0' + hex_str
+                reversed_bytes = ''.join([hex_str[i:i+2] for i in range(0, len(hex_str), 2)][::-1])
+                if len(reversed_bytes) >= 14:
+                    substr = reversed_bytes[6:14]
+                    return int(substr, 16)
+                else:
+                    return 0
+            except (ValueError, TypeError, IndexError):
+                return 0
 
-    def MENSAGENS_03(self, tempo):
-        import threading
-        import time
+        def classificar_viagem(rpm: float, velocidade: float) -> dict:
+            """
+            Classifica a viagem baseada em RPM e velocidade
+            Retorna um dicionário com as classificações booleanas
+            """
+            classificacao = {
+                'ocioso': False,
+                'faixa_azul': False,
+                'faixa_verde': False,
+                'faixa_amarela': False,
+                'faixa_vermelha': False
+            }
+            
+            # Verifica se está ocioso (parado com motor ligado)
+            if velocidade == 0 and rpm > 0:
+                classificacao['ocioso'] = True
+                return classificacao
+            
+            # Classifica por faixa de RPM (apenas se estiver em movimento)
+            if velocidade > 0:
+                if 350 <= rpm <= 799:
+                    classificacao['faixa_azul'] = True
+                elif 800 <= rpm <= 1300:
+                    classificacao['faixa_verde'] = True
+                elif 1301 <= rpm <= 2300:
+                    classificacao['faixa_amarela'] = True
+                elif rpm > 2301:
+                    classificacao['faixa_vermelha'] = True
+            
+            return classificacao
         
         counter = 0
 
-        lista_cpbracell = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        lista_petitto = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        lista_sfresgate = Veiculo.objects.filter(empresa__nome="São Francisco Resgate").values_list('id_wialon', flat=True)
+        #lista_cpbracell = Veiculo.objects.filter(empresa__nome="CPBRACELL").values_list('id_wialon', flat=True)
+        #lista_petitto = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)
+        #lista_sfresgate = Veiculo.objects.filter(empresa__nome="São Francisco Resgate").values_list('id_wialon', flat=True)
+        #lista_unidades = list(lista_sfresgate) + list(lista_petitto) + list(lista_cpbracell)
+        #lista_unidades = list(lista_petitto) + list(lista_cpbracell)
 
-        #lista_unidades = Veiculo.objects.filter(nm__icontains="1023").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        #lista todos os veículos
-        #lista_unidades = Veiculo.objects.all().values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        lista_unidades = list(lista_sfresgate) + list(lista_petitto) + list(lista_cpbracell)
+        lista_unidades = Veiculo.objects.filter(empresa__nome=empresa).values_list('id_wialon',flat=True)[:3]
 
         n_unidades = len(lista_unidades)
         print(f"lista_unidades: {n_unidades} unidades.")
         print(lista_unidades)
 
+
         current_time = int(time.time())
-        timeFrom = current_time - (tempo * 24 * 3600)  
-        timeTo = current_time  # Agora
+        timeFrom = current_time - (tempo * 24 * 3600)
+        timeTo = current_time
         sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
         if not sid:
             self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
             return
         
-        # Variável de controle para parar o keep-alive
         keep_alive_active = True
         
         def keep_session_alive():
             """Thread function para manter a sessão ativa"""
             while keep_alive_active:
                 try:
-                    # Aguarda 3 minutos (180 segundos)
                     time.sleep(180)
                     
                     if not keep_alive_active:
                         break
                     
-                    # Faz requisição para manter a sessão
                     payload = {
                         "svc": "avl_evts",
                         "sid": sid
@@ -1671,22 +1925,18 @@ class Command(BaseCommand):
                 except Exception as e:
                     print(f"⚠️ Erro inesperado no keep-alive: {e}")
         
-        # Inicia thread do keep-alive
         keep_alive_thread = threading.Thread(target=keep_session_alive, daemon=True)
         keep_alive_thread.start()
         
         try:
-            #################################################
             for unidade_id in lista_unidades:
-
                 unidade_nome = Veiculo.objects.filter(id_wialon=unidade_id).first().nm
                 print(f"\nProcessando unidade ID: {colored(unidade_id, 'cyan')} - Nome: {colored(unidade_nome, 'yellow')}")
 
+                # Remover layer anterior
                 payload = {
                     "svc": "render/remove_layer",
-                    "params": json.dumps({
-                        "layerName":"messages"
-                    }),
+                    "params": json.dumps({"layerName": "messages"}),
                     "sid": sid
                 }
                 try:
@@ -1698,12 +1948,13 @@ class Command(BaseCommand):
                     print("Error:", e)
                     continue
 
-                ##################################################
-                
+                # Update custom property
                 payload = {
                     "svc": "item/update_custom_property",
                     "params": json.dumps({
-                        "itemId": unidade_id, "name": "lastmsgl", "value": f'{{"u":{unidade_id},"t":"data","s":0}}'
+                        "itemId": unidade_id,
+                        "name": "lastmsgl",
+                        "value": f'{{"u":{unidade_id},"t":"data","s":0}}'
                     }),
                     "sid": sid
                 }
@@ -1716,12 +1967,22 @@ class Command(BaseCommand):
                     print("Error:", e)
                     continue
 
-                ##################################################
-
+                # Create messages layer
                 payload = {
                     "svc": "render/create_messages_layer",
                     "params": json.dumps({
-                        "layerName":"messages","itemId":unidade_id,"timeFrom":timeFrom,"timeTo":timeTo,"tripDetector":0,"flags":0,"trackWidth":4,"trackColor":"speed","annotations":0,"points":1,"pointColor":"cc0000ff","arrows":1
+                        "layerName": "messages",
+                        "itemId": unidade_id,
+                        "timeFrom": timeFrom,
+                        "timeTo": timeTo,
+                        "tripDetector": 0,
+                        "flags": 0,
+                        "trackWidth": 4,
+                        "trackColor": "speed",
+                        "annotations": 0,
+                        "points": 1,
+                        "pointColor": "cc0000ff",
+                        "arrows": 1
                     }),
                     "sid": sid
                 }
@@ -1736,12 +1997,14 @@ class Command(BaseCommand):
                     print("Error:", e)
                     continue
 
-                ###################################################
-                # Requisição que retorna as mensagens
+                # Get messages
                 payload = {
                     "svc": "render/get_messages",
                     "params": json.dumps({
-                        "indexFrom":0,"indexTo":contagem_mensagens,"layerName":"messages","unitId":unidade_id
+                        "indexFrom": 0,
+                        "indexTo": contagem_mensagens,
+                        "layerName": "messages",
+                        "unitId": unidade_id
                     }),
                     "sid": sid
                 }
@@ -1750,60 +2013,95 @@ class Command(BaseCommand):
                     response.raise_for_status()
                     result = response.json()
 
-                    #print("Response 04:", result)
-                    # salva como json
                     with open(f'{deposito}/messages_{unidade_nome}_{unidade_id}.json', 'w') as f:
                         json.dump(result, f, indent=4)
 
-                    
-                    # Processa as mensagens e cria o DataFrame
                     if result and isinstance(result, list):
                         df_messages = self.processar_mensagens_wialon(result)
 
-                        # CORREÇÃO: Atualiza o model Viagem_eco com TODOS os registros
                         unidade_obj = Veiculo.objects.get(id_wialon=unidade_id)
                         if unidade_obj and not df_messages.empty:
-                            registros_criados = 0
-                            registros_atualizados = 0
+                            viagens_criar = []
                             
-                            for index, row in df_messages.iterrows():
-                                timestamp = str(row['timestamp'])
-                                #can_rpm_readable = float(row['can_rpm_readable']) if 'can_rpm_readable' in row and pd.notna(row['can_rpm_readable']) else 0.0
-                                
-
-                                # Atualiza ou cria usando timestamp como chave única também
-                                viagem_eco, created = Viagem_eco.objects.update_or_create(
-                                    unidade_id=unidade_obj.id,
-                                    timestamp=timestamp,  # IMPORTANTE: Incluir timestamp na busca
-                                    defaults={
-                                        'rpm': float(row['can_rpm']) if 'can_rpm' in row and pd.notna(row['can_rpm']) else 0.0,
-                                        'velocidade': float(row['speed']) if 'speed' in row and pd.notna(row['speed']) else 0.0,
-                                        'altitude': float(row['altitude']) if 'altitude' in row and pd.notna(row['altitude']) else 0.0,
-                                        'energia': float(row['power']) if 'power' in row and pd.notna(row['power']) else 0.0,
-                                    }
-                                )
-                                
-                                if created:
-                                    registros_criados += 1
-                                else:
-                                    registros_atualizados += 1
+                            for _, row in df_messages.iterrows():
+                                try:
+                                    rpm_valor = float(row.get('can_rpm', 0)) if pd.notna(row.get('can_rpm')) else 0
+                                    velocidade_valor = float(row.get('speed', 0)) if pd.notna(row.get('speed')) else 0
+                                    altitude_valor = float(row.get('altitude', 0)) if pd.notna(row.get('altitude')) else 0
+                                    energia_valor = int(row.get('power', 0)) if pd.notna(row.get('power')) else 0
+                                    timestamp_valor = int(row.get('timestamp', 0)) if pd.notna(row.get('timestamp')) else 0
+                                    avl_driver_valor = int(row.get('avl_driver', 0)) if pd.notna(row.get('avl_driver')) else 0
+                                    rpm_tratado = float(row.get('can_rpm_readable', 0)) if pd.notna(row.get('can_rpm_readable')) else 0
+                                    # Classificar a viagem
+                                    classificacao = classificar_viagem(rpm_tratado, velocidade_valor)
+                                    
+                                    # Converter avl_driver para driver_code
+                                    driver_code_valor = avl_to_driver_code(avl_driver_valor)
+                                    
+                                    # Buscar motorista pelo driver_code
+                                    nome_motorista_obj = None
+                                    if driver_code_valor and driver_code_valor != 0:
+                                        try:
+                                            nome_motorista_obj = Driver.objects.filter(
+                                                codigo=driver_code_valor,
+                                                empresa=unidade_obj.empresa
+                                            ).first()
+                                        except Driver.DoesNotExist:
+                                            pass
+                                    
+                                    viagem = Viagem_eco(
+                                        unidade=unidade_obj,
+                                        timestamp=timestamp_valor,
+                                        rpm=rpm_valor,
+                                        velocidade=velocidade_valor,
+                                        altitude=altitude_valor,
+                                        energia=energia_valor,
+                                        avl_driver=avl_driver_valor,
+                                        driver_code=driver_code_valor,
+                                        nome_motorista=nome_motorista_obj,
+                                        # Aplicar classificações
+                                        ocioso=classificacao['ocioso'],
+                                        faixa_azul=classificacao['faixa_azul'],
+                                        faixa_verde=classificacao['faixa_verde'],
+                                        faixa_amarela=classificacao['faixa_amarela'],
+                                        faixa_vermelha=classificacao['faixa_vermelha']
+                                    )
+                                    viagens_criar.append(viagem)
+                                    
+                                except Exception as e:
+                                    print(f"Erro ao processar mensagem: {e}")
+                                    continue
                             
-                            print(f"✅ Unidade {unidade_nome}: {colored(registros_criados, 'green')} novos registros, {colored(registros_atualizados, 'yellow')} atualizados")
+                            # Criar todas as viagens de uma vez
+                            if viagens_criar:
+                                Viagem_eco.objects.bulk_create(viagens_criar, ignore_conflicts=True)
+                                print(f"✅ {colored(f'{len(viagens_criar)} viagens ecológicas criadas para {unidade_nome}', 'green')}")
+                                
+                                # Estatísticas de classificação
+                                total_viagens = len(viagens_criar)
+                                ocioso_count = sum(1 for v in viagens_criar if v.ocioso)
+                                azul_count = sum(1 for v in viagens_criar if v.faixa_azul)
+                                verde_count = sum(1 for v in viagens_criar if v.faixa_verde)
+                                amarela_count = sum(1 for v in viagens_criar if v.faixa_amarela)
+                                vermelha_count = sum(1 for v in viagens_criar if v.faixa_vermelha)
+                                
+                                print(f"\n📊 Estatísticas de classificação:")
+                                print(f"   🔵 Ocioso: {colored(ocioso_count, 'cyan')} ({colored(f'{ocioso_count/total_viagens*100:.1f}%', 'cyan')})")
+                                print(f"   🔵 Faixa Azul: {colored(azul_count, 'blue')} ({colored(f'{azul_count/total_viagens*100:.1f}%', 'blue')})")
+                                print(f"   🟢 Faixa Verde: {colored(verde_count, 'green')} ({colored(f'{verde_count/total_viagens*100:.1f}%', 'green')})")
+                                print(f"   🟡 Faixa Amarela: {colored(amarela_count, 'yellow')} ({colored(f'{amarela_count/total_viagens*100:.1f}%', 'yellow')})")
+                                print(f"   🔴 Faixa Vermelha: {colored(vermelha_count, 'red')} ({colored(f'{vermelha_count/total_viagens*100:.1f}%', 'red')})")
 
                         print(f"\nDataFrame criado com {len(df_messages)} mensagens:")
                         print(df_messages.head())
                         
-                        # Salva em Excel para análise
-                        #+---
-                        #df_messages.to_excel(f'{deposito}/{unidade_nome}_{unidade_id}.xlsx', index=False)
-                        #print(f"DataFrame salvo em {deposito}/{unidade_nome}_{unidade_id}.xlsx")
-                        #+---
-                        
-                        # Mostra algumas estatísticas
+                        df_messages.to_excel(f'{deposito}/{unidade_nome}_{unidade_id}.xlsx', index=False)
+                        print(f"DataFrame salvo em {deposito}/{unidade_nome}_{unidade_id}.xlsx")
+
                         print(f"\nEstatísticas das mensagens:")
                         print(f"Período: {df_messages['datetime'].min()} até {df_messages['datetime'].max()}")
                         print(f"Velocidade média: {df_messages['speed'].mean():.2f} km/h")
-                        print(f"RPM médio: {df_messages['can_rpm'].mean():.0f}" if 'can_rpm' in df_messages.columns else "RPM não disponível")
+                        print(f"RPM médio: {df_messages['can_rpm_readable'].mean():.0f}" if 'can_rpm_readable' in df_messages.columns else "RPM não disponível")
                         print(f"Consumo médio de combustível: {df_messages['can_fuel_rate'].mean():.2f} l/h" if 'can_fuel_rate' in df_messages.columns else "Consumo não disponível")
                         print(f"Temperatura média do motor: {df_messages['can_coolant_temp'].mean():.2f} °C" if 'can_coolant_temp' in df_messages.columns else "Temperatura não disponível")
                         print(f"Distância percorrida (odômetro): {df_messages['odometer_km'].iloc[-1] - df_messages['odometer_km'].iloc[0]:.2f} km" if 'odometer_km' in df_messages.columns else "Odômetro não disponível")
@@ -1824,7 +2122,6 @@ class Command(BaseCommand):
             print("Total de unidades processadas com sucesso:", colored(counter, 'blue'), "/", colored(n_unidades, 'green'))
 
         finally:
-            # Para o keep-alive e aguarda a thread finalizar
             keep_alive_active = False
             if keep_alive_thread.is_alive():
                 keep_alive_thread.join(timeout=5)
@@ -1835,2453 +2132,366 @@ class Command(BaseCommand):
 
 
 
-
-    def ESTUDO_01(self):
-        """
-        Análise estatística completa dos dados de Viagem_eco
-        - Detecção de outliers
-        - Análise de padrões
-        - Estatísticas descritivas
-        - Correlações entre variáveis
-        - Análise temporal
-        """
-        print(colored("="*50, 'cyan'))
-        print(colored("INICIANDO ESTUDO ESTATÍSTICO COMPLETO", 'yellow'))
-        print(colored("="*50, 'cyan'))
-        
-        # Importações necessárias
-        import numpy as np
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        from scipy import stats
-        from sklearn.preprocessing import StandardScaler
-        from sklearn.cluster import KMeans
-        from sklearn.ensemble import IsolationForest
-        import warnings
-        warnings.filterwarnings('ignore')
-        
-        # Configurar matplotlib para não mostrar gráficos
-        plt.ioff()
-        
-        try:
-            # ============= COLETA DE DADOS =============
-            print(f"📊 {colored('Coletando dados do banco...', 'blue')}")
-            
-            # Buscar todos os dados de Viagem_eco
-            viagens_eco = Viagem_eco.objects.all().select_related('unidade')
-            
-            if not viagens_eco.exists():
-                print(f"❌ {colored('Nenhum dado encontrado na tabela Viagem_eco', 'red')}")
-                return
-            
-            # Converter para DataFrame
-            data_list = []
-            for viagem in viagens_eco:
-                try:
-                    # Converter timestamp unix para datetime
-                    timestamp_int = int(viagem.timestamp)
-                    dt = datetime.fromtimestamp(timestamp_int)
-                    
-                    # Filtrar apenas dados com RPM válidos (acima de 300)
-                    if viagem.rpm and float(viagem.rpm) >= 300:
-                        data_list.append({
-                            'timestamp': timestamp_int,
-                            'datetime': dt,
-                            'unidade_id': viagem.unidade.id,
-                            'unidade_nome': viagem.unidade.nm,
-                            'empresa': viagem.unidade.empresa.nome if viagem.unidade.empresa else 'N/A',
-                            'rpm': float(viagem.rpm),
-                            'velocidade': float(viagem.velocidade) if viagem.velocidade else 0.0,
-                            'altitude': float(viagem.altitude) if viagem.altitude else 0.0,
-                            'hora': dt.hour,
-                            'dia_semana': dt.weekday(),
-                            'mes': dt.month,
-                            'ano': dt.year,
-                        })
-                except (ValueError, TypeError, OSError):
-                    continue
-            
-            if not data_list:
-                print(f"❌ {colored('Nenhum dado válido encontrado', 'red')}")
-                return
-            
-            df = pd.DataFrame(data_list)
-            print(f"✅ {colored(f'Dados coletados: {len(df)} registros de {df.unidade_id.nunique()} unidades', 'green')}")
-            
-            # ============= ANÁLISE DESCRITIVA BÁSICA =============
-            print(f"\n📈 {colored('Gerando estatísticas descritivas...', 'blue')}")
-            
-            stats_desc = df[['rpm', 'velocidade', 'altitude']].describe()
-            
-            # Função para calcular MAD (Mean Absolute Deviation) manualmente
-            def calculate_mad(series):
-                """Calcula o desvio absoluto mediano"""
-                median = series.median()
-                return (series - median).abs().median()
-            
-            # Adicionar estatísticas extras
-            stats_extras = pd.DataFrame({
-                'rpm': [
-                    df['rpm'].var(),
-                    df['rpm'].skew(),
-                    df['rpm'].kurtosis(),
-                    calculate_mad(df['rpm'])  # CORREÇÃO: Usar função personalizada
-                ],
-                'velocidade': [
-                    df['velocidade'].var(),
-                    df['velocidade'].skew(),
-                    df['velocidade'].kurtosis(),
-                    calculate_mad(df['velocidade'])  # CORREÇÃO: Usar função personalizada
-                ],
-                'altitude': [
-                    df['altitude'].var(),
-                    df['altitude'].skew(),
-                    df['altitude'].kurtosis(),
-                    calculate_mad(df['altitude'])  # CORREÇÃO: Usar função personalizada
-                ]
-            }, index=['variancia', 'assimetria', 'curtose', 'desvio_abs_mediano'])
-            
-            stats_completas = pd.concat([stats_desc, stats_extras])
-            
-            # Salvar estatísticas descritivas
-            stats_completas.to_excel(f'{deposito}/estudo_01_estatisticas_descritivas.xlsx')
-            print(f"💾 Estatísticas descritivas salvas em: estudo_01_estatisticas_descritivas.xlsx")
-            
-            # ============= DETECÇÃO DE OUTLIERS =============
-            print(f"\n🔍 {colored('Detectando outliers...', 'blue')}")
-            
-            # Método 1: Z-Score
-            z_scores = np.abs(stats.zscore(df[['rpm', 'velocidade', 'altitude']]))
-            outliers_zscore = df[(z_scores > 3).any(axis=1)].copy()
-            
-            # Método 2: IQR (Interquartile Range)
-            outliers_iqr = pd.DataFrame()
-            for coluna in ['rpm', 'velocidade', 'altitude']:
-                Q1 = df[coluna].quantile(0.25)
-                Q3 = df[coluna].quantile(0.75)
-                IQR = Q3 - Q1
-                lower_bound = Q1 - 1.5 * IQR
-                upper_bound = Q3 + 1.5 * IQR
-                
-                outliers_col = df[(df[coluna] < lower_bound) | (df[coluna] > upper_bound)]
-                outliers_iqr = pd.concat([outliers_iqr, outliers_col]).drop_duplicates()
-            
-            # Método 3: Isolation Forest
-            iso_forest = IsolationForest(contamination=0.1, random_state=42)
-            outliers_iso = iso_forest.fit_predict(df[['rpm', 'velocidade', 'altitude']])
-            outliers_isolation = df[outliers_iso == -1].copy()
-            
-            # Combinar todos os outliers
-            all_outliers = pd.concat([outliers_zscore, outliers_iqr, outliers_isolation]).drop_duplicates()
-            all_outliers['metodo_deteccao'] = 'Múltiplos'
-            
-            print(f"🎯 Outliers detectados:")
-            print(f"   - Z-Score (>3): {len(outliers_zscore)} registros")
-            print(f"   - IQR: {len(outliers_iqr)} registros")
-            print(f"   - Isolation Forest: {len(outliers_isolation)} registros")
-            print(f"   - Total únicos: {len(all_outliers)} registros")
-            
-            # Salvar outliers
-            all_outliers.to_excel(f'{deposito}/estudo_01_outliers_detectados.xlsx', index=False)
-            print(f"💾 Outliers salvos em: estudo_01_outliers_detectados.xlsx")
-            
-            # ============= ANÁLISE POR UNIDADE =============
-            print(f"\n🚛 {colored('Analisando padrões por unidade...', 'blue')}")
-            
-            stats_por_unidade = df.groupby(['unidade_nome', 'empresa']).agg({
-                'rpm': ['count', 'mean', 'std', 'min', 'max'],
-                'velocidade': ['mean', 'std', 'min', 'max'],
-                'altitude': ['mean', 'std', 'min', 'max'],
-            }).round(2)
-            
-            # Achatar colunas multi-nível
-            stats_por_unidade.columns = ['_'.join(col).strip() for col in stats_por_unidade.columns]
-            stats_por_unidade = stats_por_unidade.reset_index()
-            
-            # Adicionar classificações
-            stats_por_unidade['rpm_categoria'] = pd.cut(
-                stats_por_unidade['rpm_mean'], 
-                bins=[0, 800, 1300, 2000, float('inf')], 
-                labels=['Baixo', 'Econômico', 'Normal', 'Alto']
-            )
-            
-            stats_por_unidade['velocidade_categoria'] = pd.cut(
-                stats_por_unidade['velocidade_mean'], 
-                bins=[0, 40, 60, 80, float('inf')], 
-                labels=['Baixa', 'Moderada', 'Alta', 'Muito Alta']
-            )
-            
-            # Salvar análise por unidade
-            stats_por_unidade.to_excel(f'{deposito}/estudo_01_analise_por_unidade.xlsx', index=False)
-            print(f"💾 Análise por unidade salva em: estudo_01_analise_por_unidade.xlsx")
-            
-            # ============= ANÁLISE TEMPORAL =============
-            print(f"\n⏰ {colored('Analisando padrões temporais...', 'blue')}")
-            
-            # Por hora do dia
-            analise_hora = df.groupby('hora').agg({
-                'rpm': ['mean', 'std', 'count'],
-                'velocidade': ['mean', 'std'],
-                'altitude': ['mean', 'std']
-            }).round(2)
-            analise_hora.columns = ['_'.join(col).strip() for col in analise_hora.columns]
-            analise_hora = analise_hora.reset_index()
-            
-            # Por dia da semana
-            dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
-            analise_dia_semana = df.groupby('dia_semana').agg({
-                'rpm': ['mean', 'std', 'count'],
-                'velocidade': ['mean', 'std'],
-                'altitude': ['mean', 'std']
-            }).round(2)
-            analise_dia_semana.columns = ['_'.join(col).strip() for col in analise_dia_semana.columns]
-            analise_dia_semana = analise_dia_semana.reset_index()
-            analise_dia_semana['dia_nome'] = analise_dia_semana['dia_semana'].map(lambda x: dias_semana[x])
-            
-            # Por mês
-            analise_mes = df.groupby('mes').agg({
-                'rpm': ['mean', 'std', 'count'],
-                'velocidade': ['mean', 'std'],
-                'altitude': ['mean', 'std']
-            }).round(2)
-            analise_mes.columns = ['_'.join(col).strip() for col in analise_mes.columns]
-            analise_mes = analise_mes.reset_index()
-            
-            # Salvar análises temporais
-            with pd.ExcelWriter(f'{deposito}/estudo_01_analise_temporal.xlsx') as writer:
-                analise_hora.to_excel(writer, sheet_name='Por_Hora', index=False)
-                analise_dia_semana.to_excel(writer, sheet_name='Por_Dia_Semana', index=False)
-                analise_mes.to_excel(writer, sheet_name='Por_Mes', index=False)
-            
-            print(f"💾 Análise temporal salva em: estudo_01_analise_temporal.xlsx")
-            
-            # ============= ANÁLISE DE CORRELAÇÕES =============
-            print(f"\n🔗 {colored('Analisando correlações...', 'blue')}")
-            
-            # Matriz de correlação
-            correlation_matrix = df[['rpm', 'velocidade', 'altitude', 'hora', 'dia_semana']].corr()
-            
-            # Salvar matriz de correlação
-            correlation_matrix.to_excel(f'{deposito}/estudo_01_matriz_correlacao.xlsx')
-            print(f"💾 Matriz de correlação salva em: estudo_01_matriz_correlacao.xlsx")
-            
-            # ============= CLUSTERING ANÁLISE =============
-            print(f"\n🎯 {colored('Realizando análise de clusters...', 'blue')}")
-            
-            # Preparar dados para clustering
-            features_clustering = df[['rpm', 'velocidade', 'altitude']].copy()
-            
-            # Normalizar dados
-            scaler = StandardScaler()
-            features_normalized = scaler.fit_transform(features_clustering)
-            
-            # K-Means com diferentes números de clusters
-            inertias = []
-            K_range = range(2, 11)
-            
-            for k in K_range:
-                kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
-                kmeans.fit(features_normalized)
-                inertias.append(kmeans.inertia_)
-            
-            # Escolher k=5 para análise detalhada
-            kmeans = KMeans(n_clusters=5, random_state=42, n_init=10)
-            clusters = kmeans.fit_predict(features_normalized)
-            
-            # Adicionar clusters ao DataFrame
-            df_clusters = df.copy()
-            df_clusters['cluster'] = clusters
-            
-            # Analisar características de cada cluster
-            cluster_analysis = df_clusters.groupby('cluster').agg({
-                'rpm': ['mean', 'std', 'min', 'max', 'count'],
-                'velocidade': ['mean', 'std', 'min', 'max'],
-                'altitude': ['mean', 'std', 'min', 'max'],
-                'unidade_id': 'nunique'
-            }).round(2)
-            
-            cluster_analysis.columns = ['_'.join(col).strip() for col in cluster_analysis.columns]
-            cluster_analysis = cluster_analysis.reset_index()
-            
-            # Adicionar interpretação dos clusters
-            def interpretar_cluster(row):
-                rpm_mean = row['rpm_mean']
-                vel_mean = row['velocidade_mean']
-                
-                if rpm_mean < 800:
-                    rpm_cat = "Marcha Lenta"
-                elif rpm_mean < 1300:
-                    rpm_cat = "Econômico"
-                elif rpm_mean < 2000:
-                    rpm_cat = "Normal"
-                else:
-                    rpm_cat = "Alto"
-                
-                if vel_mean < 20:
-                    vel_cat = "Parado/Lento"
-                elif vel_mean < 50:
-                    vel_cat = "Urbano"
-                elif vel_mean < 80:
-                    vel_cat = "Rodoviário"
-                else:
-                    vel_cat = "Alto"
-                
-                return f"{rpm_cat} + {vel_cat}"
-            
-            cluster_analysis['interpretacao'] = cluster_analysis.apply(interpretar_cluster, axis=1)
-            
-            # Salvar análise de clusters
-            cluster_analysis.to_excel(f'{deposito}/estudo_01_analise_clusters.xlsx', index=False)
-            print(f"💾 Análise de clusters salva em: estudo_01_analise_clusters.xlsx")
-            
-            # ============= DETECÇÃO DE PADRÕES ESPECÍFICOS =============
-            print(f"\n🔍 {colored('Detectando padrões específicos...', 'blue')}")
-            
-            padroes_especificos = {}
-            
-            # 1. Padrão de marcha lenta excessiva
-            marcha_lenta = df[df['rpm'] < 500]
-            padroes_especificos['marcha_lenta_excessiva'] = {
-                'total_registros': len(marcha_lenta),
-                'unidades_afetadas': marcha_lenta['unidade_nome'].nunique(),
-                'percentual_total': round(len(marcha_lenta) / len(df) * 100, 2)
-            }
-            
-            # 2. Padrão de RPM muito alto (zona vermelha)
-            rpm_alto = df[df['rpm'] > 2300]
-            padroes_especificos['rpm_zona_vermelha'] = {
-                'total_registros': len(rpm_alto),
-                'unidades_afetadas': rpm_alto['unidade_nome'].nunique(),
-                'percentual_total': round(len(rpm_alto) / len(df) * 100, 2)
-            }
-            
-            # 3. Padrão de velocidade alta com RPM baixo (possível descida)
-            vel_alta_rpm_baixo = df[(df['velocidade'] > 60) & (df['rpm'] < 1000)]
-            padroes_especificos['velocidade_alta_rpm_baixo'] = {
-                'total_registros': len(vel_alta_rpm_baixo),
-                'unidades_afetadas': vel_alta_rpm_baixo['unidade_nome'].nunique(),
-                'percentual_total': round(len(vel_alta_rpm_baixo) / len(df) * 100, 2)
-            }
-            
-            # 4. Padrão noturno (22h às 6h)
-            periodo_noturno = df[(df['hora'] >= 22) | (df['hora'] <= 6)]
-            padroes_especificos['atividade_noturna'] = {
-                'total_registros': len(periodo_noturno),
-                'unidades_afetadas': periodo_noturno['unidade_nome'].nunique(),
-                'percentual_total': round(len(periodo_noturno) / len(df) * 100, 2)
-            }
-            
-            # 5. Eficiência por faixa de RPM
-            df['faixa_rpm'] = pd.cut(
-                df['rpm'], 
-                bins=[0, 799, 1300, 2300, float('inf')], 
-                labels=['Azul (350-799)', 'Verde (800-1300)', 'Amarela (1301-2300)', 'Vermelha (2301+)']
-            )
-            
-            distribuicao_rpm = df['faixa_rpm'].value_counts().to_dict()
-            padroes_especificos['distribuicao_faixas_rpm'] = distribuicao_rpm
-            
-            # Converter para DataFrame e salvar
-            padroes_df = pd.DataFrame([padroes_especificos]).T
-            padroes_df.to_excel(f'{deposito}/estudo_01_padroes_especificos.xlsx')
-            print(f"💾 Padrões específicos salvos em: estudo_01_padroes_especificos.xlsx")
-            
-            # ============= GERAR GRÁFICOS =============
-            print(f"\n📊 {colored('Gerando gráficos de análise...', 'blue')}")
-            
-            # Configurar estilo dos gráficos
-            plt.style.use('default')
-            sns.set_palette("husl")
-            
-            # 1. Distribuições das variáveis principais
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-            fig.suptitle('Distribuições das Variáveis Principais', fontsize=16, fontweight='bold')
-            
-            # RPM
-            axes[0, 0].hist(df['rpm'], bins=50, alpha=0.7, color='blue')
-            axes[0, 0].set_title('Distribuição RPM')
-            axes[0, 0].set_xlabel('RPM')
-            axes[0, 0].set_ylabel('Frequência')
-            axes[0, 0].axvline(df['rpm'].mean(), color='red', linestyle='--', label=f'Média: {df["rpm"].mean():.0f}')
-            axes[0, 0].legend()
-            
-            # Velocidade
-            axes[0, 1].hist(df['velocidade'], bins=50, alpha=0.7, color='green')
-            axes[0, 1].set_title('Distribuição Velocidade')
-            axes[0, 1].set_xlabel('Velocidade (km/h)')
-            axes[0, 1].set_ylabel('Frequência')
-            axes[0, 1].axvline(df['velocidade'].mean(), color='red', linestyle='--', label=f'Média: {df["velocidade"].mean():.1f}')
-            axes[0, 1].legend()
-            
-            # Altitude
-            axes[1, 0].hist(df['altitude'], bins=50, alpha=0.7, color='orange')
-            axes[1, 0].set_title('Distribuição Altitude')
-            axes[1, 0].set_xlabel('Altitude (m)')
-            axes[1, 0].set_ylabel('Frequência')
-            axes[1, 0].axvline(df['altitude'].mean(), color='red', linestyle='--', label=f'Média: {df["altitude"].mean():.1f}')
-            axes[1, 0].legend()
-            
-            # Distribuição por faixa de RPM
-            faixa_counts = df['faixa_rpm'].value_counts()
-            axes[1, 1].pie(faixa_counts.values, labels=faixa_counts.index, autopct='%1.1f%%')
-            axes[1, 1].set_title('Distribuição por Faixa de RPM')
-            
-            plt.tight_layout()
-            plt.savefig(f'{deposito}/estudo_01_distribuicoes.png', dpi=300, bbox_inches='tight')
-            plt.close()
-            
-            # 2. Análise temporal
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-            fig.suptitle('Análise Temporal dos Dados', fontsize=16, fontweight='bold')
-            
-            # RPM por hora
-            hourly_rpm = df.groupby('hora')['rpm'].mean()
-            axes[0, 0].plot(hourly_rpm.index, hourly_rpm.values, marker='o', linewidth=2)
-            axes[0, 0].set_title('RPM Médio por Hora do Dia')
-            axes[0, 0].set_xlabel('Hora')
-            axes[0, 0].set_ylabel('RPM Médio')
-            axes[0, 0].grid(True, alpha=0.3)
-            
-            # Velocidade por hora
-            hourly_vel = df.groupby('hora')['velocidade'].mean()
-            axes[0, 1].plot(hourly_vel.index, hourly_vel.values, marker='s', color='green', linewidth=2)
-            axes[0, 1].set_title('Velocidade Média por Hora do Dia')
-            axes[0, 1].set_xlabel('Hora')
-            axes[0, 1].set_ylabel('Velocidade Média (km/h)')
-            axes[0, 1].grid(True, alpha=0.3)
-            
-            # RPM por dia da semana
-            daily_rpm = df.groupby('dia_semana')['rpm'].mean()
-            dias_nome = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
-            axes[1, 0].bar(range(7), daily_rpm.values, color='purple', alpha=0.7)
-            axes[1, 0].set_title('RPM Médio por Dia da Semana')
-            axes[1, 0].set_xlabel('Dia da Semana')
-            axes[1, 0].set_ylabel('RPM Médio')
-            axes[1, 0].set_xticks(range(7))
-            axes[1, 0].set_xticklabels(dias_nome)
-            
-            # Atividade por mês
-            monthly_count = df.groupby('mes').size()
-            axes[1, 1].bar(monthly_count.index, monthly_count.values, color='red', alpha=0.7)
-            axes[1, 1].set_title('Atividade por Mês')
-            axes[1, 1].set_xlabel('Mês')
-            axes[1, 1].set_ylabel('Número de Registros')
-            
-            plt.tight_layout()
-            plt.savefig(f'{deposito}/estudo_01_analise_temporal.png', dpi=300, bbox_inches='tight')
-            plt.close()
-            
-            # 3. Scatter plots e correlações
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-            fig.suptitle('Análise de Correlações', fontsize=16, fontweight='bold')
-            
-            # RPM vs Velocidade
-            axes[0, 0].scatter(df['rpm'], df['velocidade'], alpha=0.1, s=1)
-            axes[0, 0].set_title('RPM vs Velocidade')
-            axes[0, 0].set_xlabel('RPM')
-            axes[0, 0].set_ylabel('Velocidade (km/h)')
-            
-            # RPM vs Altitude
-            axes[0, 1].scatter(df['rpm'], df['altitude'], alpha=0.1, s=1, color='green')
-            axes[0, 1].set_title('RPM vs Altitude')
-            axes[0, 1].set_xlabel('RPM')
-            axes[0, 1].set_ylabel('Altitude (m)')
-            
-            # Velocidade vs Altitude
-            axes[1, 0].scatter(df['velocidade'], df['altitude'], alpha=0.1, s=1, color='red')
-            axes[1, 0].set_title('Velocidade vs Altitude')
-            axes[1, 0].set_xlabel('Velocidade (km/h)')
-            axes[1, 0].set_ylabel('Altitude (m)')
-            
-            # Heatmap de correlação
-            corr_data = df[['rpm', 'velocidade', 'altitude', 'hora']].corr()
-            im = axes[1, 1].imshow(corr_data, cmap='coolwarm', aspect='auto')
-            axes[1, 1].set_title('Matriz de Correlação')
-            axes[1, 1].set_xticks(range(len(corr_data.columns)))
-            axes[1, 1].set_yticks(range(len(corr_data.columns)))
-            axes[1, 1].set_xticklabels(corr_data.columns)
-            axes[1, 1].set_yticklabels(corr_data.columns)
-            
-            plt.tight_layout()
-            plt.savefig(f'{deposito}/estudo_01_correlacoes.png', dpi=300, bbox_inches='tight')
-            plt.close()
-            
-            print(f"💾 Gráficos salvos em:")
-            print(f"   - estudo_01_distribuicoes.png")
-            print(f"   - estudo_01_analise_temporal.png")
-            print(f"   - estudo_01_correlacoes.png")
-            
-            # ============= RELATÓRIO RESUMO =============
-            print(f"\n📋 {colored('Gerando relatório resumo...', 'blue')}")
-            
-            resumo = {
-                'data_analise': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'total_registros': len(df),
-                'total_unidades': df['unidade_id'].nunique(),
-                'total_empresas': df['empresa'].nunique(),
-                'periodo_dados': f"{df['datetime'].min()} até {df['datetime'].max()}",
-                'rpm_medio_geral': round(df['rpm'].mean(), 2),
-                'rpm_desvio_padrao': round(df['rpm'].std(), 2),
-                'velocidade_media_geral': round(df['velocidade'].mean(), 2),
-                'altitude_media_geral': round(df['altitude'].mean(), 2),
-                'outliers_detectados': len(all_outliers),
-                'percentual_outliers': round(len(all_outliers) / len(df) * 100, 2),
-                'distribuicao_faixas_rpm': dict(df['faixa_rpm'].value_counts()),
-                'padroes_identificados': len(padroes_especificos),
-            }
-            
-            # Salvar resumo
-            resumo_df = pd.DataFrame([resumo]).T
-            resumo_df.columns = ['Valor']
-            resumo_df.to_excel(f'{deposito}/estudo_01_resumo_executivo.xlsx')
-            
-            # ============= RESULTADO FINAL =============
-            print(colored("="*50, 'cyan'))
-            print(colored("ESTUDO ESTATÍSTICO CONCLUÍDO COM SUCESSO!", 'green'))
-            print(colored("="*50, 'cyan'))
-            
-            print(f"📊 {colored('RESUMO DOS RESULTADOS:', 'yellow')}")
-            print(f"   • Total de registros analisados: {colored(f'{len(df):,}', 'green')}")
-            print(f"   • Unidades analisadas: {colored(df['unidade_id'].nunique(), 'green')}")
-            print(f"   • Empresas envolvidas: {colored(df['empresa'].nunique(), 'green')}")
-            print(f"   • Outliers detectados: {colored(f'{len(all_outliers):,}', 'red')} ({colored(f'{len(all_outliers)/len(df)*100:.1f}%', 'red')})")
-            print(f"   • RPM médio da frota: {colored(f'{df.rpm.mean():.0f}', 'blue')} RPM")
-            print(f"   • Velocidade média: {colored(f'{df.velocidade.mean():.1f}', 'blue')} km/h")
-            
-            print(f"\n📁 {colored('ARQUIVOS GERADOS:', 'yellow')}")
-            print(f"   • estudo_01_estatisticas_descritivas.xlsx")
-            print(f"   • estudo_01_outliers_detectados.xlsx")
-            print(f"   • estudo_01_analise_por_unidade.xlsx")
-            print(f"   • estudo_01_analise_temporal.xlsx")
-            print(f"   • estudo_01_matriz_correlacao.xlsx")
-            print(f"   • estudo_01_analise_clusters.xlsx")
-            print(f"   • estudo_01_padroes_especificos.xlsx")
-            print(f"   • estudo_01_resumo_executivo.xlsx")
-            print(f"   • estudo_01_distribuicoes.png")
-            print(f"   • estudo_01_analise_temporal.png")
-            print(f"   • estudo_01_correlacoes.png")
-            
-            print(f"\n🎯 {colored('PRINCIPAIS INSIGHTS:', 'yellow')}")
-            print(f"   • Faixa de RPM mais comum: {colored(df['faixa_rpm'].mode().iloc[0], 'green')}")
-            print(f"   • Horário de maior atividade: {colored(f'{hourly_rpm.idxmax()}h', 'green')}")
-            print(f"   • Correlação RPM-Velocidade: {colored(f'{df.rpm.corr(df.velocidade):.3f}', 'blue')}")
-            
-            return True
-            
-        except Exception as e:
-            print(f"❌ {colored(f'Erro durante a análise: {str(e)}', 'red')}")
-            import traceback
-            traceback.print_exc()
-            return False
-
-    def ESTUDO_02(self):
-        """
-        Análise estatística completa dos dados de Viagem_eco
-        - Detecção de outliers
-        - Análise de padrões
-        - Estatísticas descritivas
-        - Correlações entre variáveis
-        - Análise temporal
-        - Análise por marca e modelo
-        """
-        print(colored("="*50, 'cyan'))
-        print(colored("INICIANDO ESTUDO ESTATÍSTICO COMPLETO", 'yellow'))
-        print(colored("="*50, 'cyan'))
-        
-        # Importações necessárias
-        import numpy as np
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        from scipy import stats
-        from sklearn.preprocessing import StandardScaler
-        from sklearn.cluster import KMeans
-        from sklearn.ensemble import IsolationForest
-        import warnings
-        warnings.filterwarnings('ignore')
-        
-        # Configurar matplotlib para não mostrar gráficos
-        plt.ioff()
-        
-        try:
-            # ============= COLETA DE DADOS =============
-            print(f"📊 {colored('Coletando dados do banco...', 'blue')}")
-            
-            # Buscar todos os dados de Viagem_eco com informações dos veículos
-            viagens_eco = Viagem_eco.objects.all().select_related('unidade__empresa')
-            
-            if not viagens_eco.exists():
-                print(f"❌ {colored('Nenhum dado encontrado na tabela Viagem_eco', 'red')}")
-                return
-            
-            # Converter para DataFrame
-            data_list = []
-            for viagem in viagens_eco:
-                try:
-                    # Converter timestamp unix para datetime
-                    timestamp_int = int(viagem.timestamp)
-                    dt = datetime.fromtimestamp(timestamp_int)
-                    
-                    # Filtrar apenas dados com RPM válidos (acima de 300)
-                    if viagem.rpm and float(viagem.rpm) >= 300:
-                        data_list.append({
-                            'timestamp': timestamp_int,
-                            'datetime': dt,
-                            'unidade_id': viagem.unidade.id,
-                            'unidade_nome': viagem.unidade.nm,
-                            'empresa': viagem.unidade.empresa.nome if viagem.unidade.empresa else 'N/A',
-                            'marca': viagem.unidade.marca if hasattr(viagem.unidade, 'marca') and viagem.unidade.marca else 'N/I',
-                            'modelo': viagem.unidade.modelo if hasattr(viagem.unidade, 'modelo') and viagem.unidade.modelo else 'N/I',
-                            'cor': viagem.unidade.cor if hasattr(viagem.unidade, 'cor') and viagem.unidade.cor else 'N/I',
-                            'placa': viagem.unidade.placa if hasattr(viagem.unidade, 'placa') and viagem.unidade.placa else 'N/I',
-                            'rpm': float(viagem.rpm),
-                            'velocidade': float(viagem.velocidade) if viagem.velocidade else 0.0,
-                            'altitude': float(viagem.altitude) if viagem.altitude else 0.0,
-                            'hora': dt.hour,
-                            'dia_semana': dt.weekday(),
-                            'mes': dt.month,
-                            'ano': dt.year,
-                        })
-                except (ValueError, TypeError, OSError):
-                    continue
-            
-            if not data_list:
-                print(f"❌ {colored('Nenhum dado válido encontrado', 'red')}")
-                return
-            
-            df = pd.DataFrame(data_list)
-            print(f"✅ {colored(f'Dados coletados: {len(df)} registros de {df.unidade_id.nunique()} unidades', 'green')}")
-            print(f"📋 {colored(f'Marcas encontradas: {df.marca.nunique()} ({list(df.marca.unique())})', 'blue')}")
-            print(f"🚗 {colored(f'Modelos encontrados: {df.modelo.nunique()}', 'blue')}")
-            
-            # ============= ANÁLISE DESCRITIVA BÁSICA =============
-            print(f"\n📈 {colored('Gerando estatísticas descritivas...', 'blue')}")
-            
-            stats_desc = df[['rpm', 'velocidade', 'altitude']].describe()
-            
-            # Função para calcular MAD (Mean Absolute Deviation) manualmente
-            def calculate_mad(series):
-                """Calcula o desvio absoluto mediano"""
-                median = series.median()
-                return (series - median).abs().median()
-            
-            # Adicionar estatísticas extras
-            stats_extras = pd.DataFrame({
-                'rpm': [
-                    df['rpm'].var(),
-                    df['rpm'].skew(),
-                    df['rpm'].kurtosis(),
-                    calculate_mad(df['rpm'])
-                ],
-                'velocidade': [
-                    df['velocidade'].var(),
-                    df['velocidade'].skew(),
-                    df['velocidade'].kurtosis(),
-                    calculate_mad(df['velocidade'])
-                ],
-                'altitude': [
-                    df['altitude'].var(),
-                    df['altitude'].skew(),
-                    df['altitude'].kurtosis(),
-                    calculate_mad(df['altitude'])
-                ]
-            }, index=['variancia', 'assimetria', 'curtose', 'desvio_abs_mediano'])
-            
-            stats_completas = pd.concat([stats_desc, stats_extras])
-            
-            # Salvar estatísticas descritivas
-            stats_completas.to_excel(f'{deposito}/estudo_01_estatisticas_descritivas.xlsx')
-            print(f"💾 Estatísticas descritivas salvas em: estudo_01_estatisticas_descritivas.xlsx")
-            
-            # ============= DETECÇÃO DE OUTLIERS =============
-            print(f"\n🔍 {colored('Detectando outliers...', 'blue')}")
-            
-            # Método 1: Z-Score
-            z_scores = np.abs(stats.zscore(df[['rpm', 'velocidade', 'altitude']]))
-            outliers_zscore = df[(z_scores > 3).any(axis=1)].copy()
-            
-            # Método 2: IQR (Interquartile Range)
-            outliers_iqr = pd.DataFrame()
-            for coluna in ['rpm', 'velocidade', 'altitude']:
-                Q1 = df[coluna].quantile(0.25)
-                Q3 = df[coluna].quantile(0.75)
-                IQR = Q3 - Q1
-                lower_bound = Q1 - 1.5 * IQR
-                upper_bound = Q3 + 1.5 * IQR
-                
-                outliers_col = df[(df[coluna] < lower_bound) | (df[coluna] > upper_bound)]
-                outliers_iqr = pd.concat([outliers_iqr, outliers_col]).drop_duplicates()
-            
-            # Método 3: Isolation Forest
-            iso_forest = IsolationForest(contamination=0.1, random_state=42)
-            outliers_iso = iso_forest.fit_predict(df[['rpm', 'velocidade', 'altitude']])
-            outliers_isolation = df[outliers_iso == -1].copy()
-            
-            # Combinar todos os outliers
-            all_outliers = pd.concat([outliers_zscore, outliers_iqr, outliers_isolation]).drop_duplicates()
-            all_outliers['metodo_deteccao'] = 'Múltiplos'
-            
-            print(f"🎯 Outliers detectados:")
-            print(f"   - Z-Score (>3): {len(outliers_zscore)} registros")
-            print(f"   - IQR: {len(outliers_iqr)} registros")
-            print(f"   - Isolation Forest: {len(outliers_isolation)} registros")
-            print(f"   - Total únicos: {len(all_outliers)} registros")
-            
-            # Salvar outliers
-            all_outliers.to_excel(f'{deposito}/estudo_01_outliers_detectados.xlsx', index=False)
-            print(f"💾 Outliers salvos em: estudo_01_outliers_detectados.xlsx")
-            
-            # ============= ANÁLISE POR UNIDADE =============
-            print(f"\n🚛 {colored('Analisando padrões por unidade...', 'blue')}")
-            
-            stats_por_unidade = df.groupby(['unidade_nome', 'empresa', 'marca', 'modelo', 'placa']).agg({
-                'rpm': ['count', 'mean', 'std', 'min', 'max'],
-                'velocidade': ['mean', 'std', 'min', 'max'],
-                'altitude': ['mean', 'std', 'min', 'max'],
-            }).round(2)
-            
-            # Achatar colunas multi-nível
-            stats_por_unidade.columns = ['_'.join(col).strip() for col in stats_por_unidade.columns]
-            stats_por_unidade = stats_por_unidade.reset_index()
-            
-            # Adicionar classificações
-            stats_por_unidade['rpm_categoria'] = pd.cut(
-                stats_por_unidade['rpm_mean'], 
-                bins=[0, 800, 1300, 2000, float('inf')], 
-                labels=['Baixo', 'Econômico', 'Normal', 'Alto']
-            )
-            
-            stats_por_unidade['velocidade_categoria'] = pd.cut(
-                stats_por_unidade['velocidade_mean'], 
-                bins=[0, 40, 60, 80, float('inf')], 
-                labels=['Baixa', 'Moderada', 'Alta', 'Muito Alta']
-            )
-            
-            # Salvar análise por unidade
-            stats_por_unidade.to_excel(f'{deposito}/estudo_01_analise_por_unidade.xlsx', index=False)
-            print(f"💾 Análise por unidade salva em: estudo_01_analise_por_unidade.xlsx")
-            
-            # ============= ANÁLISE POR MARCA =============
-            print(f"\n🏭 {colored('Analisando padrões por marca...', 'blue')}")
-            
-            stats_por_marca = df.groupby('marca').agg({
-                'rpm': ['count', 'mean', 'std', 'min', 'max'],
-                'velocidade': ['mean', 'std', 'min', 'max'],
-                'altitude': ['mean', 'std', 'min', 'max'],
-                'unidade_id': 'nunique'
-            }).round(2)
-            
-            stats_por_marca.columns = ['_'.join(col).strip() for col in stats_por_marca.columns]
-            stats_por_marca = stats_por_marca.reset_index()
-            
-            # Adicionar classificação de eficiência por marca
-            stats_por_marca['eficiencia_rpm'] = pd.cut(
-                stats_por_marca['rpm_mean'], 
-                bins=[0, 800, 1300, 2000, float('inf')], 
-                labels=['Muito Eficiente', 'Eficiente', 'Normal', 'Ineficiente']
-            )
-            
-            # Calcular ranking de eficiência
-            stats_por_marca['ranking_eficiencia'] = stats_por_marca['rpm_mean'].rank(ascending=True)
-            
-            # Salvar análise por marca
-            stats_por_marca.to_excel(f'{deposito}/estudo_01_analise_por_marca.xlsx', index=False)
-            print(f"💾 Análise por marca salva em: estudo_01_analise_por_marca.xlsx")
-            
-            # ============= ANÁLISE POR MODELO =============
-            print(f"\n🚗 {colored('Analisando padrões por modelo...', 'blue')}")
-            
-            stats_por_modelo = df.groupby(['marca', 'modelo']).agg({
-                'rpm': ['count', 'mean', 'std', 'min', 'max'],
-                'velocidade': ['mean', 'std', 'min', 'max'],
-                'altitude': ['mean', 'std', 'min', 'max'],
-                'unidade_id': 'nunique'
-            }).round(2)
-            
-            stats_por_modelo.columns = ['_'.join(col).strip() for col in stats_por_modelo.columns]
-            stats_por_modelo = stats_por_modelo.reset_index()
-            
-            # Adicionar classificação de performance
-            stats_por_modelo['performance_rpm'] = pd.cut(
-                stats_por_modelo['rpm_mean'], 
-                bins=[0, 800, 1300, 2000, float('inf')], 
-                labels=['Excelente', 'Boa', 'Regular', 'Ruim']
-            )
-            
-            stats_por_modelo['performance_velocidade'] = pd.cut(
-                stats_por_modelo['velocidade_mean'], 
-                bins=[0, 40, 60, 80, float('inf')], 
-                labels=['Urbano', 'Misto', 'Rodoviário', 'Alto']
-            )
-            
-            # Salvar análise por modelo
-            stats_por_modelo.to_excel(f'{deposito}/estudo_01_analise_por_modelo.xlsx', index=False)
-            print(f"💾 Análise por modelo salva em: estudo_01_analise_por_modelo.xlsx")
-            
-            # ============= COMPARATIVO ENTRE MARCAS =============
-            print(f"\n⚖️ {colored('Gerando comparativo entre marcas...', 'blue')}")
-            
-            comparativo_marcas = {}
-            
-            for marca in df['marca'].unique():
-                if marca != 'N/I':  # Ignora registros sem marca
-                    dados_marca = df[df['marca'] == marca]
-                    
-                    comparativo_marcas[marca] = {
-                        'total_registros': len(dados_marca),
-                        'total_unidades': dados_marca['unidade_id'].nunique(),
-                        'rpm_medio': dados_marca['rpm'].mean(),
-                        'rpm_desvio': dados_marca['rpm'].std(),
-                        'velocidade_media': dados_marca['velocidade'].mean(),
-                        'altitude_media': dados_marca['altitude'].mean(),
-                        'percentual_zona_verde': len(dados_marca[(dados_marca['rpm'] >= 800) & (dados_marca['rpm'] <= 1300)]) / len(dados_marca) * 100,
-                        'percentual_zona_vermelha': len(dados_marca[dados_marca['rpm'] > 2300]) / len(dados_marca) * 100,
-                        'empresas': list(dados_marca['empresa'].unique())
-                    }
-            
-            # Converter para DataFrame
-            comparativo_df = pd.DataFrame(comparativo_marcas).T
-            comparativo_df = comparativo_df.round(2)
-            comparativo_df = comparativo_df.sort_values('rpm_medio')  # Ordenar por eficiência
-            
-            # Salvar comparativo
-            comparativo_df.to_excel(f'{deposito}/estudo_01_comparativo_marcas.xlsx')
-            print(f"💾 Comparativo entre marcas salvo em: estudo_01_comparativo_marcas.xlsx")
-            
-            # ============= ANÁLISE TEMPORAL =============
-            print(f"\n⏰ {colored('Analisando padrões temporais...', 'blue')}")
-            
-            # Por hora do dia
-            analise_hora = df.groupby('hora').agg({
-                'rpm': ['mean', 'std', 'count'],
-                'velocidade': ['mean', 'std'],
-                'altitude': ['mean', 'std']
-            }).round(2)
-            analise_hora.columns = ['_'.join(col).strip() for col in analise_hora.columns]
-            analise_hora = analise_hora.reset_index()
-            
-            # Por dia da semana
-            dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
-            analise_dia_semana = df.groupby('dia_semana').agg({
-                'rpm': ['mean', 'std', 'count'],
-                'velocidade': ['mean', 'std'],
-                'altitude': ['mean', 'std']
-            }).round(2)
-            analise_dia_semana.columns = ['_'.join(col).strip() for col in analise_dia_semana.columns]
-            analise_dia_semana = analise_dia_semana.reset_index()
-            analise_dia_semana['dia_nome'] = analise_dia_semana['dia_semana'].map(lambda x: dias_semana[x])
-            
-            # Por mês
-            analise_mes = df.groupby('mes').agg({
-                'rpm': ['mean', 'std', 'count'],
-                'velocidade': ['mean', 'std'],
-                'altitude': ['mean', 'std']
-            }).round(2)
-            analise_mes.columns = ['_'.join(col).strip() for col in analise_mes.columns]
-            analise_mes = analise_mes.reset_index()
-            
-            # Análise temporal por marca
-            analise_temporal_marca = df.groupby(['marca', 'hora']).agg({
-                'rpm': 'mean',
-                'velocidade': 'mean'
-            }).round(2).reset_index()
-            
-            # Salvar análises temporais
-            with pd.ExcelWriter(f'{deposito}/estudo_01_analise_temporal.xlsx') as writer:
-                analise_hora.to_excel(writer, sheet_name='Por_Hora', index=False)
-                analise_dia_semana.to_excel(writer, sheet_name='Por_Dia_Semana', index=False)
-                analise_mes.to_excel(writer, sheet_name='Por_Mes', index=False)
-                analise_temporal_marca.to_excel(writer, sheet_name='Marca_por_Hora', index=False)
-            
-            print(f"💾 Análise temporal salva em: estudo_01_analise_temporal.xlsx")
-            
-            # ============= ANÁLISE DE CORRELAÇÕES =============
-            print(f"\n🔗 {colored('Analisando correlações...', 'blue')}")
-            
-            # Matriz de correlação geral
-            correlation_matrix = df[['rpm', 'velocidade', 'altitude', 'hora', 'dia_semana']].corr()
-            
-            # Correlações por marca (se houver dados suficientes)
-            correlacoes_por_marca = {}
-            for marca in df['marca'].unique():
-                if marca != 'N/I':
-                    dados_marca = df[df['marca'] == marca]
-                    if len(dados_marca) > 50:  # Só calcula se houver dados suficientes
-                        correlacoes_por_marca[marca] = dados_marca[['rpm', 'velocidade', 'altitude']].corr()
-            
-            # Salvar correlações
-            with pd.ExcelWriter(f'{deposito}/estudo_01_matriz_correlacao.xlsx') as writer:
-                correlation_matrix.to_excel(writer, sheet_name='Geral')
-                for marca, corr_matrix in correlacoes_por_marca.items():
-                    corr_matrix.to_excel(writer, sheet_name=f'Marca_{marca}')
-            
-            print(f"💾 Matriz de correlação salva em: estudo_01_matriz_correlacao.xlsx")
-            
-            # ============= CLUSTERING ANÁLISE =============
-            print(f"\n🎯 {colored('Realizando análise de clusters...', 'blue')}")
-            
-            # Preparar dados para clustering
-            features_clustering = df[['rpm', 'velocidade', 'altitude']].copy()
-            
-            # Normalizar dados
-            scaler = StandardScaler()
-            features_normalized = scaler.fit_transform(features_clustering)
-            
-            # K-Means com k=5
-            kmeans = KMeans(n_clusters=5, random_state=42, n_init=10)
-            clusters = kmeans.fit_predict(features_normalized)
-            
-            # Adicionar clusters ao DataFrame
-            df_clusters = df.copy()
-            df_clusters['cluster'] = clusters
-            
-            # Analisar características de cada cluster
-            cluster_analysis = df_clusters.groupby('cluster').agg({
-                'rpm': ['mean', 'std', 'min', 'max', 'count'],
-                'velocidade': ['mean', 'std', 'min', 'max'],
-                'altitude': ['mean', 'std', 'min', 'max'],
-                'unidade_id': 'nunique'
-            }).round(2)
-            
-            cluster_analysis.columns = ['_'.join(col).strip() for col in cluster_analysis.columns]
-            cluster_analysis = cluster_analysis.reset_index()
-            
-            # Análise de clusters por marca
-            cluster_por_marca = df_clusters.groupby(['marca', 'cluster']).size().reset_index(name='count')
-            cluster_por_marca_pivot = cluster_por_marca.pivot(index='marca', columns='cluster', values='count').fillna(0)
-            
-            # Adicionar interpretação dos clusters
-            def interpretar_cluster(row):
-                rpm_mean = row['rpm_mean']
-                vel_mean = row['velocidade_mean']
-                
-                if rpm_mean < 800:
-                    rpm_cat = "Marcha Lenta"
-                elif rpm_mean < 1300:
-                    rpm_cat = "Econômico"
-                elif rpm_mean < 2000:
-                    rpm_cat = "Normal"
-                else:
-                    rpm_cat = "Alto"
-                
-                if vel_mean < 20:
-                    vel_cat = "Parado/Lento"
-                elif vel_mean < 50:
-                    vel_cat = "Urbano"
-                elif vel_mean < 80:
-                    vel_cat = "Rodoviário"
-                else:
-                    vel_cat = "Alto"
-                
-                return f"{rpm_cat} + {vel_cat}"
-            
-            cluster_analysis['interpretacao'] = cluster_analysis.apply(interpretar_cluster, axis=1)
-            
-            # Salvar análise de clusters
-            with pd.ExcelWriter(f'{deposito}/estudo_01_analise_clusters.xlsx') as writer:
-                cluster_analysis.to_excel(writer, sheet_name='Clusters_Geral', index=False)
-                cluster_por_marca_pivot.to_excel(writer, sheet_name='Clusters_por_Marca')
-            
-            print(f"💾 Análise de clusters salva em: estudo_01_analise_clusters.xlsx")
-            
-            # ============= DETECÇÃO DE PADRÕES ESPECÍFICOS =============
-            print(f"\n🔍 {colored('Detectando padrões específicos...', 'blue')}")
-            
-            padroes_especificos = {}
-            
-            # 1. Padrão de marcha lenta excessiva
-            marcha_lenta = df[df['rpm'] < 500]
-            padroes_especificos['marcha_lenta_excessiva'] = {
-                'total_registros': len(marcha_lenta),
-                'unidades_afetadas': marcha_lenta['unidade_nome'].nunique(),
-                'percentual_total': round(len(marcha_lenta) / len(df) * 100, 2),
-                'por_marca': dict(marcha_lenta['marca'].value_counts())
-            }
-            
-            # 2. Padrão de RPM muito alto (zona vermelha)
-            rpm_alto = df[df['rpm'] > 2300]
-            padroes_especificos['rpm_zona_vermelha'] = {
-                'total_registros': len(rpm_alto),
-                'unidades_afetadas': rpm_alto['unidade_nome'].nunique(),
-                'percentual_total': round(len(rpm_alto) / len(df) * 100, 2),
-                'por_marca': dict(rpm_alto['marca'].value_counts())
-            }
-            
-            # 3. Padrão de velocidade alta com RPM baixo
-            vel_alta_rpm_baixo = df[(df['velocidade'] > 60) & (df['rpm'] < 1000)]
-            padroes_especificos['velocidade_alta_rpm_baixo'] = {
-                'total_registros': len(vel_alta_rpm_baixo),
-                'unidades_afetadas': vel_alta_rpm_baixo['unidade_nome'].nunique(),
-                'percentual_total': round(len(vel_alta_rpm_baixo) / len(df) * 100, 2),
-                'por_marca': dict(vel_alta_rpm_baixo['marca'].value_counts())
-            }
-            
-            # 4. Padrão noturno (22h às 6h)
-            periodo_noturno = df[(df['hora'] >= 22) | (df['hora'] <= 6)]
-            padroes_especificos['atividade_noturna'] = {
-                'total_registros': len(periodo_noturno),
-                'unidades_afetadas': periodo_noturno['unidade_nome'].nunique(),
-                'percentual_total': round(len(periodo_noturno) / len(df) * 100, 2),
-                'por_marca': dict(periodo_noturno['marca'].value_counts())
-            }
-            
-            # 5. Eficiência por faixa de RPM
-            df['faixa_rpm'] = pd.cut(
-                df['rpm'], 
-                bins=[0, 799, 1300, 2300, float('inf')], 
-                labels=['Azul (350-799)', 'Verde (800-1300)', 'Amarela (1301-2300)', 'Vermelha (2301+)']
-            )
-            
-            distribuicao_rpm = df['faixa_rpm'].value_counts().to_dict()
-            distribuicao_rpm_por_marca = df.groupby(['marca', 'faixa_rpm']).size().unstack(fill_value=0)
-            
-            padroes_especificos['distribuicao_faixas_rpm'] = distribuicao_rpm
-            
-            # Salvar padrões específicos
-            with pd.ExcelWriter(f'{deposito}/estudo_01_padroes_especificos.xlsx') as writer:
-                # Sheet com resumo dos padrões
-                padroes_resumo = pd.DataFrame([padroes_especificos]).T
-                padroes_resumo.to_excel(writer, sheet_name='Resumo_Padroes')
-                
-                # Sheet com distribuição RPM por marca
-                distribuicao_rpm_por_marca.to_excel(writer, sheet_name='RPM_por_Marca')
-            
-            print(f"💾 Padrões específicos salvos em: estudo_01_padroes_especificos.xlsx")
-            
-            # ============= GERAR GRÁFICOS =============
-            print(f"\n📊 {colored('Gerando gráficos de análise...', 'blue')}")
-            
-            # Configurar estilo dos gráficos
-            plt.style.use('default')
-            sns.set_palette("husl")
-            
-            # 1. Distribuições das variáveis principais
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-            fig.suptitle('Distribuições das Variáveis Principais', fontsize=16, fontweight='bold')
-            
-            # RPM
-            axes[0, 0].hist(df['rpm'], bins=50, alpha=0.7, color='blue')
-            axes[0, 0].set_title('Distribuição RPM')
-            axes[0, 0].set_xlabel('RPM')
-            axes[0, 0].set_ylabel('Frequência')
-            axes[0, 0].axvline(df['rpm'].mean(), color='red', linestyle='--', label=f'Média: {df["rpm"].mean():.0f}')
-            axes[0, 0].legend()
-            
-            # Velocidade
-            axes[0, 1].hist(df['velocidade'], bins=50, alpha=0.7, color='green')
-            axes[0, 1].set_title('Distribuição Velocidade')
-            axes[0, 1].set_xlabel('Velocidade (km/h)')
-            axes[0, 1].set_ylabel('Frequência')
-            axes[0, 1].axvline(df['velocidade'].mean(), color='red', linestyle='--', label=f'Média: {df["velocidade"].mean():.1f}')
-            axes[0, 1].legend()
-            
-            # Altitude
-            axes[1, 0].hist(df['altitude'], bins=50, alpha=0.7, color='orange')
-            axes[1, 0].set_title('Distribuição Altitude')
-            axes[1, 0].set_xlabel('Altitude (m)')
-            axes[1, 0].set_ylabel('Frequência')
-            axes[1, 0].axvline(df['altitude'].mean(), color='red', linestyle='--', label=f'Média: {df["altitude"].mean():.1f}')
-            axes[1, 0].legend()
-            
-            # Distribuição por faixa de RPM
-            faixa_counts = df['faixa_rpm'].value_counts()
-            axes[1, 1].pie(faixa_counts.values, labels=faixa_counts.index, autopct='%1.1f%%')
-            axes[1, 1].set_title('Distribuição por Faixa de RPM')
-            
-            plt.tight_layout()
-            plt.savefig(f'{deposito}/estudo_01_distribuicoes.png', dpi=300, bbox_inches='tight')
-            plt.close()
-            
-            # 2. Análise por marca
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-            fig.suptitle('Análise por Marca', fontsize=16, fontweight='bold')
-            
-            # RPM médio por marca
-            marca_rpm = df.groupby('marca')['rpm'].mean().sort_values()
-            axes[0, 0].bar(range(len(marca_rpm)), marca_rpm.values, color='skyblue')
-            axes[0, 0].set_title('RPM Médio por Marca')
-            axes[0, 0].set_xlabel('Marca')
-            axes[0, 0].set_ylabel('RPM Médio')
-            axes[0, 0].set_xticks(range(len(marca_rpm)))
-            axes[0, 0].set_xticklabels(marca_rpm.index, rotation=45)
-            
-            # Velocidade média por marca
-            marca_vel = df.groupby('marca')['velocidade'].mean().sort_values()
-            axes[0, 1].bar(range(len(marca_vel)), marca_vel.values, color='lightgreen')
-            axes[0, 1].set_title('Velocidade Média por Marca')
-            axes[0, 1].set_xlabel('Marca')
-            axes[0, 1].set_ylabel('Velocidade Média (km/h)')
-            axes[0, 1].set_xticks(range(len(marca_vel)))
-            axes[0, 1].set_xticklabels(marca_vel.index, rotation=45)
-            
-            # Distribuição de registros por marca
-            marca_count = df['marca'].value_counts()
-            axes[1, 0].pie(marca_count.values, labels=marca_count.index, autopct='%1.1f%%')
-            axes[1, 0].set_title('Distribuição de Registros por Marca')
-            
-            # Boxplot RPM por marca
-            marcas_com_dados = [marca for marca in df['marca'].unique() if len(df[df['marca'] == marca]) > 100]
-            if len(marcas_com_dados) > 1:
-                dados_boxplot = [df[df['marca'] == marca]['rpm'] for marca in marcas_com_dados]
-                axes[1, 1].boxplot(dados_boxplot, labels=marcas_com_dados)
-                axes[1, 1].set_title('Distribuição RPM por Marca')
-                axes[1, 1].set_xlabel('Marca')
-                axes[1, 1].set_ylabel('RPM')
-                axes[1, 1].tick_params(axis='x', rotation=45)
-            
-            plt.tight_layout()
-            plt.savefig(f'{deposito}/estudo_01_analise_marcas.png', dpi=300, bbox_inches='tight')
-            plt.close()
-            
-            # 3. Análise temporal
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-            fig.suptitle('Análise Temporal dos Dados', fontsize=16, fontweight='bold')
-            
-            # RPM por hora
-            hourly_rpm = df.groupby('hora')['rpm'].mean()
-            axes[0, 0].plot(hourly_rpm.index, hourly_rpm.values, marker='o', linewidth=2)
-            axes[0, 0].set_title('RPM Médio por Hora do Dia')
-            axes[0, 0].set_xlabel('Hora')
-            axes[0, 0].set_ylabel('RPM Médio')
-            axes[0, 0].grid(True, alpha=0.3)
-            
-            # Velocidade por hora
-            hourly_vel = df.groupby('hora')['velocidade'].mean()
-            axes[0, 1].plot(hourly_vel.index, hourly_vel.values, marker='s', color='green', linewidth=2)
-            axes[0, 1].set_title('Velocidade Média por Hora do Dia')
-            axes[0, 1].set_xlabel('Hora')
-            axes[0, 1].set_ylabel('Velocidade Média (km/h)')
-            axes[0, 1].grid(True, alpha=0.3)
-            
-            # RPM por dia da semana
-            daily_rpm = df.groupby('dia_semana')['rpm'].mean()
-            dias_nome = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
-            axes[1, 0].bar(range(7), daily_rpm.values, color='purple', alpha=0.7)
-            axes[1, 0].set_title('RPM Médio por Dia da Semana')
-            axes[1, 0].set_xlabel('Dia da Semana')
-            axes[1, 0].set_ylabel('RPM Médio')
-            axes[1, 0].set_xticks(range(7))
-            axes[1, 0].set_xticklabels(dias_nome)
-            
-            # Atividade por mês
-            monthly_count = df.groupby('mes').size()
-            axes[1, 1].bar(monthly_count.index, monthly_count.values, color='red', alpha=0.7)
-            axes[1, 1].set_title('Atividade por Mês')
-            axes[1, 1].set_xlabel('Mês')
-            axes[1, 1].set_ylabel('Número de Registros')
-            
-            plt.tight_layout()
-            plt.savefig(f'{deposito}/estudo_01_analise_temporal.png', dpi=300, bbox_inches='tight')
-            plt.close()
-            
-            # 4. Scatter plots e correlações
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-            fig.suptitle('Análise de Correlações', fontsize=16, fontweight='bold')
-            
-            # RPM vs Velocidade
-            axes[0, 0].scatter(df['rpm'], df['velocidade'], alpha=0.1, s=1)
-            axes[0, 0].set_title('RPM vs Velocidade')
-            axes[0, 0].set_xlabel('RPM')
-            axes[0, 0].set_ylabel('Velocidade (km/h)')
-            
-            # RPM vs Altitude
-            axes[0, 1].scatter(df['rpm'], df['altitude'], alpha=0.1, s=1, color='green')
-            axes[0, 1].set_title('RPM vs Altitude')
-            axes[0, 1].set_xlabel('RPM')
-            axes[0, 1].set_ylabel('Altitude (m)')
-            
-            # Velocidade vs Altitude
-            axes[1, 0].scatter(df['velocidade'], df['altitude'], alpha=0.1, s=1, color='red')
-            axes[1, 0].set_title('Velocidade vs Altitude')
-            axes[1, 0].set_xlabel('Velocidade (km/h)')
-            axes[1, 0].set_ylabel('Altitude (m)')
-            
-            # Heatmap de correlação
-            corr_data = df[['rpm', 'velocidade', 'altitude', 'hora']].corr()
-            im = axes[1, 1].imshow(corr_data, cmap='coolwarm', aspect='auto')
-            axes[1, 1].set_title('Matriz de Correlação')
-            axes[1, 1].set_xticks(range(len(corr_data.columns)))
-            axes[1, 1].set_yticks(range(len(corr_data.columns)))
-            axes[1, 1].set_xticklabels(corr_data.columns)
-            axes[1, 1].set_yticklabels(corr_data.columns)
-            
-            plt.tight_layout()
-            plt.savefig(f'{deposito}/estudo_01_correlacoes.png', dpi=300, bbox_inches='tight')
-            plt.close()
-            
-            print(f"💾 Gráficos salvos em:")
-            print(f"   - estudo_01_distribuicoes.png")
-            print(f"   - estudo_01_analise_marcas.png")
-            print(f"   - estudo_01_analise_temporal.png")
-            print(f"   - estudo_01_correlacoes.png")
-            
-            # ============= RELATÓRIO RESUMO =============
-            print(f"\n📋 {colored('Gerando relatório resumo...', 'blue')}")
-            
-            resumo = {
-                'data_analise': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'total_registros': len(df),
-                'total_unidades': df['unidade_id'].nunique(),
-                'total_empresas': df['empresa'].nunique(),
-                'total_marcas': df['marca'].nunique(),
-                'total_modelos': df['modelo'].nunique(),
-                'periodo_dados': f"{df['datetime'].min()} até {df['datetime'].max()}",
-                'rpm_medio_geral': round(df['rpm'].mean(), 2),
-                'rpm_desvio_padrao': round(df['rpm'].std(), 2),
-                'velocidade_media_geral': round(df['velocidade'].mean(), 2),
-                'altitude_media_geral': round(df['altitude'].mean(), 2),
-                'outliers_detectados': len(all_outliers),
-                'percentual_outliers': round(len(all_outliers) / len(df) * 100, 2),
-                'distribuicao_faixas_rpm': dict(df['faixa_rpm'].value_counts()),
-                'marca_mais_eficiente': marca_rpm.index[0] if len(marca_rpm) > 0 else 'N/A',
-                'marca_menos_eficiente': marca_rpm.index[-1] if len(marca_rpm) > 0 else 'N/A',
-                'padroes_identificados': len(padroes_especificos),
-            }
-            
-            # Salvar resumo
-            resumo_df = pd.DataFrame([resumo]).T
-            resumo_df.columns = ['Valor']
-            resumo_df.to_excel(f'{deposito}/estudo_01_resumo_executivo.xlsx')
-            
-            # ============= RESULTADO FINAL =============
-            print(colored("="*50, 'cyan'))
-            print(colored("ESTUDO ESTATÍSTICO CONCLUÍDO COM SUCESSO!", 'green'))
-            print(colored("="*50, 'cyan'))
-            
-            print(f"📊 {colored('RESUMO DOS RESULTADOS:', 'yellow')}")
-            print(f"   • Total de registros analisados: {colored(f'{len(df):,}', 'green')}")
-            print(f"   • Unidades analisadas: {colored(df['unidade_id'].nunique(), 'green')}")
-            print(f"   • Empresas envolvidas: {colored(df['empresa'].nunique(), 'green')}")
-            print(f"   • Marcas analisadas: {colored(df['marca'].nunique(), 'blue')}")
-            print(f"   • Modelos analisados: {colored(df['modelo'].nunique(), 'blue')}")
-            print(f"   • Outliers detectados: {colored(f'{len(all_outliers):,}', 'red')} ({colored(f'{len(all_outliers)/len(df)*100:.1f}%', 'red')})")
-            print(f"   • RPM médio da frota: {colored(f'{df.rpm.mean():.0f}', 'blue')} RPM")
-            print(f"   • Velocidade média: {colored(f'{df.velocidade.mean():.1f}', 'blue')} km/h")
-            
-            print(f"\n🏭 {colored('ANÁLISE POR MARCA:', 'yellow')}")
-            if len(marca_rpm) > 0:
-                print(f"   • Marca mais eficiente: {colored(marca_rpm.index[0], 'green')} ({colored(f'{marca_rpm.iloc[0]:.0f}', 'green')} RPM)")
-                print(f"   • Marca menos eficiente: {colored(marca_rpm.index[-1], 'red')} ({colored(f'{marca_rpm.iloc[-1]:.0f}', 'red')} RPM)")
-            
-            print(f"\n📁 {colored('ARQUIVOS GERADOS:', 'yellow')}")
-            print(f"   • estudo_01_estatisticas_descritivas.xlsx")
-            print(f"   • estudo_01_outliers_detectados.xlsx") 
-            print(f"   • estudo_01_analise_por_unidade.xlsx")
-            print(f"   • estudo_01_analise_por_marca.xlsx")
-            print(f"   • estudo_01_analise_por_modelo.xlsx")
-            print(f"   • estudo_01_comparativo_marcas.xlsx")
-            print(f"   • estudo_01_analise_temporal.xlsx")
-            print(f"   • estudo_01_matriz_correlacao.xlsx")
-            print(f"   • estudo_01_analise_clusters.xlsx")
-            print(f"   • estudo_01_padroes_especificos.xlsx")
-            print(f"   • estudo_01_resumo_executivo.xlsx")
-            print(f"   • estudo_01_distribuicoes.png")
-            print(f"   • estudo_01_analise_marcas.png")
-            print(f"   • estudo_01_analise_temporal.png")
-            print(f"   • estudo_01_correlacoes.png")
-            
-            print(f"\n🎯 {colored('PRINCIPAIS INSIGHTS:', 'yellow')}")
-            print(f"   • Faixa de RPM mais comum: {colored(df['faixa_rpm'].mode().iloc[0], 'green')}")
-            print(f"   • Horário de maior atividade: {colored(f'{hourly_rpm.idxmax()}h', 'green')}")
-            print(f"   • Correlação RPM-Velocidade: {colored(f'{df.rpm.corr(df.velocidade):.3f}', 'blue')}")
-            if len(marca_rpm) > 1:
-                print(f"   • Diferença de eficiência entre marcas: {colored(f'{marca_rpm.iloc[-1] - marca_rpm.iloc[0]:.0f}', 'yellow')} RPM")
-            
-            return True
-            
-        except Exception as e:
-            print(f"❌ {colored(f'Erro durante a análise: {str(e)}', 'red')}")
-            import traceback
-            traceback.print_exc()
-            return False
-
-
-    def ESTUDO_03(self):
-        """
-        Análise estatística completa dos dados de Viagem_eco
-        - Detecção de outliers
-        - Análise de padrões
-        - Estatísticas descritivas
-        - Correlações entre variáveis
-        - Análise temporal
-        - Análise por marca e modelo
-        - NOVO: Análises de dispersão RPM detalhadas
-        """
-        print(colored("="*50, 'cyan'))
-        print(colored("INICIANDO ESTUDO ESTATÍSTICO COMPLETO V2", 'yellow'))
-        print(colored("="*50, 'cyan'))
-        
-        # Importações necessárias
-        import numpy as np
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        from scipy import stats
-        from sklearn.preprocessing import StandardScaler
-        from sklearn.cluster import KMeans
-        from sklearn.ensemble import IsolationForest
-        import warnings
-        warnings.filterwarnings('ignore')
-        
-        # Configurar matplotlib para não mostrar gráficos
-        plt.ioff()
-        
-        try:
-            # ============= COLETA DE DADOS =============
-            print(f"📊 {colored('Coletando dados do banco...', 'blue')}")
-            
-            # Buscar todos os dados de Viagem_eco com informações dos veículos
-            viagens_eco = Viagem_eco.objects.all().select_related('unidade__empresa')
-            
-            if not viagens_eco.exists():
-                print(f"❌ {colored('Nenhum dado encontrado na tabela Viagem_eco', 'red')}")
-                return
-            
-            # Converter para DataFrame
-            data_list = []
-            for viagem in viagens_eco:
-                try:
-                    # Converter timestamp unix para datetime
-                    timestamp_int = int(viagem.timestamp)
-                    dt = datetime.fromtimestamp(timestamp_int)
-                    
-                    # Filtrar apenas dados com RPM válidos (acima de 300)
-                    if viagem.rpm and float(viagem.rpm) >= 300:
-                        data_list.append({
-                            'timestamp': timestamp_int,
-                            'datetime': dt,
-                            'unidade_id': viagem.unidade.id,
-                            'unidade_nome': viagem.unidade.nm,
-                            'empresa': viagem.unidade.empresa.nome if viagem.unidade.empresa else 'N/A',
-                            'marca': viagem.unidade.marca if hasattr(viagem.unidade, 'marca') and viagem.unidade.marca else 'N/I',
-                            'modelo': viagem.unidade.modelo if hasattr(viagem.unidade, 'modelo') and viagem.unidade.modelo else 'N/I',
-                            'cor': viagem.unidade.cor if hasattr(viagem.unidade, 'cor') and viagem.unidade.cor else 'N/I',
-                            'placa': viagem.unidade.placa if hasattr(viagem.unidade, 'placa') and viagem.unidade.placa else 'N/I',
-                            'rpm': float(viagem.rpm),
-                            'velocidade': float(viagem.velocidade) if viagem.velocidade else 0.0,
-                            'altitude': float(viagem.altitude) if viagem.altitude else 0.0,
-                            'hora': dt.hour,
-                            'dia_semana': dt.weekday(),
-                            'mes': dt.month,
-                            'ano': dt.year,
-                        })
-                except (ValueError, TypeError, OSError):
-                    continue
-            
-            if not data_list:
-                print(f"❌ {colored('Nenhum dado válido encontrado', 'red')}")
-                return
-            
-            df = pd.DataFrame(data_list)
-            print(f"✅ {colored(f'Dados coletados: {len(df)} registros de {df.unidade_id.nunique()} unidades', 'green')}")
-            print(f"📋 {colored(f'Marcas encontradas: {df.marca.nunique()} ({list(df.marca.unique())})', 'blue')}")
-            print(f"🚗 {colored(f'Modelos encontrados: {df.modelo.nunique()}', 'blue')}")
-            
-            # ============= ANÁLISE DESCRITIVA BÁSICA =============
-            print(f"\n📈 {colored('Gerando estatísticas descritivas...', 'blue')}")
-            
-            stats_desc = df[['rpm', 'velocidade', 'altitude']].describe()
-            
-            # Função para calcular MAD (Mean Absolute Deviation) manualmente
-            def calculate_mad(series):
-                """Calcula o desvio absoluto mediano"""
-                median = series.median()
-                return (series - median).abs().median()
-            
-            # Adicionar estatísticas extras
-            stats_extras = pd.DataFrame({
-                'rpm': [
-                    df['rpm'].var(),
-                    df['rpm'].skew(),
-                    df['rpm'].kurtosis(),
-                    calculate_mad(df['rpm'])
-                ],
-                'velocidade': [
-                    df['velocidade'].var(),
-                    df['velocidade'].skew(),
-                    df['velocidade'].kurtosis(),
-                    calculate_mad(df['velocidade'])
-                ],
-                'altitude': [
-                    df['altitude'].var(),
-                    df['altitude'].skew(),
-                    df['altitude'].kurtosis(),
-                    calculate_mad(df['altitude'])
-                ]
-            }, index=['variancia', 'assimetria', 'curtose', 'desvio_abs_mediano'])
-            
-            stats_completas = pd.concat([stats_desc, stats_extras])
-            
-            # Salvar estatísticas descritivas
-            stats_completas.to_excel(f'{deposito}/estudo_02_estatisticas_descritivas.xlsx')
-            print(f"💾 Estatísticas descritivas salvas em: estudo_02_estatisticas_descritivas.xlsx")
-            
-            # ============= DETECÇÃO DE OUTLIERS =============
-            print(f"\n🔍 {colored('Detectando outliers...', 'blue')}")
-            
-            # Método 1: Z-Score
-            z_scores = np.abs(stats.zscore(df[['rpm', 'velocidade', 'altitude']]))
-            outliers_zscore = df[(z_scores > 3).any(axis=1)].copy()
-            
-            # Método 2: IQR (Interquartile Range)
-            outliers_iqr = pd.DataFrame()
-            for coluna in ['rpm', 'velocidade', 'altitude']:
-                Q1 = df[coluna].quantile(0.25)
-                Q3 = df[coluna].quantile(0.75)
-                IQR = Q3 - Q1
-                lower_bound = Q1 - 1.5 * IQR
-                upper_bound = Q3 + 1.5 * IQR
-                
-                outliers_col = df[(df[coluna] < lower_bound) | (df[coluna] > upper_bound)]
-                outliers_iqr = pd.concat([outliers_iqr, outliers_col]).drop_duplicates()
-            
-            # Método 3: Isolation Forest
-            iso_forest = IsolationForest(contamination=0.1, random_state=42)
-            outliers_iso = iso_forest.fit_predict(df[['rpm', 'velocidade', 'altitude']])
-            outliers_isolation = df[outliers_iso == -1].copy()
-            
-            # Combinar todos os outliers
-            all_outliers = pd.concat([outliers_zscore, outliers_iqr, outliers_isolation]).drop_duplicates()
-            all_outliers['metodo_deteccao'] = 'Múltiplos'
-            
-            print(f"🎯 Outliers detectados:")
-            print(f"   - Z-Score (>3): {len(outliers_zscore)} registros")
-            print(f"   - IQR: {len(outliers_iqr)} registros")
-            print(f"   - Isolation Forest: {len(outliers_isolation)} registros")
-            print(f"   - Total únicos: {len(all_outliers)} registros")
-            
-            # Salvar outliers
-            all_outliers.to_excel(f'{deposito}/estudo_02_outliers_detectados.xlsx', index=False)
-            print(f"💾 Outliers salvos em: estudo_02_outliers_detectados.xlsx")
-            
-            # ============= ANÁLISE POR UNIDADE =============
-            print(f"\n🚛 {colored('Analisando padrões por unidade...', 'blue')}")
-            
-            stats_por_unidade = df.groupby(['unidade_nome', 'empresa', 'marca', 'modelo', 'placa']).agg({
-                'rpm': ['count', 'mean', 'std', 'min', 'max'],
-                'velocidade': ['mean', 'std', 'min', 'max'],
-                'altitude': ['mean', 'std', 'min', 'max'],
-            }).round(2)
-            
-            # Achatar colunas multi-nível
-            stats_por_unidade.columns = ['_'.join(col).strip() for col in stats_por_unidade.columns]
-            stats_por_unidade = stats_por_unidade.reset_index()
-            
-            # Adicionar classificações
-            stats_por_unidade['rpm_categoria'] = pd.cut(
-                stats_por_unidade['rpm_mean'], 
-                bins=[0, 800, 1300, 2000, float('inf')], 
-                labels=['Baixo', 'Econômico', 'Normal', 'Alto']
-            )
-            
-            stats_por_unidade['velocidade_categoria'] = pd.cut(
-                stats_por_unidade['velocidade_mean'], 
-                bins=[0, 40, 60, 80, float('inf')], 
-                labels=['Baixa', 'Moderada', 'Alta', 'Muito Alta']
-            )
-            
-            # Salvar análise por unidade
-            stats_por_unidade.to_excel(f'{deposito}/estudo_02_analise_por_unidade.xlsx', index=False)
-            print(f"💾 Análise por unidade salva em: estudo_02_analise_por_unidade.xlsx")
-            
-            # ============= ANÁLISE POR MARCA =============
-            print(f"\n🏭 {colored('Analisando padrões por marca...', 'blue')}")
-            
-            stats_por_marca = df.groupby('marca').agg({
-                'rpm': ['count', 'mean', 'std', 'min', 'max'],
-                'velocidade': ['mean', 'std', 'min', 'max'],
-                'altitude': ['mean', 'std', 'min', 'max'],
-                'unidade_id': 'nunique'
-            }).round(2)
-            
-            stats_por_marca.columns = ['_'.join(col).strip() for col in stats_por_marca.columns]
-            stats_por_marca = stats_por_marca.reset_index()
-            
-            # Adicionar classificação de eficiência por marca
-            stats_por_marca['eficiencia_rpm'] = pd.cut(
-                stats_por_marca['rpm_mean'], 
-                bins=[0, 800, 1300, 2000, float('inf')], 
-                labels=['Muito Eficiente', 'Eficiente', 'Normal', 'Ineficiente']
-            )
-            
-            # Calcular ranking de eficiência
-            stats_por_marca['ranking_eficiencia'] = stats_por_marca['rpm_mean'].rank(ascending=True)
-            
-            # Salvar análise por marca
-            stats_por_marca.to_excel(f'{deposito}/estudo_02_analise_por_marca.xlsx', index=False)
-            print(f"💾 Análise por marca salva em: estudo_02_analise_por_marca.xlsx")
-            
-            # ============= ANÁLISE POR MODELO =============
-            print(f"\n🚗 {colored('Analisando padrões por modelo...', 'blue')}")
-            
-            stats_por_modelo = df.groupby(['marca', 'modelo']).agg({
-                'rpm': ['count', 'mean', 'std', 'min', 'max'],
-                'velocidade': ['mean', 'std', 'min', 'max'],
-                'altitude': ['mean', 'std', 'min', 'max'],
-                'unidade_id': 'nunique'
-            }).round(2)
-            
-            stats_por_modelo.columns = ['_'.join(col).strip() for col in stats_por_modelo.columns]
-            stats_por_modelo = stats_por_modelo.reset_index()
-            
-            # Adicionar classificação de performance
-            stats_por_modelo['performance_rpm'] = pd.cut(
-                stats_por_modelo['rpm_mean'], 
-                bins=[0, 800, 1300, 2000, float('inf')], 
-                labels=['Excelente', 'Boa', 'Regular', 'Ruim']
-            )
-            
-            stats_por_modelo['performance_velocidade'] = pd.cut(
-                stats_por_modelo['velocidade_mean'], 
-                bins=[0, 40, 60, 80, float('inf')], 
-                labels=['Urbano', 'Misto', 'Rodoviário', 'Alto']
-            )
-            
-            # Salvar análise por modelo
-            stats_por_modelo.to_excel(f'{deposito}/estudo_02_analise_por_modelo.xlsx', index=False)
-            print(f"💾 Análise por modelo salva em: estudo_02_analise_por_modelo.xlsx")
-            
-            # ============= ANÁLISE DE DISPERSÃO RPM AVANÇADA =============
-            print(f"\n📊 {colored('Analisando dispersão RPM por marca e modelo...', 'blue')}")
-            
-            # Análise de desvio por marca
-            desvios_por_marca = {}
-            
-            for marca in df['marca'].unique():
-                if marca != 'N/I':
-                    dados_marca = df[df['marca'] == marca]
-                    
-                    if len(dados_marca) > 50:  # Só analisa marcas com dados suficientes
-                        rpm_mean = dados_marca['rpm'].mean()
-                        rpm_std = dados_marca['rpm'].std()
-                        
-                        # Identificar unidades fora do padrão da marca (> 2 desvios padrão)
-                        unidades_fora_padrao = []
-                        
-                        for unidade in dados_marca['unidade_nome'].unique():
-                            dados_unidade = dados_marca[dados_marca['unidade_nome'] == unidade]
-                            rpm_unidade = dados_unidade['rpm'].mean()
-                            
-                            # Calcular z-score em relação à marca
-                            z_score = abs(rpm_unidade - rpm_mean) / rpm_std if rpm_std > 0 else 0
-                            
-                            if z_score > 2:  # Fora do padrão
-                                unidades_fora_padrao.append({
-                                    'unidade': unidade,
-                                    'rpm_unidade': rpm_unidade,
-                                    'z_score': z_score,
-                                    'desvio_absoluto': rpm_unidade - rpm_mean,
-                                    'status': 'Acima' if rpm_unidade > rpm_mean else 'Abaixo'
-                                })
-                        
-                        desvios_por_marca[marca] = {
-                            'rpm_medio_marca': rpm_mean,
-                            'rpm_desvio_marca': rpm_std,
-                            'total_unidades': dados_marca['unidade_nome'].nunique(),
-                            'unidades_fora_padrao': len(unidades_fora_padrao),
-                            'percentual_fora_padrao': (len(unidades_fora_padrao) / dados_marca['unidade_nome'].nunique()) * 100,
-                            'detalhes_unidades': unidades_fora_padrao
-                        }
-            
-            # Salvar análise de desvios
-            desvios_detalhados = []
-            for marca, dados in desvios_por_marca.items():
-                for unidade in dados['detalhes_unidades']:
-                    desvios_detalhados.append({
-                        'marca': marca,
-                        'unidade': unidade['unidade'],
-                        'rpm_unidade': unidade['rpm_unidade'],
-                        'rpm_medio_marca': dados['rpm_medio_marca'],
-                        'desvio_absoluto': unidade['desvio_absoluto'],
-                        'z_score': unidade['z_score'],
-                        'status': unidade['status']
-                    })
-            
-            df_desvios = pd.DataFrame(desvios_detalhados)
-            df_desvios.to_excel(f'{deposito}/estudo_02_unidades_fora_padrao.xlsx', index=False)
-            print(f"💾 Análise de unidades fora do padrão salva em: estudo_02_unidades_fora_padrao.xlsx")
-            
-            # Análise de dispersão por modelo dentro da marca
-            dispersao_modelo = []
-            
-            for marca in df['marca'].unique():
-                if marca != 'N/I':
-                    dados_marca = df[df['marca'] == marca]
-                    modelos_marca = dados_marca['modelo'].unique()
-                    
-                    if len(modelos_marca) > 1:  # Só analisa se há múltiplos modelos
-                        for modelo in modelos_marca:
-                            dados_modelo = dados_marca[dados_marca['modelo'] == modelo]
-                            
-                            if len(dados_modelo) > 20:  # Dados suficientes
-                                dispersao_modelo.append({
-                                    'marca': marca,
-                                    'modelo': modelo,
-                                    'rpm_medio': dados_modelo['rpm'].mean(),
-                                    'rpm_desvio': dados_modelo['rpm'].std(),
-                                    'rpm_min': dados_modelo['rpm'].min(),
-                                    'rpm_max': dados_modelo['rpm'].max(),
-                                    'coef_variacao': (dados_modelo['rpm'].std() / dados_modelo['rpm'].mean()) * 100,
-                                    'total_registros': len(dados_modelo),
-                                    'total_unidades': dados_modelo['unidade_nome'].nunique()
-                                })
-            
-            df_dispersao = pd.DataFrame(dispersao_modelo)
-            df_dispersao = df_dispersao.sort_values(['marca', 'coef_variacao'])
-            df_dispersao.to_excel(f'{deposito}/estudo_02_dispersao_por_modelo.xlsx', index=False)
-            print(f"💾 Análise de dispersão por modelo salva em: estudo_02_dispersao_por_modelo.xlsx")
-            
-            # ============= COMPARATIVO ENTRE MARCAS =============
-            print(f"\n⚖️ {colored('Gerando comparativo entre marcas...', 'blue')}")
-            
-            comparativo_marcas = {}
-            
-            for marca in df['marca'].unique():
-                if marca != 'N/I':  # Ignora registros sem marca
-                    dados_marca = df[df['marca'] == marca]
-                    
-                    comparativo_marcas[marca] = {
-                        'total_registros': len(dados_marca),
-                        'total_unidades': dados_marca['unidade_id'].nunique(),
-                        'rpm_medio': dados_marca['rpm'].mean(),
-                        'rpm_desvio': dados_marca['rpm'].std(),
-                        'velocidade_media': dados_marca['velocidade'].mean(),
-                        'altitude_media': dados_marca['altitude'].mean(),
-                        'percentual_zona_verde': len(dados_marca[(dados_marca['rpm'] >= 800) & (dados_marca['rpm'] <= 1300)]) / len(dados_marca) * 100,
-                        'percentual_zona_vermelha': len(dados_marca[dados_marca['rpm'] > 2300]) / len(dados_marca) * 100,
-                        'coef_variacao_rpm': (dados_marca['rpm'].std() / dados_marca['rpm'].mean()) * 100,
-                        'empresas': list(dados_marca['empresa'].unique())
-                    }
-            
-            # Converter para DataFrame
-            comparativo_df = pd.DataFrame(comparativo_marcas).T
-            comparativo_df = comparativo_df.round(2)
-            comparativo_df = comparativo_df.sort_values('rpm_medio')  # Ordenar por eficiência
-            
-            # Salvar comparativo
-            comparativo_df.to_excel(f'{deposito}/estudo_02_comparativo_marcas.xlsx')
-            print(f"💾 Comparativo entre marcas salvo em: estudo_02_comparativo_marcas.xlsx")
-            
-            # ============= ANÁLISE TEMPORAL =============
-            print(f"\n⏰ {colored('Analisando padrões temporais...', 'blue')}")
-            
-            # Por hora do dia
-            analise_hora = df.groupby('hora').agg({
-                'rpm': ['mean', 'std', 'count'],
-                'velocidade': ['mean', 'std'],
-                'altitude': ['mean', 'std']
-            }).round(2)
-            analise_hora.columns = ['_'.join(col).strip() for col in analise_hora.columns]
-            analise_hora = analise_hora.reset_index()
-            
-            # Por dia da semana
-            dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
-            analise_dia_semana = df.groupby('dia_semana').agg({
-                'rpm': ['mean', 'std', 'count'],
-                'velocidade': ['mean', 'std'],
-                'altitude': ['mean', 'std']
-            }).round(2)
-            analise_dia_semana.columns = ['_'.join(col).strip() for col in analise_dia_semana.columns]
-            analise_dia_semana = analise_dia_semana.reset_index()
-            analise_dia_semana['dia_nome'] = analise_dia_semana['dia_semana'].map(lambda x: dias_semana[x])
-            
-            # Por mês
-            analise_mes = df.groupby('mes').agg({
-                'rpm': ['mean', 'std', 'count'],
-                'velocidade': ['mean', 'std'],
-                'altitude': ['mean', 'std']
-            }).round(2)
-            analise_mes.columns = ['_'.join(col).strip() for col in analise_mes.columns]
-            analise_mes = analise_mes.reset_index()
-            
-            # Análise temporal por marca
-            analise_temporal_marca = df.groupby(['marca', 'hora']).agg({
-                'rpm': 'mean',
-                'velocidade': 'mean'
-            }).round(2).reset_index()
-            
-            # Salvar análises temporais
-            with pd.ExcelWriter(f'{deposito}/estudo_02_analise_temporal.xlsx') as writer:
-                analise_hora.to_excel(writer, sheet_name='Por_Hora', index=False)
-                analise_dia_semana.to_excel(writer, sheet_name='Por_Dia_Semana', index=False)
-                analise_mes.to_excel(writer, sheet_name='Por_Mes', index=False)
-                analise_temporal_marca.to_excel(writer, sheet_name='Marca_por_Hora', index=False)
-            
-            print(f"💾 Análise temporal salva em: estudo_02_analise_temporal.xlsx")
-            
-            # ============= ANÁLISE DE CORRELAÇÕES =============
-            print(f"\n🔗 {colored('Analisando correlações...', 'blue')}")
-            
-            # Matriz de correlação geral
-            correlation_matrix = df[['rpm', 'velocidade', 'altitude', 'hora', 'dia_semana']].corr()
-            
-            # Correlações por marca (se houver dados suficientes)
-            correlacoes_por_marca = {}
-            for marca in df['marca'].unique():
-                if marca != 'N/I':
-                    dados_marca = df[df['marca'] == marca]
-                    if len(dados_marca) > 50:  # Só calcula se houver dados suficientes
-                        correlacoes_por_marca[marca] = dados_marca[['rpm', 'velocidade', 'altitude']].corr()
-            
-            # Salvar correlações
-            with pd.ExcelWriter(f'{deposito}/estudo_02_matriz_correlacao.xlsx') as writer:
-                correlation_matrix.to_excel(writer, sheet_name='Geral')
-                for marca, corr_matrix in correlacoes_por_marca.items():
-                    corr_matrix.to_excel(writer, sheet_name=f'Marca_{marca}')
-            
-            print(f"💾 Matriz de correlação salva em: estudo_02_matriz_correlacao.xlsx")
-            
-            # ============= CLUSTERING ANÁLISE =============
-            print(f"\n🎯 {colored('Realizando análise de clusters...', 'blue')}")
-            
-            # Preparar dados para clustering
-            features_clustering = df[['rpm', 'velocidade', 'altitude']].copy()
-            
-            # Normalizar dados
-            scaler = StandardScaler()
-            features_normalized = scaler.fit_transform(features_clustering)
-            
-            # K-Means com k=5
-            kmeans = KMeans(n_clusters=5, random_state=42, n_init=10)
-            clusters = kmeans.fit_predict(features_normalized)
-            
-            # Adicionar clusters ao DataFrame
-            df_clusters = df.copy()
-            df_clusters['cluster'] = clusters
-            
-            # Analisar características de cada cluster
-            cluster_analysis = df_clusters.groupby('cluster').agg({
-                'rpm': ['mean', 'std', 'min', 'max', 'count'],
-                'velocidade': ['mean', 'std', 'min', 'max'],
-                'altitude': ['mean', 'std', 'min', 'max'],
-                'unidade_id': 'nunique'
-            }).round(2)
-            
-            cluster_analysis.columns = ['_'.join(col).strip() for col in cluster_analysis.columns]
-            cluster_analysis = cluster_analysis.reset_index()
-            
-            # Análise de clusters por marca
-            cluster_por_marca = df_clusters.groupby(['marca', 'cluster']).size().reset_index(name='count')
-            cluster_por_marca_pivot = cluster_por_marca.pivot(index='marca', columns='cluster', values='count').fillna(0)
-            
-            # Adicionar interpretação dos clusters
-            def interpretar_cluster(row):
-                rpm_mean = row['rpm_mean']
-                vel_mean = row['velocidade_mean']
-                
-                if rpm_mean < 800:
-                    rpm_cat = "Marcha Lenta"
-                elif rpm_mean < 1300:
-                    rpm_cat = "Econômico"
-                elif rpm_mean < 2000:
-                    rpm_cat = "Normal"
-                else:
-                    rpm_cat = "Alto"
-                
-                if vel_mean < 20:
-                    vel_cat = "Parado/Lento"
-                elif vel_mean < 50:
-                    vel_cat = "Urbano"
-                elif vel_mean < 80:
-                    vel_cat = "Rodoviário"
-                else:
-                    vel_cat = "Alto"
-                
-                return f"{rpm_cat} + {vel_cat}"
-            
-            cluster_analysis['interpretacao'] = cluster_analysis.apply(interpretar_cluster, axis=1)
-            
-            # Salvar análise de clusters
-            with pd.ExcelWriter(f'{deposito}/estudo_02_analise_clusters.xlsx') as writer:
-                cluster_analysis.to_excel(writer, sheet_name='Clusters_Geral', index=False)
-                cluster_por_marca_pivot.to_excel(writer, sheet_name='Clusters_por_Marca')
-            
-            print(f"💾 Análise de clusters salva em: estudo_02_analise_clusters.xlsx")
-            
-            # ============= DETECÇÃO DE PADRÕES ESPECÍFICOS =============
-            print(f"\n🔍 {colored('Detectando padrões específicos...', 'blue')}")
-            
-            padroes_especificos = {}
-            
-            # 1. Padrão de marcha lenta excessiva
-            marcha_lenta = df[df['rpm'] < 500]
-            padroes_especificos['marcha_lenta_excessiva'] = {
-                'total_registros': len(marcha_lenta),
-                'unidades_afetadas': marcha_lenta['unidade_nome'].nunique(),
-                'percentual_total': round(len(marcha_lenta) / len(df) * 100, 2),
-                'por_marca': dict(marcha_lenta['marca'].value_counts())
-            }
-            
-            # 2. Padrão de RPM muito alto (zona vermelha)
-            rpm_alto = df[df['rpm'] > 2300]
-            padroes_especificos['rpm_zona_vermelha'] = {
-                'total_registros': len(rpm_alto),
-                'unidades_afetadas': rpm_alto['unidade_nome'].nunique(),
-                'percentual_total': round(len(rpm_alto) / len(df) * 100, 2),
-                'por_marca': dict(rpm_alto['marca'].value_counts())
-            }
-            
-            # 3. Padrão de velocidade alta com RPM baixo
-            vel_alta_rpm_baixo = df[(df['velocidade'] > 60) & (df['rpm'] < 1000)]
-            padroes_especificos['velocidade_alta_rpm_baixo'] = {
-                'total_registros': len(vel_alta_rpm_baixo),
-                'unidades_afetadas': vel_alta_rpm_baixo['unidade_nome'].nunique(),
-                'percentual_total': round(len(vel_alta_rpm_baixo) / len(df) * 100, 2),
-                'por_marca': dict(vel_alta_rpm_baixo['marca'].value_counts())
-            }
-            
-            # 4. Padrão noturno (22h às 6h)
-            periodo_noturno = df[(df['hora'] >= 22) | (df['hora'] <= 6)]
-            padroes_especificos['atividade_noturna'] = {
-                'total_registros': len(periodo_noturno),
-                'unidades_afetadas': periodo_noturno['unidade_nome'].nunique(),
-                'percentual_total': round(len(periodo_noturno) / len(df) * 100, 2),
-                'por_marca': dict(periodo_noturno['marca'].value_counts())
-            }
-            
-            # 5. Eficiência por faixa de RPM
-            df['faixa_rpm'] = pd.cut(
-                df['rpm'], 
-                bins=[0, 799, 1300, 2300, float('inf')], 
-                labels=['Azul (350-799)', 'Verde (800-1300)', 'Amarela (1301-2300)', 'Vermelha (2301+)']
-            )
-            
-            distribuicao_rpm = df['faixa_rpm'].value_counts().to_dict()
-            distribuicao_rpm_por_marca = df.groupby(['marca', 'faixa_rpm']).size().unstack(fill_value=0)
-            
-            padroes_especificos['distribuicao_faixas_rpm'] = distribuicao_rpm
-            
-            # Salvar padrões específicos
-            with pd.ExcelWriter(f'{deposito}/estudo_02_padroes_especificos.xlsx') as writer:
-                # Sheet com resumo dos padrões
-                padroes_resumo = pd.DataFrame([padroes_especificos]).T
-                padroes_resumo.to_excel(writer, sheet_name='Resumo_Padroes')
-                
-                # Sheet com distribuição RPM por marca
-                distribuicao_rpm_por_marca.to_excel(writer, sheet_name='RPM_por_Marca')
-            
-            print(f"💾 Padrões específicos salvos em: estudo_02_padroes_especificos.xlsx")
-            
-            # ============= GERAR GRÁFICOS =============
-            print(f"\n📊 {colored('Gerando gráficos de análise...', 'blue')}")
-            
-            # Configurar estilo dos gráficos
-            plt.style.use('default')
-            sns.set_palette("husl")
-            
-            # 1. Distribuições das variáveis principais
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-            fig.suptitle('Distribuições das Variáveis Principais', fontsize=16, fontweight='bold')
-            
-            # RPM
-            axes[0, 0].hist(df['rpm'], bins=50, alpha=0.7, color='blue')
-            axes[0, 0].set_title('Distribuição RPM')
-            axes[0, 0].set_xlabel('RPM')
-            axes[0, 0].set_ylabel('Frequência')
-            axes[0, 0].axvline(df['rpm'].mean(), color='red', linestyle='--', label=f'Média: {df["rpm"].mean():.0f}')
-            axes[0, 0].legend()
-            
-            # Velocidade
-            axes[0, 1].hist(df['velocidade'], bins=50, alpha=0.7, color='green')
-            axes[0, 1].set_title('Distribuição Velocidade')
-            axes[0, 1].set_xlabel('Velocidade (km/h)')
-            axes[0, 1].set_ylabel('Frequência')
-            axes[0, 1].axvline(df['velocidade'].mean(), color='red', linestyle='--', label=f'Média: {df["velocidade"].mean():.1f}')
-            axes[0, 1].legend()
-            
-            # Altitude
-            axes[1, 0].hist(df['altitude'], bins=50, alpha=0.7, color='orange')
-            axes[1, 0].set_title('Distribuição Altitude')
-            axes[1, 0].set_xlabel('Altitude (m)')
-            axes[1, 0].set_ylabel('Frequência')
-            axes[1, 0].axvline(df['altitude'].mean(), color='red', linestyle='--', label=f'Média: {df["altitude"].mean():.1f}')
-            axes[1, 0].legend()
-            
-            # Distribuição por faixa de RPM
-            faixa_counts = df['faixa_rpm'].value_counts()
-            axes[1, 1].pie(faixa_counts.values, labels=faixa_counts.index, autopct='%1.1f%%')
-            axes[1, 1].set_title('Distribuição por Faixa de RPM')
-            
-            plt.tight_layout()
-            plt.savefig(f'{deposito}/estudo_02_distribuicoes.png', dpi=300, bbox_inches='tight')
-            plt.close()
-            
-            # ============= GRÁFICOS DE DISPERSÃO RPM AVANÇADOS =============
-            print(f"\n📈 {colored('Gerando gráficos de dispersão RPM avançados...', 'blue')}")
-            
-            # 2. Gráfico de dispersão RPM por marca (com identificação de outliers)
-            marcas_validas = [marca for marca in df['marca'].unique() if marca != 'N/I']
-            
-            if len(marcas_validas) > 1:
-                # Gráfico 1: Dispersão RPM por marca com boxplots
-                fig, axes = plt.subplots(2, 2, figsize=(20, 16))
-                fig.suptitle('Análise de Dispersão RPM por Marca', fontsize=16, fontweight='bold')
-                
-                # Subplot 1: Boxplot RPM por marca
-                dados_boxplot = [df[df['marca'] == marca]['rpm'] for marca in marcas_validas if len(df[df['marca'] == marca]) > 100]
-                marcas_boxplot = [marca for marca in marcas_validas if len(df[df['marca'] == marca]) > 100]
-                
-                if dados_boxplot:
-                    axes[0, 0].boxplot(dados_boxplot, labels=marcas_boxplot, patch_artist=True)
-                    axes[0, 0].set_title('Distribuição RPM por Marca (Boxplot)')
-                    axes[0, 0].set_xlabel('Marca')
-                    axes[0, 0].set_ylabel('RPM')
-                    axes[0, 0].tick_params(axis='x', rotation=45)
-                    axes[0, 0].grid(True, alpha=0.3)
-                    
-                    # Adicionar linhas de referência
-                    axes[0, 0].axhline(800, color='green', linestyle='--', alpha=0.7, label='Zona Verde (800)')
-                    axes[0, 0].axhline(1300, color='green', linestyle='--', alpha=0.7, label='Zona Verde (1300)')
-                    axes[0, 0].axhline(2300, color='red', linestyle='--', alpha=0.7, label='Zona Vermelha (2300)')
-                    axes[0, 0].legend()
-                
-                # Subplot 2: Violin plot para mostrar distribuição completa
-                df_plot = df[df['marca'].isin(marcas_boxplot)]
-                import seaborn as sns
-                sns.violinplot(data=df_plot, x='marca', y='rpm', ax=axes[0, 1])
-                axes[0, 1].set_title('Distribuição RPM por Marca (Violin Plot)')
-                axes[0, 1].set_xlabel('Marca')
-                axes[0, 1].set_ylabel('RPM')
-                axes[0, 1].tick_params(axis='x', rotation=45)
-                
-                # Subplot 3: Scatter plot RPM vs Velocidade colorido por marca
-                cores_marca = plt.cm.Set1(np.linspace(0, 1, len(marcas_validas)))
-                for i, marca in enumerate(marcas_validas):
-                    dados_marca = df[df['marca'] == marca]
-                    axes[1, 0].scatter(dados_marca['rpm'], dados_marca['velocidade'], 
-                                    alpha=0.3, s=1, label=marca, c=[cores_marca[i]])
-                
-                axes[1, 0].set_title('RPM vs Velocidade por Marca')
-                axes[1, 0].set_xlabel('RPM')
-                axes[1, 0].set_ylabel('Velocidade (km/h)')
-                axes[1, 0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-                axes[1, 0].grid(True, alpha=0.3)
-                
-                # Subplot 4: Média RPM por marca com barras de erro
-                marca_stats = []
-                for marca in marcas_validas:
-                    dados_marca = df[df['marca'] == marca]
-                    if len(dados_marca) > 50:
-                        marca_stats.append({
-                            'marca': marca,
-                            'rpm_mean': dados_marca['rpm'].mean(),
-                            'rpm_std': dados_marca['rpm'].std()
-                        })
-                
-                if marca_stats:
-                    df_stats = pd.DataFrame(marca_stats).sort_values('rpm_mean')
-                    axes[1, 1].bar(df_stats['marca'], df_stats['rpm_mean'], 
-                                yerr=df_stats['rpm_std'], capsize=5, alpha=0.7)
-                    axes[1, 1].set_title('RPM Médio por Marca (com Desvio Padrão)')
-                    axes[1, 1].set_xlabel('Marca')
-                    axes[1, 1].set_ylabel('RPM Médio')
-                    axes[1, 1].tick_params(axis='x', rotation=45)
-                    axes[1, 1].grid(True, alpha=0.3)
-                    
-                    # Adicionar linhas de referência
-                    axes[1, 1].axhline(1050, color='green', linestyle='-', alpha=0.7, label='Zona Verde Média')
-                    axes[1, 1].legend()
-                
-                plt.tight_layout()
-                plt.savefig(f'{deposito}/estudo_02_dispersao_rpm_marcas.png', dpi=300, bbox_inches='tight')
-                plt.close()
-            
-            # 3. Gráfico de unidades fora do padrão por marca
-            if desvios_detalhados:
-                fig, axes = plt.subplots(2, 2, figsize=(20, 16))
-                fig.suptitle('Análise de Unidades Fora do Padrão por Marca', fontsize=16, fontweight='bold')
-                
-                # Subplot 1: Número de unidades fora do padrão por marca
-                marca_desvios = {}
-                for marca, dados in desvios_por_marca.items():
-                    marca_desvios[marca] = dados['unidades_fora_padrao']
-                
-                marcas = list(marca_desvios.keys())
-                valores = list(marca_desvios.values())
-                
-                axes[0, 0].bar(marcas, valores, color='red', alpha=0.7)
-                axes[0, 0].set_title('Unidades Fora do Padrão por Marca')
-                axes[0, 0].set_xlabel('Marca')
-                axes[0, 0].set_ylabel('Número de Unidades Fora do Padrão')
-                axes[0, 0].tick_params(axis='x', rotation=45)
-                
-                # Subplot 2: Percentual de unidades fora do padrão
-                percentuais = [desvios_por_marca[marca]['percentual_fora_padrao'] for marca in marcas]
-                axes[0, 1].bar(marcas, percentuais, color='orange', alpha=0.7)
-                axes[0, 1].set_title('Percentual de Unidades Fora do Padrão')
-                axes[0, 1].set_xlabel('Marca')
-                axes[0, 1].set_ylabel('Percentual (%)')
-                axes[0, 1].tick_params(axis='x', rotation=45)
-                
-                # Subplot 3: Scatter plot dos desvios
-                if desvios_detalhados:
-                    df_desvios_plot = pd.DataFrame(desvios_detalhados)
-                    cores = ['red' if status == 'Acima' else 'blue' for status in df_desvios_plot['status']]
-                    
-                    axes[1, 0].scatter(df_desvios_plot['rpm_medio_marca'], df_desvios_plot['rpm_unidade'], 
-                                    c=cores, alpha=0.6, s=50)
-                    axes[1, 0].plot([400, 2500], [400, 2500], 'k--', alpha=0.5, label='Linha de Igualdade')
-                    axes[1, 0].set_title('RPM Unidade vs RPM Médio da Marca')
-                    axes[1, 0].set_xlabel('RPM Médio da Marca')
-                    axes[1, 0].set_ylabel('RPM da Unidade')
-                    axes[1, 0].legend()
-                    axes[1, 0].grid(True, alpha=0.3)
-                
-                # Subplot 4: Histograma dos Z-scores
-                if desvios_detalhados:
-                    z_scores = [item['z_score'] for item in desvios_detalhados]
-                    axes[1, 1].hist(z_scores, bins=20, alpha=0.7, color='purple')
-                    axes[1, 1].axvline(2, color='red', linestyle='--', label='Limite Z-Score = 2')
-                    axes[1, 1].set_title('Distribuição dos Z-Scores das Unidades Fora do Padrão')
-                    axes[1, 1].set_xlabel('Z-Score')
-                    axes[1, 1].set_ylabel('Frequência')
-                    axes[1, 1].legend()
-                    axes[1, 1].grid(True, alpha=0.3)
-                
-                plt.tight_layout()
-                plt.savefig(f'{deposito}/estudo_02_unidades_fora_padrao_graficos.png', dpi=300, bbox_inches='tight')
-                plt.close()
-            
-            # 4. Análise temporal de dispersão
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-            fig.suptitle('Análise Temporal dos Dados', fontsize=16, fontweight='bold')
-            
-            # RPM por hora
-            hourly_rpm = df.groupby('hora')['rpm'].mean()
-            axes[0, 0].plot(hourly_rpm.index, hourly_rpm.values, marker='o', linewidth=2)
-            axes[0, 0].set_title('RPM Médio por Hora do Dia')
-            axes[0, 0].set_xlabel('Hora')
-            axes[0, 0].set_ylabel('RPM Médio')
-            axes[0, 0].grid(True, alpha=0.3)
-            
-            # Velocidade por hora
-            hourly_vel = df.groupby('hora')['velocidade'].mean()
-            axes[0, 1].plot(hourly_vel.index, hourly_vel.values, marker='s', color='green', linewidth=2)
-            axes[0, 1].set_title('Velocidade Média por Hora do Dia')
-            axes[0, 1].set_xlabel('Hora')
-            axes[0, 1].set_ylabel('Velocidade Média (km/h)')
-            axes[0, 1].grid(True, alpha=0.3)
-            
-            # RPM por dia da semana
-            daily_rpm = df.groupby('dia_semana')['rpm'].mean()
-            dias_nome = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
-            axes[1, 0].bar(range(7), daily_rpm.values, color='purple', alpha=0.7)
-            axes[1, 0].set_title('RPM Médio por Dia da Semana')
-            axes[1, 0].set_xlabel('Dia da Semana')
-            axes[1, 0].set_ylabel('RPM Médio')
-            axes[1, 0].set_xticks(range(7))
-            axes[1, 0].set_xticklabels(dias_nome)
-            
-            # Atividade por mês
-            monthly_count = df.groupby('mes').size()
-            axes[1, 1].bar(monthly_count.index, monthly_count.values, color='red', alpha=0.7)
-            axes[1, 1].set_title('Atividade por Mês')
-            axes[1, 1].set_xlabel('Mês')
-            axes[1, 1].set_ylabel('Número de Registros')
-            
-            plt.tight_layout()
-            plt.savefig(f'{deposito}/estudo_02_analise_temporal.png', dpi=300, bbox_inches='tight')
-            plt.close()
-            
-            # 5. Scatter plots e correlações
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-            fig.suptitle('Análise de Correlações', fontsize=16, fontweight='bold')
-            
-            # RPM vs Velocidade
-            axes[0, 0].scatter(df['rpm'], df['velocidade'], alpha=0.1, s=1)
-            axes[0, 0].set_title('RPM vs Velocidade')
-            axes[0, 0].set_xlabel('RPM')
-            axes[0, 0].set_ylabel('Velocidade (km/h)')
-            
-            # RPM vs Altitude
-            axes[0, 1].scatter(df['rpm'], df['altitude'], alpha=0.1, s=1, color='green')
-            axes[0, 1].set_title('RPM vs Altitude')
-            axes[0, 1].set_xlabel('RPM')
-            axes[0, 1].set_ylabel('Altitude (m)')
-            
-            # Velocidade vs Altitude
-            axes[1, 0].scatter(df['velocidade'], df['altitude'], alpha=0.1, s=1, color='red')
-            axes[1, 0].set_title('Velocidade vs Altitude')
-            axes[1, 0].set_xlabel('Velocidade (km/h)')
-            axes[1, 0].set_ylabel('Altitude (m)')
-            
-            # Heatmap de correlação
-            corr_data = df[['rpm', 'velocidade', 'altitude', 'hora']].corr()
-            im = axes[1, 1].imshow(corr_data, cmap='coolwarm', aspect='auto')
-            axes[1, 1].set_title('Matriz de Correlação')
-            axes[1, 1].set_xticks(range(len(corr_data.columns)))
-            axes[1, 1].set_yticks(range(len(corr_data.columns)))
-            axes[1, 1].set_xticklabels(corr_data.columns)
-            axes[1, 1].set_yticklabels(corr_data.columns)
-            
-            plt.tight_layout()
-            plt.savefig(f'{deposito}/estudo_02_correlacoes.png', dpi=300, bbox_inches='tight')
-            plt.close()
-            
-            print(f"💾 Gráficos salvos em:")
-            print(f"   - estudo_02_distribuicoes.png")
-            print(f"   - estudo_02_dispersao_rpm_marcas.png")
-            print(f"   - estudo_02_unidades_fora_padrao_graficos.png")
-            print(f"   - estudo_02_analise_temporal.png")
-            print(f"   - estudo_02_correlacoes.png")
-            
-            # ============= RELATÓRIO RESUMO =============
-            print(f"\n📋 {colored('Gerando relatório resumo...', 'blue')}")
-            
-            marca_rpm = df.groupby('marca')['rpm'].mean().sort_values()
-            
-            resumo = {
-                'data_analise': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'total_registros': len(df),
-                'total_unidades': df['unidade_id'].nunique(),
-                'total_empresas': df['empresa'].nunique(),
-                'total_marcas': df['marca'].nunique(),
-                'total_modelos': df['modelo'].nunique(),
-                'periodo_dados': f"{df['datetime'].min()} até {df['datetime'].max()}",
-                'rpm_medio_geral': round(df['rpm'].mean(), 2),
-                'rpm_desvio_padrao': round(df['rpm'].std(), 2),
-                'velocidade_media_geral': round(df['velocidade'].mean(), 2),
-                'altitude_media_geral': round(df['altitude'].mean(), 2),
-                'outliers_detectados': len(all_outliers),
-                'percentual_outliers': round(len(all_outliers) / len(df) * 100, 2),
-                'distribuicao_faixas_rpm': dict(df['faixa_rpm'].value_counts()),
-                'marca_mais_eficiente': marca_rpm.index[0] if len(marca_rpm) > 0 else 'N/A',
-                'marca_menos_eficiente': marca_rpm.index[-1] if len(marca_rpm) > 0 else 'N/A',
-                'padroes_identificados': len(padroes_especificos),
-                'unidades_fora_padrao_total': len(desvios_detalhados),
-                'marcas_analisadas_dispersao': len(desvios_por_marca),
-            }
-            
-            # Salvar resumo
-            resumo_df = pd.DataFrame([resumo]).T
-            resumo_df.columns = ['Valor']
-            resumo_df.to_excel(f'{deposito}/estudo_02_resumo_executivo.xlsx')
-            
-            # ============= RESULTADO FINAL =============
-            print(colored("="*50, 'cyan'))
-            print(colored("ESTUDO ESTATÍSTICO AVANÇADO CONCLUÍDO COM SUCESSO!", 'green'))
-            print(colored("="*50, 'cyan'))
-            
-            print(f"📊 {colored('RESUMO DOS RESULTADOS:', 'yellow')}")
-            print(f"   • Total de registros analisados: {colored(f'{len(df):,}', 'green')}")
-            print(f"   • Unidades analisadas: {colored(df['unidade_id'].nunique(), 'green')}")
-            print(f"   • Empresas envolvidas: {colored(df['empresa'].nunique(), 'green')}")
-            print(f"   • Marcas analisadas: {colored(df['marca'].nunique(), 'blue')}")
-            print(f"   • Modelos analisados: {colored(df['modelo'].nunique(), 'blue')}")
-            print(f"   • Outliers detectados: {colored(f'{len(all_outliers):,}', 'red')} ({colored(f'{len(all_outliers)/len(df)*100:.1f}%', 'red')})")
-            print(f"   • RPM médio da frota: {colored(f'{df.rpm.mean():.0f}', 'blue')} RPM")
-            print(f"   • Velocidade média: {colored(f'{df.velocidade.mean():.1f}', 'blue')} km/h")
-            
-            print(f"\n🏭 {colored('ANÁLISE POR MARCA:', 'yellow')}")
-            if len(marca_rpm) > 0:
-                print(f"   • Marca mais eficiente: {colored(marca_rpm.index[0], 'green')} ({colored(f'{marca_rpm.iloc[0]:.0f}', 'green')} RPM)")
-                print(f"   • Marca menos eficiente: {colored(marca_rpm.index[-1], 'red')} ({colored(f'{marca_rpm.iloc[-1]:.0f}', 'red')} RPM)")
-            
-            print(f"\n🎯 {colored('ANÁLISE DE DISPERSÃO:', 'yellow')}")
-            print(f"   • Unidades fora do padrão: {colored(len(desvios_detalhados), 'red')}")
-            print(f"   • Marcas com análise de dispersão: {colored(len(desvios_por_marca), 'blue')}")
-            
-            if desvios_por_marca:
-                marca_mais_problemas = max(desvios_por_marca, key=lambda x: desvios_por_marca[x]['percentual_fora_padrao'])
-                print(f"   • Marca com mais unidades fora do padrão: {colored(marca_mais_problemas, 'red')} ({colored(f'{desvios_por_marca[marca_mais_problemas]['percentual_fora_padrao']:.1f}%', 'red')})")
-            
-            print(f"\n📁 {colored('ARQUIVOS GERADOS:', 'yellow')}")
-            print(f"   • estudo_02_estatisticas_descritivas.xlsx")
-            print(f"   • estudo_02_outliers_detectados.xlsx") 
-            print(f"   • estudo_02_analise_por_unidade.xlsx")
-            print(f"   • estudo_02_analise_por_marca.xlsx")
-            print(f"   • estudo_02_analise_por_modelo.xlsx")
-            print(f"   • estudo_02_comparativo_marcas.xlsx")
-            print(f"   • estudo_02_unidades_fora_padrao.xlsx")
-            print(f"   • estudo_02_dispersao_por_modelo.xlsx")
-            print(f"   • estudo_02_analise_temporal.xlsx")
-            print(f"   • estudo_02_matriz_correlacao.xlsx")
-            print(f"   • estudo_02_analise_clusters.xlsx")
-            print(f"   • estudo_02_padroes_especificos.xlsx")
-            print(f"   • estudo_02_resumo_executivo.xlsx")
-            print(f"   • estudo_02_distribuicoes.png")
-            print(f"   • estudo_02_dispersao_rpm_marcas.png")
-            print(f"   • estudo_02_unidades_fora_padrao_graficos.png")
-            print(f"   • estudo_02_analise_temporal.png")
-            print(f"   • estudo_02_correlacoes.png")
-            
-            print(f"\n🎯 {colored('PRINCIPAIS INSIGHTS:', 'yellow')}")
-            print(f"   • Faixa de RPM mais comum: {colored(df['faixa_rpm'].mode().iloc[0], 'green')}")
-            print(f"   • Horário de maior atividade: {colored(f'{hourly_rpm.idxmax()}h', 'green')}")
-            print(f"   • Correlação RPM-Velocidade: {colored(f'{df.rpm.corr(df.velocidade):.3f}', 'blue')}")
-            if len(marca_rpm) > 1:
-                print(f"   • Diferença de eficiência entre marcas: {colored(f'{marca_rpm.iloc[-1] - marca_rpm.iloc[0]:.0f}', 'yellow')} RPM")
-            
-            return True
-            
-        except Exception as e:
-            print(f"❌ {colored(f'Erro durante a análise: {str(e)}', 'red')}")
-            import traceback
-            traceback.print_exc()
-            return False
-
-
-
-
 ###-----------------------------------------------------------------------------------------------------------------#####
 # INVESTIGAÇÃO #
         #######################################################################################
+    def INVESTIGAÇÃO(self):
 
-    def localizzare(self, token):
-        sid = Wialon.authenticate_with_wialon(token)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+        def localizzare(self, token):
+            sid = Wialon.authenticate_with_wialon(token)
+            if not sid:
+                    self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                    return
+
+            #busca os relatorios
+            relatórios = Wialon.buscadora_reports(sid)
+            #salva os relatorios em .txt no deposito
+            with open(f'{deposito}/localizzare_relatorios.txt', 'w') as f:
+                f.write(json.dumps(relatórios, indent=4))
+
+            unidades = unidades_simples(sid)
+            if not unidades:
+                self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
                 return
+            
+            #coloca os dados em um dataframe
+            df_unidades = pd.DataFrame(unidades)
+            print(f'Unidades encontradas:' , colored(f'{len(df_unidades)}', 'green'))
+            print(f'Unidades: {df_unidades}')
+            #salva as unidades em um excel
+            df_unidades.to_excel(f'{deposito}/localizzare_unidades.xlsx', index=False)
+            #
+            motoristas = Wialon.motoristas_simples2(sid)
+            df_motoristas = pd.DataFrame(motoristas)
+            print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
+            print(f'Motoristas: {df_motoristas}')
+            df_motoristas.to_excel(f'{deposito}/localizzare_motoristas.xlsx', index=False)
 
-        #busca os relatorios
-        relatórios = Wialon.buscadora_reports(sid)
-        #salva os relatorios em .txt no deposito
-        with open(f'{deposito}/localizzare_relatorios.txt', 'w') as f:
-            f.write(json.dumps(relatórios, indent=4))
+            #####
 
-        unidades = unidades_simples(sid)
-        if not unidades:
-            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-            return
-        
-        #coloca os dados em um dataframe
-        df_unidades = pd.DataFrame(unidades)
-        print(f'Unidades encontradas:' , colored(f'{len(df_unidades)}', 'green'))
-        print(f'Unidades: {df_unidades}')
-        #salva as unidades em um excel
-        df_unidades.to_excel(f'{deposito}/localizzare_unidades.xlsx', index=False)
-        #
-        motoristas = Wialon.motoristas_simples2(sid)
-        df_motoristas = pd.DataFrame(motoristas)
-        print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
-        print(f'Motoristas: {df_motoristas}')
-        df_motoristas.to_excel(f'{deposito}/localizzare_motoristas.xlsx', index=False)
+            unidades_db = Unidade.objects.all()
+            unidades_db_ids = [unidade.id for unidade in unidades_db]
+            if unidades_db_ids:
+                unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
 
-        #####
-
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
-
-        processamento_df = pd.DataFrame()
-        unidades_db = unidades_db
-        unidades_db = unidades_db[:5]# Limita a 5 veículos para teste
-        # Coleta dados de relatório para 1 dia
-        
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-
-        processamento_df.to_excel(f'{deposito}/localizzare_veiculos.xlsx', index=False)
-#######
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
-            unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')  # Filtra por empresa CPBRACELL
-        processamento_df = pd.DataFrame()
-        unidades_db = unidades_db
-        unidades_db = unidades_db[:5]  # Limita a 5 motoristas para teste
-        # Coleta dados de relatório para 1 dia
-        
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=1, periodo='Ontem')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-
-        processamento_df.to_excel(f'{deposito}/localizzare_motoristas.xlsx', index=False)
-
-        motoristas = Wialon.motoristas_simples2(sid)
-        df_motoristas = pd.DataFrame(motoristas)
-        print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
-        print(f'Motoristas: {df_motoristas}')
-        #seleciona os 10 primeiros motoristas do dataframe
-        df_motoristas = df_motoristas.head(10)
-        for motorista in df_motoristas.itertuples(index=False):
-            motorista_id = motorista.driver_id
-
-            relatorio = Wialon.Colheitadeira_JSON_02(sid, 401756219, motorista_id, 5, tempo_dias=1, periodo="teste")
-            print(relatorio)
-            Wialon.clean_up_result(sid)
-            relatorio = Wialon.Colheitadeira_JSON_02(sid, 401756219, motorista_id, 58, tempo_dias=1, periodo="teste")
-            print(relatorio)
-            Wialon.clean_up_result(sid)
-
-
-
-
-
-        Wialon.wialon_logout(sid)
-
-    def localizzare2(self, token):
-        sid = Wialon.authenticate_with_wialon(token)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        Wialon.set_locale()
-
-        ###__UNIDADES__TODAS__###
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=1, periodo="Ontem")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_ontem.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=7, periodo="Semana")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_semana.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=30, periodo="Mês")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_mes.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        ###__MOTORISTAS__CPBrascell__###
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=1, periodo="Ontem")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_ontem.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=7, periodo="Semana")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_semana.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-        
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=30, periodo="Mês")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_mes.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        ###__MOTORISTAS__PLACIDO__###
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=1, periodo="Ontem")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_ontem.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=7, periodo="Semana")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_semana.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-        
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=30, periodo="Mês")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_mes.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-
-        Wialon.wialon_logout(sid)
-
-    
-    def localizzare3(self, token):
-        sid = Wialon.authenticate_with_wialon(token)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        Wialon.set_locale()
-        processamento_df = pd.DataFrame()
-
-        ###__UNIDADES__TODAS__###
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=1, periodo="Ontem")
-        print(f'Relatório coletado: {relatorio}')
-
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_ontem.xlsx', index=False)
-            processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
-            print("RESULTADO:")
+            processamento_df = pd.DataFrame()
+            unidades_db = unidades_db
+            unidades_db = unidades_db[:5]# Limita a 5 veículos para teste
+            # Coleta dados de relatório para 1 dia
+            
+            processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
+            print(f'Relatórios coletados para {len(processamento_df)} unidades.')
             print(processamento_df)
 
-        Wialon.clean_up_result(sid)
+            processamento_df.to_excel(f'{deposito}/localizzare_veiculos.xlsx', index=False)
+    #######
+            unidades_db = Unidade.objects.all()
+            unidades_db_ids = [unidade.id for unidade in unidades_db]
+            if unidades_db_ids:
+                unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
+                unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')  # Filtra por empresa CPBRACELL
+            processamento_df = pd.DataFrame()
+            unidades_db = unidades_db
+            unidades_db = unidades_db[:5]  # Limita a 5 motoristas para teste
+            # Coleta dados de relatório para 1 dia
+            
+            processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=1, periodo='Ontem')
+            print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+            print(processamento_df)
 
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=7, periodo="Semana")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_semana.xlsx', index=False)
-        Wialon.clean_up_result(sid)
+            processamento_df.to_excel(f'{deposito}/localizzare_motoristas.xlsx', index=False)
 
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=30, periodo="Mês")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_mes.xlsx', index=False)
-        Wialon.clean_up_result(sid)
+            motoristas = Wialon.motoristas_simples2(sid)
+            df_motoristas = pd.DataFrame(motoristas)
+            print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
+            print(f'Motoristas: {df_motoristas}')
+            #seleciona os 10 primeiros motoristas do dataframe
+            df_motoristas = df_motoristas.head(10)
+            for motorista in df_motoristas.itertuples(index=False):
+                motorista_id = motorista.driver_id
 
-        ###__MOTORISTAS__CPBrascell__###
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=1, periodo="Ontem")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_ontem.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=7, periodo="Semana")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_semana.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-        
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=30, periodo="Mês")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_mes.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        ###__MOTORISTAS__PLACIDO__###
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=1, periodo="Ontem")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_ontem.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=7, periodo="Semana")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_semana.xlsx', index=False)
-        Wialon.clean_up_result(sid)
-        
-        relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=30, periodo="Mês")
-        print(f'Relatório coletado: {relatorio}')
-        if relatorio is not None:
-            relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_mes.xlsx', index=False)
-        Wialon.clean_up_result(sid)
+                relatorio = Wialon.Colheitadeira_JSON_02(sid, 401756219, motorista_id, 5, tempo_dias=1, periodo="teste")
+                print(relatorio)
+                Wialon.clean_up_result(sid)
+                relatorio = Wialon.Colheitadeira_JSON_02(sid, 401756219, motorista_id, 58, tempo_dias=1, periodo="teste")
+                print(relatorio)
+                Wialon.clean_up_result(sid)
 
 
-        Wialon.wialon_logout(sid)
 
-    def atualizador(self,nome="atualizador_unidades"):
-            def comm(msg):
-                print(colored("="*30, "yellow"))
-                print(colored(f"{nome}:","green"))
-                print(f"{msg}")
-                print(colored("="*30, "yellow"))
-            #lista as empresas registradas
-            contador_sessoes = 0
-            empresas = Empresa.objects.all()
-            for empresa in empresas:
-                comm(f'Empresa: {empresa.nome}')
-                # Inicia a sessão Wialon para cada empresa
-                sid=Wialon.authenticate_with_wialon(empresa.token)
-                comm(f'Sessão Wialon iniciada para {empresa.nome}, ID de recurso: {empresa.id_recurso}')
-                if not sid:
+
+
+            Wialon.wialon_logout(sid)
+
+        def localizzare2(self, token):
+            sid = Wialon.authenticate_with_wialon(token)
+            if not sid:
                     self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                    continue
-                if sid:
-                    contador_sessoes += 1
+                    return
+
+            Wialon.set_locale()
+
+            ###__UNIDADES__TODAS__###
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=1, periodo="Ontem")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_ontem.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=7, periodo="Semana")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_semana.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=30, periodo="Mês")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_mes.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+
+            ###__MOTORISTAS__CPBrascell__###
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=1, periodo="Ontem")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_ontem.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=7, periodo="Semana")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_semana.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+            
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=30, periodo="Mês")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_mes.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+
+            ###__MOTORISTAS__PLACIDO__###
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=1, periodo="Ontem")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_ontem.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=7, periodo="Semana")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_semana.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+            
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=30, periodo="Mês")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_mes.xlsx', index=False)
+            Wialon.clean_up_result(sid)
 
 
-                unidades = Wialon.unidades_simples_03(sid,empresa)
+            Wialon.wialon_logout(sid)
+
+        
+        def localizzare3(self, token):
+            sid = Wialon.authenticate_with_wialon(token)
+            if not sid:
+                    self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                    return
+
+            Wialon.set_locale()
+            processamento_df = pd.DataFrame()
+
+            ###__UNIDADES__TODAS__###
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=1, periodo="Ontem")
+            print(f'Relatório coletado: {relatorio}')
+
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_ontem.xlsx', index=False)
+                processamento_df = pd.concat([processamento_df, relatorio], ignore_index=True)
+                print("RESULTADO:")
+                print(processamento_df)
+
+            Wialon.clean_up_result(sid)
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=7, periodo="Semana")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_semana.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=59, reportObjectId=401939391, reportObjectSecId=0, unit_id="teste",  tempo_dias=30, periodo="Mês")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[UMBR]UNIDADES_mes.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+
+            ###__MOTORISTAS__CPBrascell__###
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=1, periodo="Ontem")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_ontem.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=7, periodo="Semana")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_semana.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+            
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401756219, reportTemplateId=58, reportObjectId=401756219, reportObjectSecId=1, unit_id="teste",  tempo_dias=30, periodo="Mês")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[CPB]MOTORISTAS_mes.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+
+            ###__MOTORISTAS__PLACIDO__###
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=1, periodo="Ontem")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_ontem.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=7, periodo="Semana")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_semana.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+            
+            relatorio = Wialon.Colheitadeira_JSON_03(sid, flag=16777218, reportResourceId=401768999, reportTemplateId=48, reportObjectId=401768999, reportObjectSecId=1, unit_id="teste",  tempo_dias=30, periodo="Mês")
+            print(f'Relatório coletado: {relatorio}')
+            if relatorio is not None:
+                relatorio.to_excel(f'{deposito}/relatorio_[PLA]MOTORISTAS_mes.xlsx', index=False)
+            Wialon.clean_up_result(sid)
+
+
+            Wialon.wialon_logout(sid)
+
+        def atualizador(self,nome="atualizador_unidades"):
+                def comm(msg):
+                    print(colored("="*30, "yellow"))
+                    print(colored(f"{nome}:","green"))
+                    print(f"{msg}")
+                    print(colored("="*30, "yellow"))
+                #lista as empresas registradas
+                contador_sessoes = 0
+                empresas = Empresa.objects.all()
+                for empresa in empresas:
+                    comm(f'Empresa: {empresa.nome}')
+                    # Inicia a sessão Wialon para cada empresa
+                    sid=Wialon.authenticate_with_wialon(empresa.token)
+                    comm(f'Sessão Wialon iniciada para {empresa.nome}, ID de recurso: {empresa.id_recurso}')
+                    if not sid:
+                        self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                        continue
+                    if sid:
+                        contador_sessoes += 1
+
+
+                    unidades = Wialon.unidades_simples_03(sid,empresa)
+                    if not unidades:
+                        self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
+                        return
+
+                    comm(f'Unidades encontradas: {len(unidades)}')
+                    #
+                    #+-----
+                    #print(f'Unidades: {colored(f"{unidades}", "green")}')
+                    #+-----
+                    #
+
+                    #coloca os dados em um dataframe
+                    df_unidades = pd.DataFrame(unidades)
+                    comm(f'Unidades encontradas: {len(df_unidades)}')
+                    comm(f'Unidades: {df_unidades}')
+                    #
+                    #+-----
+                    #df_unidades.to_excel(f'{deposito}/{empresa.nome}_unidades.xlsx', index=False)
+                    #comm(f'Arquivo {deposito}/{empresa.nome}_unidades.xlsx salvo.')
+                    #+-----
+                    #
+                    
+
+                    for unidade in df_unidades.itertuples(index=False):
+                        id=unidade.unit_id
+                        nome=unidade.unit_name
+                        marca=unidade.brand
+                        modelo=unidade.model
+                        ano=unidade.year
+                        cor=unidade.color
+                        placa=unidade.registration_plate
+                        cls = 'Veículo'
+                        unidade_id = f"{empresa.nome}_{id}"
+
+                        #
+                        #+---
+                        #comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
+                        #+---
+                        #
+
+                        # Atualiza a unidade no banco de dados
+                        Veiculo.objects.update_or_create(
+                            id=unidade_id,
+                            defaults={
+                                'nm': nome,
+                                'placa': placa,
+                                'marca': marca,
+                                'cls': cls,
+                                'empresa': empresa,
+                                'cor': cor,
+                                'modelo': modelo,
+                                'id_wialon': id,
+                            }
+                        )
+                        comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
+                    
+                    #adiciona também os motoristas
+
+                    motoristas = Wialon.motoristas_simples2(sid)
+                    df_motoristas = pd.DataFrame(motoristas)
+                    comm(f'Motoristas encontrados: {len(df_motoristas)}')
+                    comm(f'Motoristas: {df_motoristas}')
+                    for motorista in df_motoristas.itertuples(index=False):
+                        motorista_id = motorista.driver_id
+                        motorista_nome = motorista.driver_name
+                        cls = 'Motorista'
+
+
+                        motorista_id = f"{empresa.nome}_{motorista_id}"
+
+                        comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
+
+                        # Atualiza o motorista no banco de dados
+                        Unidade.objects.update_or_create(
+                            id=motorista_id,
+                            defaults={
+                                'nm': motorista_nome,
+                                'cls': cls,
+                                'empresa': empresa,
+                                'id_wialon': motorista_id,
+                            }
+                            
+                        )
+                #faz logout
+                Wialon.wialon_logout(sid)
+                return contador_sessoes
+
+                #-------------------------------------------------------------------------------------------------------------#
+
+        def atualizador_02(self,sid, nome="atualizador_unidades", empresa='CPBracell', flags=8388609):
+                def comm(msg):
+                    print(colored("="*30, "yellow"))
+                    print(colored(f"{nome}:","green"))
+                    print(f"{msg}")
+                    print(colored("="*30, "yellow"))
+
+
+                unidades = Wialon.unidades_simples_04(sid, empresa=empresa, flags=flags)
                 if not unidades:
                     self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
                     return
@@ -4314,7 +2524,7 @@ class Command(BaseCommand):
                     cor=unidade.color
                     placa=unidade.registration_plate
                     cls = 'Veículo'
-                    unidade_id = f"{empresa.nome}_{id}"
+                    unidade_id = f"{empresa}_{id}"
 
                     #
                     #+---
@@ -4350,200 +2560,6 @@ class Command(BaseCommand):
                     cls = 'Motorista'
 
 
-                    motorista_id = f"{empresa.nome}_{motorista_id}"
-
-                    comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
-
-                    # Atualiza o motorista no banco de dados
-                    Unidade.objects.update_or_create(
-                        id=motorista_id,
-                        defaults={
-                            'nm': motorista_nome,
-                            'cls': cls,
-                            'empresa': empresa,
-                            'id_wialon': motorista_id,
-                        }
-                        
-                    )
-            #faz logout
-            Wialon.wialon_logout(sid)
-            return contador_sessoes
-
-            #-------------------------------------------------------------------------------------------------------------#
-
-    def atualizador_02(self,sid, nome="atualizador_unidades", empresa='CPBracell', flags=8388609):
-            def comm(msg):
-                print(colored("="*30, "yellow"))
-                print(colored(f"{nome}:","green"))
-                print(f"{msg}")
-                print(colored("="*30, "yellow"))
-
-
-            unidades = Wialon.unidades_simples_04(sid, empresa=empresa, flags=flags)
-            if not unidades:
-                self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-                return
-
-            comm(f'Unidades encontradas: {len(unidades)}')
-            #
-            #+-----
-            #print(f'Unidades: {colored(f"{unidades}", "green")}')
-            #+-----
-            #
-
-            #coloca os dados em um dataframe
-            df_unidades = pd.DataFrame(unidades)
-            comm(f'Unidades encontradas: {len(df_unidades)}')
-            comm(f'Unidades: {df_unidades}')
-            #
-            #+-----
-            #df_unidades.to_excel(f'{deposito}/{empresa.nome}_unidades.xlsx', index=False)
-            #comm(f'Arquivo {deposito}/{empresa.nome}_unidades.xlsx salvo.')
-            #+-----
-            #
-            
-
-            for unidade in df_unidades.itertuples(index=False):
-                id=unidade.unit_id
-                nome=unidade.unit_name
-                marca=unidade.brand
-                modelo=unidade.model
-                ano=unidade.year
-                cor=unidade.color
-                placa=unidade.registration_plate
-                cls = 'Veículo'
-                unidade_id = f"{empresa}_{id}"
-
-                #
-                #+---
-                #comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
-                #+---
-                #
-
-                # Atualiza a unidade no banco de dados
-                Veiculo.objects.update_or_create(
-                    id=unidade_id,
-                    defaults={
-                        'nm': nome,
-                        'placa': placa,
-                        'marca': marca,
-                        'cls': cls,
-                        'empresa': empresa,
-                        'cor': cor,
-                        'modelo': modelo,
-                        'id_wialon': id,
-                    }
-                )
-                comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
-            
-            #adiciona também os motoristas
-
-            motoristas = Wialon.motoristas_simples2(sid)
-            df_motoristas = pd.DataFrame(motoristas)
-            comm(f'Motoristas encontrados: {len(df_motoristas)}')
-            comm(f'Motoristas: {df_motoristas}')
-            for motorista in df_motoristas.itertuples(index=False):
-                motorista_id = motorista.driver_id
-                motorista_nome = motorista.driver_name
-                cls = 'Motorista'
-
-
-                motorista_id = f"{empresa}_{motorista_id}"
-
-                comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa}')
-
-                # Atualiza o motorista no banco de dados
-                Unidade.objects.update_or_create(
-                    id=motorista_id,
-                    defaults={
-                        'nm': motorista_nome,
-                        'cls': cls,
-                        'empresa': empresa,
-                        'id_wialon': motorista_id,
-                    }
-                    
-                )
-
-    def atualizador_03(self,sid,id_criador,  flags=8388613):
-        
-
-        def comm(msg):
-            print(colored("="*30, "yellow"))
-            print(colored(f"Atualizador de Unidades:","green"))
-            print(f"{msg}")
-            print(colored("="*30, "yellow"))
-
-
-        unidades = Wialon.unidades_simples_05(sid,  flags=flags)
-        if not unidades:
-            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-            return
-
-        comm(f'Unidades encontradas: {len(unidades)}')
-        #coloca os dados em um dataframe
-        df_unidades = pd.DataFrame(unidades)
-        comm(f'Unidades encontradas: {len(df_unidades)}')
-        comm(f'Unidades: {df_unidades}')
-
-        for unidade in df_unidades.itertuples(index=False):
-            id=unidade.unit_id
-            nome=unidade.unit_name
-            marca=unidade.brand
-            modelo=unidade.model
-            ano=unidade.year
-            cor=unidade.color
-            placa=unidade.registration_plate
-            cls = 'Veículo'
-            id_criador_unidade = unidade.id_criador
-            if id_criador_unidade == id_criador:
-                print(f'A unidade {nome} pertence à empresa CARGO POLO.')
-                empresa = Empresa.objects.get(id_criador=id_criador)
-                print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
-                empresa_nome = empresa.nome
-                unidade_id = f"{empresa.nome}_{id}"
-
-
-                comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
-                #+---
-                # Atualiza a unidade no banco de dados
-                Veiculo.objects.update_or_create(
-                    id=unidade_id,
-                    defaults={
-                        'nm': nome,
-                        'placa': placa,
-                        'marca': marca,
-                        'cls': cls,
-                        'empresa': empresa,
-                        'cor': cor,
-                        'modelo': modelo,
-                        'id_wialon': id,
-                    }
-                )
-                comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
-            else:
-                comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
-
-            #adiciona também os motoristas
-
-            motoristas = Wialon.motoristas_simples_03(sid, flags=5)
-            df_motoristas = pd.DataFrame(motoristas)
-            comm(f'Motoristas encontrados: {len(df_motoristas)}')
-            comm(f'Motoristas: {df_motoristas}')
-
-
-            for motorista in df_motoristas.itertuples(index=False):
-                motorista_id = motorista.driver_id
-                motorista_nome = motorista.driver_name
-                cls = 'Motorista'
-                id_criador_unidade = unidade.id_criador
-                if id_criador_unidade == id_criador:
-                    print(f'A unidade {nome} pertence à empresa CARGO POLO.')
-                    empresa = Empresa.objects.get(id_criador=id_criador)
-                    print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
-                    empresa_nome = empresa.nome
-                    unidade_id = f"{empresa.nome}_{id}"
-
-
                     motorista_id = f"{empresa}_{motorista_id}"
 
                     comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa}')
@@ -4559,780 +2575,691 @@ class Command(BaseCommand):
                         }
                         
                     )
+
+        def atualizador_03(self,sid,id_criador,  flags=8388613):
+            
+
+            def comm(msg):
+                print(colored("="*30, "yellow"))
+                print(colored(f"Atualizador de Unidades:","green"))
+                print(f"{msg}")
+                print(colored("="*30, "yellow"))
+
+
+            unidades = Wialon.unidades_simples_05(sid,  flags=flags)
+            if not unidades:
+                self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
+                return
+
+            comm(f'Unidades encontradas: {len(unidades)}')
+            #coloca os dados em um dataframe
+            df_unidades = pd.DataFrame(unidades)
+            comm(f'Unidades encontradas: {len(df_unidades)}')
+            comm(f'Unidades: {df_unidades}')
+
+            for unidade in df_unidades.itertuples(index=False):
+                id=unidade.unit_id
+                nome=unidade.unit_name
+                marca=unidade.brand
+                modelo=unidade.model
+                ano=unidade.year
+                cor=unidade.color
+                placa=unidade.registration_plate
+                cls = 'Veículo'
+                id_criador_unidade = unidade.id_criador
+                if id_criador_unidade == id_criador:
+                    print(f'A unidade {nome} pertence à empresa CARGO POLO.')
+                    empresa = Empresa.objects.get(id_criador=id_criador)
+                    print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
+                    empresa_nome = empresa.nome
+                    unidade_id = f"{empresa.nome}_{id}"
+
+
+                    comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
+                    #+---
+                    # Atualiza a unidade no banco de dados
+                    Veiculo.objects.update_or_create(
+                        id=unidade_id,
+                        defaults={
+                            'nm': nome,
+                            'placa': placa,
+                            'marca': marca,
+                            'cls': cls,
+                            'empresa': empresa,
+                            'cor': cor,
+                            'modelo': modelo,
+                            'id_wialon': id,
+                        }
+                    )
+                    comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
                 else:
                     comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
 
+                #adiciona também os motoristas
+
+                motoristas = Wialon.motoristas_simples_03(sid, flags=5)
+                df_motoristas = pd.DataFrame(motoristas)
+                comm(f'Motoristas encontrados: {len(df_motoristas)}')
+                comm(f'Motoristas: {df_motoristas}')
 
 
-    def atualizador_04(self,sid,id_criador,  flags=8388613):
-        
-
-        def comm(msg):
-            print(colored("="*30, "yellow"))
-            print(colored(f"Atualizador de Unidades V4:","green"))
-            print(f"{msg}")
-            print(colored("="*30, "yellow"))
-                
-                
-        empresa = Empresa.objects.get(id_criador=id_criador)
-
-        vcl_processados = 0
-        vcl_excludentes = 0
-        mtr_processados = 0
-        mtr_excludentes = 0
+                for motorista in df_motoristas.itertuples(index=False):
+                    motorista_id = motorista.driver_id
+                    motorista_nome = motorista.driver_name
+                    cls = 'Motorista'
+                    id_criador_unidade = unidade.id_criador
+                    if id_criador_unidade == id_criador:
+                        print(f'A unidade {nome} pertence à empresa CARGO POLO.')
+                        empresa = Empresa.objects.get(id_criador=id_criador)
+                        print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
+                        empresa_nome = empresa.nome
+                        unidade_id = f"{empresa.nome}_{id}"
 
 
-        unidades = Wialon.unidades_simples_05(sid,  flags=flags)
-        if not unidades:
-            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-            return
+                        motorista_id = f"{empresa}_{motorista_id}"
 
-        #coloca os dados em um dataframe
-        df_unidades = pd.DataFrame(unidades)
-        #+---
-        #comm(f'Unidades encontradas: {len(df_unidades)}')
-        #comm(f'Unidades: {df_unidades}')
-        #+---
+                        comm(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa}')
 
-        for unidade in df_unidades.itertuples(index=False):
-            id=unidade.unit_id
-            nome=unidade.unit_name
-            marca=unidade.brand
-            modelo=unidade.model
-            ano=unidade.year
-            cor=unidade.color
-            placa=unidade.registration_plate
-            cls = 'Veículo'
-            id_criador_unidade = unidade.id_criador
-            if id_criador_unidade == id_criador:
+                        # Atualiza o motorista no banco de dados
+                        Unidade.objects.update_or_create(
+                            id=motorista_id,
+                            defaults={
+                                'nm': motorista_nome,
+                                'cls': cls,
+                                'empresa': empresa,
+                                'id_wialon': motorista_id,
+                            }
+                            
+                        )
+                    else:
+                        comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
 
-                #+---
-                #print(f'A unidade {nome} pertence à empresa {empresa.nome}')
-                #print(colored(f'Empresa encontrada: {empresa.nome}, ID Criador: {empresa.id_criador}', 'red'))
-                #+---
-                #+---   
-                #comm(f'Nome da unidade: {nome}, Marca: {marca}, Modelo: {modelo}, Ano: {ano}, Cor: {cor}, Placa: {placa}')
-                #+---
-                
-                # Atualiza a unidade no banco de dados
-                Veiculo.objects.update_or_create(
-                    id=f"{empresa.nome}_{id}",
-                    defaults={
-                        'nm': nome,
-                        'placa': placa,
-                        'marca': marca,
-                        'cls': cls,
-                        'empresa': empresa,
-                        'cor': cor,
-                        'modelo': modelo,
-                        'id_wialon': id,
-                    }
-                )
-                vcl_processados += 1
-                #+---
-                #comm(f'Veículo {nome} atualizado/criado com ID {unidade_id}.')
-                #+---
 
-            else:
-                vcl_excludentes += 1
-                #+---
-                #comm(f'A unidade {nome} não pertence à empresa CARGO POLO. ID Criador: {id_criador_unidade}')
-                #+---
 
-        #adiciona também os motoristas
 
-        motoristas = Wialon.motoristas_simples_03(sid, flags=261)
-        df_motoristas = pd.DataFrame(motoristas)
+        def atualizador_teste(self, sid, nome="atualizador_unidades_04", flags=8388613):
+            def comm(msg):
+                print(colored("="*30, "yellow"))
+                print(colored(f"{nome}:", "green"))
+                print(f"{msg}")
+                print(colored("="*30, "yellow"))
 
-        #+---
-        #comm(f'Motoristas encontrados: {len(df_motoristas)}')
-        #comm(f'Motoristas: {df_motoristas}')
-        #+---
+            unidades = Wialon.unidades_simples_05(sid, flags=flags)
+            if not unidades:
+                self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
+                return
 
-        
-
-        for motorista in df_motoristas.itertuples(index=False):
-            if motorista.creator_id == id_criador:
-                #+---
-                #comm(f'O motorista {motorista.driver_name} pertence à empresa CARGO POLO.')
-                #+---
-                Unidade.objects.update_or_create(
-                    id=f"{empresa.nome}_{motorista.driver_id}",
-                    defaults={
-                        'nm': motorista.driver_name,
-                        'cls': 'Motorista',
-                        'empresa': empresa,
-                        'id_wialon': f"{motorista.driver_name}_{motorista.driver_id}",
-                    }
-                )
-                mtr_processados += 1
-                #+---
-                #comm(f'Motorista {motorista.driver_name} atualizado/criado com ID {empresa.nome}_{motorista.driver_id}.')
-                #+---
-                
-
-            else:
-                mtr_excludentes += 1
-                #+---
-                #comm(f'O motorista {motorista.driver_name} não pertence à empresa CARGO POLO. ID Criador: {motorista.creator_id}')
-                #+---
-                
+            comm(f'Unidades encontradas: {len(unidades)}')
             
-
-        comm(f'{colored("Resumo:", "magenta")}\n'
-            f'Veículos processados: {colored(vcl_processados, "green")}\n'
-            f'Veículos excluídos: {colored(vcl_excludentes, "red")}\n'
-            f'Motoristas processados: {colored(mtr_processados, "green")}\n'
-            f'Motoristas excluídos: {colored(mtr_excludentes, "red")}\n'
-            f'Motoristas encontrados: {len(df_motoristas)}\n'
-            f'{df_motoristas.head()}'
-        )
-
-
-    def atualizador_teste(self, sid, nome="atualizador_unidades_04", flags=8388613):
-        def comm(msg):
-            print(colored("="*30, "yellow"))
-            print(colored(f"{nome}:", "green"))
-            print(f"{msg}")
-            print(colored("="*30, "yellow"))
-
-        unidades = Wialon.unidades_simples_05(sid, flags=flags)
-        if not unidades:
-            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-            return
-
-        comm(f'Unidades encontradas: {len(unidades)}')
-        
-        # Coloca os dados em um dataframe
-        df_unidades = pd.DataFrame(unidades)
-        comm(f'Unidades encontradas: {len(df_unidades)}')
-        
-        # Busca todas as empresas cadastradas com seus id_criador
-        empresas_dict = {}
-        empresas = Empresa.objects.all()
-        
-        for empresa in empresas:
-            if empresa.id_criador:
-                empresas_dict[empresa.id_criador] = empresa
-                comm(f'Empresa cadastrada: {empresa.nome} - ID Criador: {empresa.id_criador}')
-
-        if not empresas_dict:
-            comm("⚠️ Nenhuma empresa com id_criador encontrada. Verifique o cadastro das empresas.")
-            return
-
-        # Contadores para estatísticas
-        unidades_processadas = 0
-        unidades_vinculadas = 0
-        unidades_sem_empresa = 0
-
-        for unidade in df_unidades.itertuples(index=False):
-            unidades_processadas += 1
+            # Coloca os dados em um dataframe
+            df_unidades = pd.DataFrame(unidades)
+            comm(f'Unidades encontradas: {len(df_unidades)}')
             
-            # Extrai dados da unidade
-            unit_id = unidade.unit_id
-            unit_name = unidade.unit_name
-            id_criador_unidade = unidade.id_criador
+            # Busca todas as empresas cadastradas com seus id_criador
+            empresas_dict = {}
+            empresas = Empresa.objects.all()
             
-            # Extrai campos do profile se existirem
-            brand = getattr(unidade, 'brand', '')
-            model = getattr(unidade, 'model', '')
-            year = getattr(unidade, 'year', '')
-            color = getattr(unidade, 'color', '')
-            registration_plate = getattr(unidade, 'registration_plate', '')
-            
-            # Verifica se a unidade pertence a alguma empresa cadastrada
-            empresa_vinculada = empresas_dict.get(id_criador_unidade)
-            
-            if empresa_vinculada:
-                unidades_vinculadas += 1
-                cls = 'Veículo'
+            for empresa in empresas:
+                if empresa.id_criador:
+                    empresas_dict[empresa.id_criador] = empresa
+                    comm(f'Empresa cadastrada: {empresa.nome} - ID Criador: {empresa.id_criador}')
+
+            if not empresas_dict:
+                comm("⚠️ Nenhuma empresa com id_criador encontrada. Verifique o cadastro das empresas.")
+                return
+
+            # Contadores para estatísticas
+            unidades_processadas = 0
+            unidades_vinculadas = 0
+            unidades_sem_empresa = 0
+
+            for unidade in df_unidades.itertuples(index=False):
+                unidades_processadas += 1
                 
-                # Cria o ID único da unidade
-                unidade_id = f"{empresa_vinculada.nome}_{unit_id}"
+                # Extrai dados da unidade
+                unit_id = unidade.unit_id
+                unit_name = unidade.unit_name
+                id_criador_unidade = unidade.id_criador
                 
-                comm(f'✅ Unidade {unit_name} pertence à empresa {empresa_vinculada.nome}')
-                comm(f'   Marca: {brand}, Modelo: {model}, Ano: {year}, Cor: {color}, Placa: {registration_plate}')
+                # Extrai campos do profile se existirem
+                brand = getattr(unidade, 'brand', '')
+                model = getattr(unidade, 'model', '')
+                year = getattr(unidade, 'year', '')
+                color = getattr(unidade, 'color', '')
+                registration_plate = getattr(unidade, 'registration_plate', '')
                 
-                # Atualiza/cria a unidade no banco de dados
-                try:
-                    veiculo, created = Veiculo.objects.update_or_create(
-                        id=unidade_id,
-                        defaults={
-                            'nm': unit_name,
-                            'placa': registration_plate,
-                            'marca': brand,
-                            'cls': cls,
-                            'empresa': empresa_vinculada,
-                            'cor': color,
-                            'modelo': model,
-                            'ano': int(year) if year and str(year).isdigit() else None,
-                            'id_wialon': unit_id,
-                            'id_criador': id_criador_unidade,
-                        }
-                    )
+                # Verifica se a unidade pertence a alguma empresa cadastrada
+                empresa_vinculada = empresas_dict.get(id_criador_unidade)
+                
+                if empresa_vinculada:
+                    unidades_vinculadas += 1
+                    cls = 'Veículo'
                     
-                    action = "criado" if created else "atualizado"
-                    comm(f'✅ Veículo {unit_name} {action} com ID {unidade_id}')
+                    # Cria o ID único da unidade
+                    unidade_id = f"{empresa_vinculada.nome}_{unit_id}"
                     
-                except Exception as e:
-                    comm(f'❌ Erro ao processar veículo {unit_name}: {e}')
+                    comm(f'✅ Unidade {unit_name} pertence à empresa {empresa_vinculada.nome}')
+                    comm(f'   Marca: {brand}, Modelo: {model}, Ano: {year}, Cor: {color}, Placa: {registration_plate}')
                     
-            else:
-                unidades_sem_empresa += 1
-                comm(f'⚠️ Unidade {unit_name} (ID Criador: {id_criador_unidade}) não pertence a nenhuma empresa cadastrada')
+                    # Atualiza/cria a unidade no banco de dados
+                    try:
+                        veiculo, created = Veiculo.objects.update_or_create(
+                            id=unidade_id,
+                            defaults={
+                                'nm': unit_name,
+                                'placa': registration_plate,
+                                'marca': brand,
+                                'cls': cls,
+                                'empresa': empresa_vinculada,
+                                'cor': color,
+                                'modelo': model,
+                                'ano': int(year) if year and str(year).isdigit() else None,
+                                'id_wialon': unit_id,
+                                'id_criador': id_criador_unidade,
+                            }
+                        )
+                        
+                        action = "criado" if created else "atualizado"
+                        comm(f'✅ Veículo {unit_name} {action} com ID {unidade_id}')
+                        
+                    except Exception as e:
+                        comm(f'❌ Erro ao processar veículo {unit_name}: {e}')
+                        
+                else:
+                    unidades_sem_empresa += 1
+                    comm(f'⚠️ Unidade {unit_name} (ID Criador: {id_criador_unidade}) não pertence a nenhuma empresa cadastrada')
 
-        # Processamento dos motoristas (se necessário)
-        comm("Processando motoristas...")
-        motoristas = Wialon.motoristas_simples2(sid)
-        df_motoristas = pd.DataFrame(motoristas)
-        
-        motoristas_processados = 0
-        motoristas_vinculados = 0
-        
-        for motorista in df_motoristas.itertuples(index=False):
-            motoristas_processados += 1
+            # Processamento dos motoristas (se necessário)
+            comm("Processando motoristas...")
+            motoristas = Wialon.motoristas_simples2(sid)
+            df_motoristas = pd.DataFrame(motoristas)
             
-            motorista_id_wialon = motorista.driver_id
-            motorista_nome = motorista.driver_name
-            resource_id = motorista.resource_id
+            motoristas_processados = 0
+            motoristas_vinculados = 0
             
-            # Tenta identificar a empresa do motorista pelo resource_id
-            # (assumindo que o resource corresponde ao id_criador da empresa)
-            empresa_motorista = empresas_dict.get(str(resource_id))
-            
-            if empresa_motorista:
-                motoristas_vinculados += 1
-                cls = 'Motorista'
-                motorista_id = f"{empresa_motorista.nome}_{motorista_id_wialon}"
+            for motorista in df_motoristas.itertuples(index=False):
+                motoristas_processados += 1
+                
+                motorista_id_wialon = motorista.driver_id
+                motorista_nome = motorista.driver_name
+                resource_id = motorista.resource_id
+                
+                # Tenta identificar a empresa do motorista pelo resource_id
+                # (assumindo que o resource corresponde ao id_criador da empresa)
+                empresa_motorista = empresas_dict.get(str(resource_id))
+                
+                if empresa_motorista:
+                    motoristas_vinculados += 1
+                    cls = 'Motorista'
+                    motorista_id = f"{empresa_motorista.nome}_{motorista_id_wialon}"
 
-                comm(f'✅ Motorista {motorista_nome} pertence à empresa {empresa_motorista.nome}')
+                    comm(f'✅ Motorista {motorista_nome} pertence à empresa {empresa_motorista.nome}')
 
-                try:
-                    unidade, created = Unidade.objects.update_or_create(
-                        id=motorista_id,
-                        defaults={
-                            'nm': motorista_nome,
-                            'cls': cls,
-                            'empresa': empresa_motorista,
-                            'id_wialon': motorista_id_wialon,
-                        }
-                    )
-                    
-                    action = "criado" if created else "atualizado"
-                    comm(f'✅ Motorista {motorista_nome} {action} com ID {motorista_id}')
-                    
-                except Exception as e:
-                    comm(f'❌ Erro ao processar motorista {motorista_nome}: {e}')
-            else:
-                comm(f'⚠️ Motorista {motorista_nome} (Resource ID: {resource_id}) não pertence a nenhuma empresa cadastrada')
+                    try:
+                        unidade, created = Unidade.objects.update_or_create(
+                            id=motorista_id,
+                            defaults={
+                                'nm': motorista_nome,
+                                'cls': cls,
+                                'empresa': empresa_motorista,
+                                'id_wialon': motorista_id_wialon,
+                            }
+                        )
+                        
+                        action = "criado" if created else "atualizado"
+                        comm(f'✅ Motorista {motorista_nome} {action} com ID {motorista_id}')
+                        
+                    except Exception as e:
+                        comm(f'❌ Erro ao processar motorista {motorista_nome}: {e}')
+                else:
+                    comm(f'⚠️ Motorista {motorista_nome} (Resource ID: {resource_id}) não pertence a nenhuma empresa cadastrada')
 
-        # Relatório final
-        comm("="*50)
-        comm("RELATÓRIO FINAL:")
-        comm(f"📊 Unidades processadas: {unidades_processadas}")
-        comm(f"✅ Unidades vinculadas: {unidades_vinculadas}")
-        comm(f"⚠️ Unidades sem empresa: {unidades_sem_empresa}")
-        comm(f"📊 Motoristas processados: {motoristas_processados}")
-        comm(f"✅ Motoristas vinculados: {motoristas_vinculados}")
-        comm("="*50)
+            # Relatório final
+            comm("="*50)
+            comm("RELATÓRIO FINAL:")
+            comm(f"📊 Unidades processadas: {unidades_processadas}")
+            comm(f"✅ Unidades vinculadas: {unidades_vinculadas}")
+            comm(f"⚠️ Unidades sem empresa: {unidades_sem_empresa}")
+            comm(f"📊 Motoristas processados: {motoristas_processados}")
+            comm(f"✅ Motoristas vinculados: {motoristas_vinculados}")
+            comm("="*50)
 
-        # Salva log detalhado se necessário
-        if unidades_sem_empresa > 0:
-            comm(f"⚠️ {unidades_sem_empresa} unidades não puderam ser vinculadas.")
-            comm("Verifique se os id_criador das empresas estão corretos no banco de dados.")
+            # Salva log detalhado se necessário
+            if unidades_sem_empresa > 0:
+                comm(f"⚠️ {unidades_sem_empresa} unidades não puderam ser vinculadas.")
+                comm("Verifique se os id_criador das empresas estão corretos no banco de dados.")
 
 
     ############################################################################################
     ###+---------------------------------------------------------------------------------------------+
     # DEMOLIÇÃO #
-    def CLTDR_UMBRELLA(self):
-        def comm(msg):
-            print(colored("="*30, "blue"))
-            print(colored("CLTDR_UMBRELLA:","green"))
-            print(f"{msg}")
-            print(colored("="*30, "blue"))
-        
-        comm("Iniciando processamento global...")
-        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        #Wialon.set_locale()
-
-        ###__UNIDADES__TODAS__###
-        comm("Processando Unidades...")
-        processamento_df = pd.DataFrame()
-
-        ###
-
-
-        ###__CARGO__POLO__###
-        # VEÍCULOS
-        self.CARGO_POLO_veiculos(sid, processamento_df)
-        processamento_df = pd.DataFrame()
-
-        #motoristas
-        self.CARGO_POLO_motoristas(sid, processamento_df)
-        processamento_df = pd.DataFrame()
-
-        self.CARGO_POLO(sid)
-
-        ###__PLACIDO__###
-        # VEÍCULOS
-        self.PLACIDO_veiculos(sid, processamento_df)
-        processamento_df = pd.DataFrame()
-
-        #Motoristas
-        self.PLACIDO_motoristas(sid, processamento_df)
-        processamento_df = pd.DataFrame()
-
-        ###__SFRESGATE__###
-        # VEÍCULOS
-        self.SFRESGATE_veiculos(sid, processamento_df)
-        processamento_df = pd.DataFrame()
-        
-        #motoristas 
-        self.SFRESGATE_motoristas(sid, processamento_df)
-        processamento_df = pd.DataFrame()
-
-        ###__checkpoints e infrações__###
-        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
-        processamento_df = pd.DataFrame()   
-
-        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
-        processamento_df = pd.DataFrame()
-
-        Wialon.wialon_logout(sid)
-
-    def SFRESGATE_motoristas(self, sid, processamento_df):
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-    def SFRESGATE_veiculos(self, sid, processamento_df):
-        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=1, periodo="Ontem")
-        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=7, periodo="Últimos 7 dias")
-        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=30, periodo="Últimos 30 dias")
-
-    def PLACIDO_motoristas(self, sid, processamento_df):
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-    def PLACIDO_veiculos(self, sid, processamento_df):
-        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=1, periodo="Ontem")
-        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=7, periodo="Últimos 7 dias")
-        self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=30, periodo="Últimos 30 dias")
-
-    def CARGO_POLO_motoristas(self, sid, processamento_df):
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-    def CARGO_POLO_veiculos(self, sid, processamento_df):
-        self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=1, periodo="Ontem")
-        self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=7, periodo="Últimos 7 dias")
-        self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=30, periodo="Últimos 30 dias")
-    
-        
-        
-    def atualizar_01(self):
-        #lista as empresas registradas
-        empresas = Empresa.objects.all()
-        for empresa in empresas:
-            print(f'Empresa: {empresa.nome}')
-            # Inicia a sessão Wialon para cada empresa
-            sid=Wialon.authenticate_with_wialon(empresa.token)
-            print(f'Sessão Wialon iniciada para {empresa.nome}, ID de recurso: {empresa.id_recurso}')
+    def DEMOLICAO(self):
+        def CLTDR_UMBRELLA(self):
+            def comm(msg):
+                print(colored("="*30, "blue"))
+                print(colored("CLTDR_UMBRELLA:","green"))
+                print(f"{msg}")
+                print(colored("="*30, "blue"))
+            
+            comm("Iniciando processamento global...")
+            sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
             if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                continue
+                    self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                    return
+
+            #Wialon.set_locale()
+
+            ###__UNIDADES__TODAS__###
+            comm("Processando Unidades...")
+            processamento_df = pd.DataFrame()
+
+            ###
+
+
+            ###__CARGO__POLO__###
+            # VEÍCULOS
+            self.CARGO_POLO_veiculos(sid, processamento_df)
+            processamento_df = pd.DataFrame()
+
+            #motoristas
+            self.CARGO_POLO_motoristas(sid, processamento_df)
+            processamento_df = pd.DataFrame()
+
+            self.CARGO_POLO(sid)
+
+            ###__PLACIDO__###
+            # VEÍCULOS
+            self.PLACIDO_veiculos(sid, processamento_df)
+            processamento_df = pd.DataFrame()
+
+            #Motoristas
+            self.PLACIDO_motoristas(sid, processamento_df)
+            processamento_df = pd.DataFrame()
+
+            ###__SFRESGATE__###
+            # VEÍCULOS
+            self.SFRESGATE_veiculos(sid, processamento_df)
+            processamento_df = pd.DataFrame()
+            
+            #motoristas 
+            self.SFRESGATE_motoristas(sid, processamento_df)
+            processamento_df = pd.DataFrame()
+
+            ###__checkpoints e infrações__###
+            self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
+            processamento_df = pd.DataFrame()   
+
+            self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
+            processamento_df = pd.DataFrame()
+
+            Wialon.wialon_logout(sid)
+
+        def SFRESGATE_motoristas(self, sid, processamento_df):
+            self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777218, dias=1, periodo="Ontem")
+            self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777220, dias=1, periodo="Últimos 7 dias")
+            self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777224, dias=1, periodo="Últimos 30 dias")
+
+        def SFRESGATE_veiculos(self, sid, processamento_df):
+            self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=1, periodo="Ontem")
+            self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=7, periodo="Últimos 7 dias")
+            self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre, dias=30, periodo="Últimos 30 dias")
+
+        def PLACIDO_motoristas(self, sid, processamento_df):
+            self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
+            self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
+            self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
+
+        def PLACIDO_veiculos(self, sid, processamento_df):
+            self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=1, periodo="Ontem")
+            self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=7, periodo="Últimos 7 dias")
+            self.CLTDR_03(sid, processamento_df, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac, dias=30, periodo="Últimos 30 dias")
+
+        def CARGO_POLO_motoristas(self, sid, processamento_df):
+            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
+            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
+            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
+
+        def CARGO_POLO_veiculos(self, sid, processamento_df):
+            self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=1, periodo="Ontem")
+            self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=7, periodo="Últimos 7 dias")
+            self.CLTDR_04(sid, processamento_df, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr, dias=30, periodo="Últimos 30 dias")
+        
+            
+            
+        def atualizar_01(self):
+            #lista as empresas registradas
+            empresas = Empresa.objects.all()
+            for empresa in empresas:
+                print(f'Empresa: {empresa.nome}')
+                # Inicia a sessão Wialon para cada empresa
+                sid=Wialon.authenticate_with_wialon(empresa.token)
+                print(f'Sessão Wialon iniciada para {empresa.nome}, ID de recurso: {empresa.id_recurso}')
+                if not sid:
+                    self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                    continue
+
+                Wialon.set_locale()
+
+                #busca relatórios
+                relatórios = Wialon.buscadora_reports(sid)
+                print(f'Relatórios encontrados: {colored(len(relatórios), "green")}')
+                relatórios = json.dumps(relatórios, indent=4)
+                print(f'Relatórios: {relatórios}')
+                #-------
+                #salva os relatorios em .txt no deposito
+                #with open(f'{deposito}/{empresa.nome}_relatorios.txt', 'w') as f:
+                #    f.write(json.dumps(relatórios, indent=4))
+                #-------
+                unidades = Wialon.unidades_simples(sid)
+                print(f'Unidades encontradas: {colored(len(unidades), "green")}')
+                #-------
+                #for unidade in unidades:
+                #    print(f'Unidade: {unidade}')
+                #-------
+                df_unidades = pd.DataFrame(unidades)
+                print(f'Unidades: {df_unidades}')
+
+
+                motoristas = Wialon.motoristas_simples2(sid)
+                df_motoristas = pd.DataFrame(motoristas)
+                print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
+                print(f'Motoristas: {df_motoristas}')
+                
+                # Atualiza as unidades
+                self.atualiza_unidades(sid, empresa.nome)
+                ###
+
+                #faz logout
+                Wialon.wialon_logout(sid)
+        #+---
+
+
+        def processamento_global(self):
+            print("Iniciando processamento global...")
+            sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+            if not sid:
+                    self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                    return
 
             Wialon.set_locale()
+            processamento_df = pd.DataFrame()
 
-            #busca relatórios
-            relatórios = Wialon.buscadora_reports(sid)
-            print(f'Relatórios encontrados: {colored(len(relatórios), "green")}')
-            relatórios = json.dumps(relatórios, indent=4)
-            print(f'Relatórios: {relatórios}')
-            #-------
-            #salva os relatorios em .txt no deposito
-            #with open(f'{deposito}/{empresa.nome}_relatorios.txt', 'w') as f:
-            #    f.write(json.dumps(relatórios, indent=4))
-            #-------
-            unidades = Wialon.unidades_simples(sid)
-            print(f'Unidades encontradas: {colored(len(unidades), "green")}')
-            #-------
-            #for unidade in unidades:
-            #    print(f'Unidade: {unidade}')
-            #-------
+            ###__UNIDADES__TODAS__###
+            print("Processando Unidades...")
+            self.processador_unidades_totais(sid, processamento_df)
+            print("Unidades processadas.")
+            ###
+
+            processamento_df = pd.DataFrame()
+
+            ###__CARGO__POLO__###
+            #motoristas 
+            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
+            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
+            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
+
+            processamento_df = pd.DataFrame()
+
+            ###__PLACIDO__###
+            #Motoristas 
+            self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
+            self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
+            self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
+
+            processamento_df = pd.DataFrame()
+
+
+            ###__SFRESGATE__###
+            #motoristas 
+            self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777218, dias=1, periodo="Ontem")
+            self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777220, dias=1, periodo="Últimos 7 dias")
+            self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777224, dias=1, periodo="Últimos 30 dias")
+            processamento_df = pd.DataFrame()
+
+            #checkpoints e infrações
+            self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
+            processamento_df = pd.DataFrame()   
+
+            self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
+            processamento_df = pd.DataFrame()
+
+        def processador_unidades_totais(self, sid, processamento_df):
+            print("Processando Unidades...")
+            # Coleta de dados para o relatório
+            
+            self.CLTDR_01(sid, processamento_df, flag=16777218, dias=1, periodo="Ontem")
+            self.CLTDR_01(sid, processamento_df, flag=16777218, dias=7, periodo="Últimos 7 dias")
+            self.CLTDR_01(sid, processamento_df, flag=16777218, dias=30, periodo="Últimos 30 dias")
+            #
+            #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401939410, dias=1, periodo="Últimos 30 dias")
+            #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401939414, dias=1, periodo="Últimos 30 dias")
+            #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401929585, dias=1, periodo="Últimos 30 dias")
+            #
+            processamento_df = pd.DataFrame()
+
+            
+        
+        def atualiza_unidades(self, sid, empresa_nome):
+                    # Busca unidades
+            unidades = unidades_simples(sid)
+            if not unidades:
+                self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
+                return
+            
+            #coloca os dados em um dataframe
             df_unidades = pd.DataFrame(unidades)
+            print(f'Unidades encontradas:' , colored(f'{len(df_unidades)}', 'green'))
             print(f'Unidades: {df_unidades}')
+            for unidade in df_unidades.itertuples(index=False):
+                unidade_id = unidade.id
+                unidade_nome = unidade.nm
+                #separa o nome da unidade por delimitadores '_'(underline). a primeira parte antes do primeiro underline é a placa, que devemos considerar como o novo nome do veículo.
+                partes_nome = unidade_nome.split('_')
+                placa = partes_nome[0].strip() if partes_nome else ''
+                restante_nome = ' '.join([parte.strip() for parte in partes_nome[1:]]) if len(partes_nome) > 1 else ''
+        
+                #checa se 'restante_nome' possui o valor 'Scania', se sim, define 'marca' como Scania
+                if 'Scania' in restante_nome:
+                    marca = 'Scania'
+                else:
+                    marca = 'Volvo'
 
+                cls = 'Veículo'
+                #retorna a instância da empresa correspondente
+                empresa = Empresa.objects.filter(nome=empresa_nome).first()
+                if not empresa:
+                    self.stdout.write(self.style.ERROR(f'Empresa {empresa_nome} não encontrada no banco de dados.'))
+                    return
+                if empresa.nome == 'PLACIDO':
+                    marca = 'DAF'
+                if empresa.nome == 'São Francisco Resgate':
+                    marca = 'Fiat'
+                unidade_id = f"{empresa_nome}_{unidade_id}"
+
+                #+---
+                print(f'Unidade: {placa} | ID: {unidade_id} | Restante do nome: {restante_nome} | Marca: {marca} | Classe: {cls} | Empresa: {empresa.nome}')
+                #+---
+
+                # Atualiza a unidade no banco de dados
+                Unidade.objects.update_or_create(
+                    id=unidade_id,
+                    defaults={
+                        'nm': unidade_nome,
+                        'placa': placa,
+                        'marca': marca,
+                        'cls': cls,
+                        'descricao': restante_nome if restante_nome else placa,
+                        'empresa': empresa
+                    }
+                )
+            #adiciona também os motoristas
 
             motoristas = Wialon.motoristas_simples2(sid)
             df_motoristas = pd.DataFrame(motoristas)
             print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
             print(f'Motoristas: {df_motoristas}')
+            for motorista in df_motoristas.itertuples(index=False):
+                motorista_id = motorista.driver_id
+                motorista_nome = motorista.driver_name
+                cls = 'Motorista'
+                empresa = Empresa.objects.filter(nome=empresa_nome).first()
+                if not empresa:
+                    self.stdout.write(self.style.ERROR(f'Empresa {empresa_nome} não encontrada no banco de dados.'))
+                    return
+
+                motorista_id = f"{empresa_nome}_{motorista_id}"
+
+                print(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
+
+                # Atualiza o motorista no banco de dados
+                Unidade.objects.update_or_create(
+                    id=motorista_id,
+                    defaults={
+                        'nm': motorista_nome,
+                        'cls': cls,
+                        'empresa': empresa,
+                    }
+                )
+
+
+
+
+
+        def process_units_CP(self, sid):
+            # CAMINHOES BRASCELL#######################
+            unidades_db = Unidade.objects.all()
+            unidades_db_ids = [unidade.id for unidade in unidades_db]
+            if unidades_db_ids:
+                unidades_db = unidades_db.filter(empresa__nome='CPBRASCELL')
+                unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
+
+            processamento_df = pd.DataFrame()
+            unidades_db = unidades_db
+            # Coleta dados de relatório para 1 dia
             
-            # Atualiza as unidades
-            self.atualiza_unidades(sid, empresa.nome)
-            ###
-
-            #faz logout
-            Wialon.wialon_logout(sid)
-    #+---
-
-
-    def processamento_global(self):
-        print("Iniciando processamento global...")
-        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        Wialon.set_locale()
-        processamento_df = pd.DataFrame()
-
-        ###__UNIDADES__TODAS__###
-        print("Processando Unidades...")
-        self.processador_unidades_totais(sid, processamento_df)
-        print("Unidades processadas.")
-        ###
-
-        processamento_df = pd.DataFrame()
-
-        ###__CARGO__POLO__###
-        #motoristas 
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-        processamento_df = pd.DataFrame()
-
-        ###__PLACIDO__###
-        #Motoristas 
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401768999, template=48, Objeto=401768999, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-        processamento_df = pd.DataFrame()
-
-
-        ###__SFRESGATE__###
-        #motoristas 
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777220, dias=1, periodo="Últimos 7 dias")
-        self.CLTDR_MOT_02(sid, processamento_df, recurso=401872803, template=48, Objeto=401872803, flag=16777224, dias=1, periodo="Últimos 30 dias")
-        processamento_df = pd.DataFrame()
-
-        #checkpoints e infrações
-        self.CLTDR_CP_01(sid, processamento_df, recurso=401755650, template=1, flag=16777218, Objeto=401946382, dias=30)
-        processamento_df = pd.DataFrame()   
-
-        self.CLTDR_INFRA_01(sid, processamento_df, recurso=401872803, template=7, flag=16777218, Objeto=401929585, dias=30)
-        processamento_df = pd.DataFrame()
-
-    def processador_unidades_totais(self, sid, processamento_df):
-        print("Processando Unidades...")
-        # Coleta de dados para o relatório
-        
-        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=1, periodo="Ontem")
-        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=7, periodo="Últimos 7 dias")
-        self.CLTDR_01(sid, processamento_df, flag=16777218, dias=30, periodo="Últimos 30 dias")
-        #
-        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401939410, dias=1, periodo="Últimos 30 dias")
-        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401939414, dias=1, periodo="Últimos 30 dias")
-        #self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401929585, dias=1, periodo="Últimos 30 dias")
-        #
-        processamento_df = pd.DataFrame()
-
-        
-    
-    def atualiza_unidades(self, sid, empresa_nome):
-                 # Busca unidades
-        unidades = unidades_simples(sid)
-        if not unidades:
-            self.stdout.write(self.style.ERROR('Nenhuma unidade encontrada.'))
-            return
-        
-        #coloca os dados em um dataframe
-        df_unidades = pd.DataFrame(unidades)
-        print(f'Unidades encontradas:' , colored(f'{len(df_unidades)}', 'green'))
-        print(f'Unidades: {df_unidades}')
-        for unidade in df_unidades.itertuples(index=False):
-            unidade_id = unidade.id
-            unidade_nome = unidade.nm
-            #separa o nome da unidade por delimitadores '_'(underline). a primeira parte antes do primeiro underline é a placa, que devemos considerar como o novo nome do veículo.
-            partes_nome = unidade_nome.split('_')
-            placa = partes_nome[0].strip() if partes_nome else ''
-            restante_nome = ' '.join([parte.strip() for parte in partes_nome[1:]]) if len(partes_nome) > 1 else ''
-    
-            #checa se 'restante_nome' possui o valor 'Scania', se sim, define 'marca' como Scania
-            if 'Scania' in restante_nome:
-                marca = 'Scania'
-            else:
-                marca = 'Volvo'
-
-            cls = 'Veículo'
-            #retorna a instância da empresa correspondente
-            empresa = Empresa.objects.filter(nome=empresa_nome).first()
-            if not empresa:
-                self.stdout.write(self.style.ERROR(f'Empresa {empresa_nome} não encontrada no banco de dados.'))
-                return
-            if empresa.nome == 'PLACIDO':
-                marca = 'DAF'
-            if empresa.nome == 'São Francisco Resgate':
-                marca = 'Fiat'
-            unidade_id = f"{empresa_nome}_{unidade_id}"
-
-            #+---
-            print(f'Unidade: {placa} | ID: {unidade_id} | Restante do nome: {restante_nome} | Marca: {marca} | Classe: {cls} | Empresa: {empresa.nome}')
-            #+---
-
-            # Atualiza a unidade no banco de dados
-            Unidade.objects.update_or_create(
-                id=unidade_id,
-                defaults={
-                    'nm': unidade_nome,
-                    'placa': placa,
-                    'marca': marca,
-                    'cls': cls,
-                    'descricao': restante_nome if restante_nome else placa,
-                    'empresa': empresa
-                }
-            )
-        #adiciona também os motoristas
-
-        motoristas = Wialon.motoristas_simples2(sid)
-        df_motoristas = pd.DataFrame(motoristas)
-        print(f'Motoristas encontrados:' , colored(f'{len(df_motoristas)}', 'green'))
-        print(f'Motoristas: {df_motoristas}')
-        for motorista in df_motoristas.itertuples(index=False):
-            motorista_id = motorista.driver_id
-            motorista_nome = motorista.driver_name
-            cls = 'Motorista'
-            empresa = Empresa.objects.filter(nome=empresa_nome).first()
-            if not empresa:
-                self.stdout.write(self.style.ERROR(f'Empresa {empresa_nome} não encontrada no banco de dados.'))
-                return
-
-            motorista_id = f"{empresa_nome}_{motorista_id}"
-
-            print(f'Motorista: {motorista_nome} | ID: {motorista_id} | Classe: {cls} | Empresa: {empresa.nome}')
-
-            # Atualiza o motorista no banco de dados
-            Unidade.objects.update_or_create(
-                id=motorista_id,
-                defaults={
-                    'nm': motorista_nome,
-                    'cls': cls,
-                    'empresa': empresa,
-                }
-            )
+            processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
+            print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+            print(processamento_df)
+            processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+            print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+            print(processamento_df)
+            processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+            print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+            print(processamento_df)
+            
 
 
 
 
+            # Atualiza ou cria as viagens no model Viagem_Base
 
-    def process_units_CP(self, sid):
-        # CAMINHOES BRASCELL#######################
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='CPBRASCELL')
-            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
-
-        processamento_df = pd.DataFrame()
-        unidades_db = unidades_db
-        # Coleta dados de relatório para 1 dia
-        
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        
+            self.update_or_create_trip(processamento_df)
 
 
 
+        def process_units_PLAC(self, sid):
+            # CAMINHOES PLACIDO#######################
+            unidades_db = Unidade.objects.all()
+            unidades_db_ids = [unidade.id for unidade in unidades_db]
+            if unidades_db_ids:
+                unidades_db = unidades_db.filter(empresa__nome='PLACIDO')
+                unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
 
-        # Atualiza ou cria as viagens no model Viagem_Base
+            processamento_df = pd.DataFrame()
 
-        self.update_or_create_trip(processamento_df)
+            # Coleta dados de relatório para 1 dia
+            processamento_df = self.retrieve_unit_data(sid, 401768999, unidades_db, 45, processamento_df, tempo_dias=1, periodo='Ontem')
+            processamento_df = self.retrieve_unit_data(sid, 401768999, unidades_db, 45, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+            processamento_df = self.retrieve_unit_data(sid, 401768999, unidades_db, 45, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+            print(f'Relatórios coletados para {len(processamento_df)} unidades.')
 
+            # Atualiza ou cria as viagens no model Viagem_Base
+            self.update_or_create_trip(processamento_df)
+            print(processamento_df)
 
+        def process_units_SF(self, sid):
+            # CAMINHOES SÃO FRANCISCO#######################
+            unidades_db = Unidade.objects.all()
+            unidades_db_ids = [unidade.id for unidade in unidades_db]
+            if unidades_db_ids:
+                unidades_db = unidades_db.filter(empresa__nome='São Francisco Resgate')
+                unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
 
-    def process_units_PLAC(self, sid):
-        # CAMINHOES PLACIDO#######################
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='PLACIDO')
-            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
-
-        processamento_df = pd.DataFrame()
-
-        # Coleta dados de relatório para 1 dia
-        processamento_df = self.retrieve_unit_data(sid, 401768999, unidades_db, 45, processamento_df, tempo_dias=1, periodo='Ontem')
-        processamento_df = self.retrieve_unit_data(sid, 401768999, unidades_db, 45, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        processamento_df = self.retrieve_unit_data(sid, 401768999, unidades_db, 45, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-
-        # Atualiza ou cria as viagens no model Viagem_Base
-        self.update_or_create_trip(processamento_df)
-        print(processamento_df)
-
-    def process_units_SF(self, sid):
-        # CAMINHOES SÃO FRANCISCO#######################
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='São Francisco Resgate')
-            unidades_db = unidades_db.filter(cls__icontains='Veículo')  # Filtra por classe que contém "Veículo"
-
-        processamento_df = pd.DataFrame()
-        unidades_db = unidades_db
-        # Coleta dados de relatório para 1 dia
-        
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        
+            processamento_df = pd.DataFrame()
+            unidades_db = unidades_db
+            # Coleta dados de relatório para 1 dia
+            
+            processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=1, periodo='Ontem')
+            print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+            print(processamento_df)
+            processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+            print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+            print(processamento_df)
+            processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 59, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+            print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+            print(processamento_df)
+            
 
 
 
 
-        # Atualiza ou cria as viagens no model Viagem_Base
+            # Atualiza ou cria as viagens no model Viagem_Base
 
-        self.update_or_create_trip(processamento_df)
-
-
-
-    def process_motoristas_CP(self, sid):
-        #MOTORISTAS BRASCELL####################################################################################
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')
-            unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
-
-        processamento_df = pd.DataFrame()
-        #pega as primmeiras 5 unidades
-        unidades_db = unidades_db[:5]
-        print(f"ids_motoristas: {unidades_db}")
-        # Coleta dados de relatório para 7 dias
-        processamento_df = self.retrieve_unit_data_motorista(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=7, periodo='Ultimos 7 dias')
-        print(f'Relatórios coletados para {len(processamento_df)} motoristas.')
-        print(processamento_df)
-
-    def process_motoristas_CP_2(self, sid):
-        # motoristas BRASCELL#######################
-        unidades_db = Unidade.objects.all()
-        unidades_db_ids = [unidade.id for unidade in unidades_db]
-        if unidades_db_ids:
-            unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')
-            unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
-
-        processamento_df = pd.DataFrame()
-        unidades_db = unidades_db
-        # Coleta dados de relatório para 1 dia
-        
-        processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=1, periodo='Ontem')
-        print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        print(processamento_df)
-        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
-        #print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        #print(processamento_df)
-        #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
-        #print(f'Relatórios coletados para {len(processamento_df)} unidades.')
-        #print(processamento_df)
-        
+            self.update_or_create_trip(processamento_df)
 
 
 
+        def process_motoristas_CP(self, sid):
+            #MOTORISTAS BRASCELL####################################################################################
+            unidades_db = Unidade.objects.all()
+            unidades_db_ids = [unidade.id for unidade in unidades_db]
+            if unidades_db_ids:
+                unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')
+                unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
 
-        # Atualiza ou cria as viagens no model Viagem_Base
+            processamento_df = pd.DataFrame()
+            #pega as primmeiras 5 unidades
+            unidades_db = unidades_db[:5]
+            print(f"ids_motoristas: {unidades_db}")
+            # Coleta dados de relatório para 7 dias
+            processamento_df = self.retrieve_unit_data_motorista(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=7, periodo='Ultimos 7 dias')
+            print(f'Relatórios coletados para {len(processamento_df)} motoristas.')
+            print(processamento_df)
 
-        self.update_or_create_trip(processamento_df)
+        def process_motoristas_CP_2(self, sid):
+            # motoristas BRASCELL#######################
+            unidades_db = Unidade.objects.all()
+            unidades_db_ids = [unidade.id for unidade in unidades_db]
+            if unidades_db_ids:
+                unidades_db = unidades_db.filter(empresa__nome='CPBRACELL')
+                unidades_db = unidades_db.filter(cls__icontains='Motorista')  # Filtra por classe que contém "Motorista"
+
+            processamento_df = pd.DataFrame()
+            unidades_db = unidades_db
+            # Coleta dados de relatório para 1 dia
+            
+            processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=1, periodo='Ontem')
+            print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+            print(processamento_df)
+            #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=7, periodo='Últimos 7 dias')
+            #print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+            #print(processamento_df)
+            #processamento_df = self.retrieve_unit_data(sid, 401756219, unidades_db, 58, processamento_df, tempo_dias=30, periodo='Últimos 30 dias')
+            #print(f'Relatórios coletados para {len(processamento_df)} unidades.')
+            #print(processamento_df)
+            
+
+
+
+
+            # Atualiza ou cria as viagens no model Viagem_Base
+
+            self.update_or_create_trip(processamento_df)
 
     ###+---
 
-    def principal(self, token, empresa_nome):
-        self.stdout.write(self.style.SUCCESS(f'Iniciando importação de dados para a empresa: {empresa_nome}'))
 
 
-        # Inicia a sessão Wialon
-        self.stdout.write(self.style.SUCCESS(f'Iniciando sessão Wialon para {empresa_nome}...'))
-
-        sid = Wialon.authenticate_with_wialon(token)
-        if not sid:
-                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-                return
-
-        self.atualiza_unidades(sid, empresa_nome)
-
-        #busca os relatorios
-        print(Wialon.buscadora_reports(sid))
-
-        if empresa_nome == 'CPBRACELL':
-            self.process_units_CP(sid)
-            #self.process_motoristas_CP_2(sid)
-
-        if empresa_nome == 'PLACIDO':
-            self.process_units_PLAC(sid)
-
-        elif empresa_nome == 'São Francisco Resgate':
-            self.process_units_SF(sid)
-
-        # Encerra a sessão Wialon
-        Wialon.wialon_logout(sid)
-
-        self.stdout.write(self.style.SUCCESS(f'Sessão Wialon encerrada para {empresa_nome}.'))
-
-        ###+---
-    
-
-
-    
-    def processamento_teste(self, empresa):
-        if empresa.nome == 'CPBRACELL':
-        #processa as unidades
-            processamento_df = pd.DataFrame()
-            self.CLTDR_02(sid, processamento_df, flag=16777218, Objeto=401756235, dias=1, periodo="Ontem")
-            self.CLTDR_02(sid, processamento_df, flag=16777220, Objeto=401756235, dias=1, periodo="Últimos 7 dias")
-            self.CLTDR_02(sid, processamento_df, flag=16777224, Objeto=401756235, dias=1, periodo="Últimos 30 dias")
-
-        #processa os motoristas
-            processamento_df = pd.DataFrame()
-            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777218, dias=1, periodo="Ontem")
-            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777220, dias=1, periodo="Últimos 7 dias")
-            self.CLTDR_MOT_01(sid, processamento_df, Objeto=401756219, flag=16777224, dias=1, periodo="Últimos 30 dias")
-
-        elif empresa.nome == 'PLACIDO':
-            #processa as unidades
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777218, Objeto=401756235, dias=1, periodo="Ontem")
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777220, Objeto=401756235, dias=1, periodo="Últimos 7 dias")
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777224, Objeto=401756235, dias=1, periodo="Últimos 30 dias")
-            
-
-        elif empresa.nome == 'São Francisco Resgate':
-            #processa as unidades
-            processamento_df = pd.DataFrame()
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777218, Objeto=401756235, dias=1, periodo="Ontem")
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777220, Objeto=401756235, dias=1, periodo="Últimos 7 dias")
-            self.CLTDR_03(sid, processamento_df, recurso=401756235, template=59, flag=16777224, Objeto=401756235, dias=1, periodo="Últimos 30 dias")
 
     # DEMOLIÇÃO #
     ###+---------------------------------------------------------------------------------------------+

@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from umbrella360.FERRAMENTAS.umbrellab import Wialon
 from umbrella360.FERRAMENTAS.umbrellab.Wialon import *
-from umbrella360.models import Empresa, Unidade, Viagem_Base, CheckPoint, Infrações, Veiculo, ConfiguracaoSistema, Viagem_eco, Viagem_Detalhada
+from umbrella360.models import Empresa, Unidade, Viagem_Base, CheckPoint, Infrações, Veiculo, ConfiguracaoSistema, Viagem_eco, Viagem_Detalhada, Driver
 import json
 import pandas as pd
 import time
@@ -15,6 +15,9 @@ from django.utils import timezone
 from datetime import timedelta
 import pytz
 import sqlite3
+import numbers
+import threading
+import time
 conn = sqlite3.connect('db.sqlite3')
 conn.execute('PRAGMA journal_mode=WAL;')
 conn.close()
@@ -49,18 +52,19 @@ class Command(BaseCommand):
         # PRINCIPAL #
         #self.Limpeza() 
 
-        self.CLTDR_TESTE_01(cor1="blue", cor2="green")
+        #self.CLTDR_TESTE_01(cor1="blue", cor2="green")
+        self.CLTDR_TESTE_02(cor1="blue", cor2="green")
         ##################################################
         # MENSAGENS #
+
+        #Viagem_eco.objects.all().delete()
+        #self.MENSAGENS(1,"Petitto")
+        #self.MENSAGENS(1,"CPBRACELL")
         
-        #self.MENSAGENS_03(1)
 
         ##################################################
         # ESTUDO #
 
-        #self.ESTUDO_01()
-        #self.ESTUDO_02()
-        #self.ESTUDO_03()
         ##################################################
         # CHECAGEM #
         self.Checagem_01()
@@ -78,7 +82,13 @@ class Command(BaseCommand):
     
 ################################################################################################
 
-    def atualizador(self,sid,id_criador,  flags=8388613):
+
+
+
+
+
+
+    def atualizador_04(self,sid,id_criador,  flags=8388613):
         
 
         def comm(msg):
@@ -86,6 +96,20 @@ class Command(BaseCommand):
             print(colored(f"Atualizador de Unidades V4:","green"))
             print(f"{msg}")
             print(colored("="*30, "yellow"))
+
+        def driver_code_to_avl(codigo_motorista: int) -> int:
+            # converte para hex e garante 8 caracteres
+            hex_code = f'{codigo_motorista}'
+            # cria uma string de 16 bytes com o código no meio
+            # exemplo: prefixo + hex_code + sufixo
+            # aqui usamos um padrão que gera o mesmo resultado
+            reversed_bytes = '000000' + hex_code + '000000'
+            # inverte os bytes novamente
+            bytes_list = [reversed_bytes[i:i+2] for i in range(0, len(reversed_bytes), 2)]
+            original_hex = ''.join(bytes_list[::-1])
+            # converte para decimal
+            return int(original_hex, 16)
+
                 
                 
         empresa = Empresa.objects.get(id_criador=id_criador)
@@ -140,6 +164,7 @@ class Command(BaseCommand):
                         'cor': cor,
                         'modelo': modelo,
                         'id_wialon': id,
+                        
                     }
                 )
                 vcl_processados += 1
@@ -170,13 +195,15 @@ class Command(BaseCommand):
                 #+---
                 #comm(f'O motorista {motorista.driver_name} pertence à empresa CARGO POLO.')
                 #+---
-                Unidade.objects.update_or_create(
+                Driver.objects.update_or_create(
                     id=f"{empresa.nome}_{motorista.driver_id}",
                     defaults={
                         'nm': motorista.driver_name,
                         'cls': 'Motorista',
                         'empresa': empresa,
                         'id_wialon': f"{motorista.driver_name}_{motorista.driver_id}",
+                        'codigo': motorista.driver_code if motorista.driver_code.isnumeric() else 0,
+                        #'avl_driver': driver_code_to_avl(motorista.driver_code) if motorista.driver_code.isnumeric() else 0,
                     }
                 )
                 mtr_processados += 1
@@ -201,6 +228,64 @@ class Command(BaseCommand):
             f'Motoristas encontrados: {len(df_motoristas)}\n'
             f'{df_motoristas.head()}'
         )
+
+
+
+
+    def CLTDR_TESTE_02(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
+        def comm(msg):
+            print(colored("="*30, cor1))
+            print(colored(tool, cor2))
+            print(f"{msg}")
+            print(colored("="*30, cor1))
+        comm("Iniciando processamento global...")
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+                self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+                return
+
+        Wialon.set_locale()
+        #busca os relatorios
+        usuários = Wialon.buscadora_reports(sid)
+        comm(usuários)
+
+        ###__ATUALIZADOR_UNIDADES__###
+        self.ATUALIZADOR_01(sid)
+
+        ###__CLTDR_empresas__###
+        self.CLTDR_empresas(sid, cor1="blue" , cor2="white", tool= "CLTDR_empresas")
+
+        Wialon.wialon_logout(sid)
+
+    def CLTDR_empresas(self, sid, cor1, cor2, tool):
+        def comm(msg):
+            print(colored("="*30, cor1))
+            print(colored(tool, cor2))
+            print(f"{msg}")
+            print(colored("="*30, cor1))
+        ###__CARGO__POLO__###
+        comm("Processando CARGO POLO...")
+        self.CARGO_POLO(sid, recurso=401756219, template=9, flag=16777218, Objeto=frt_cpbr,)
+        comm("CARGO POLO processado.")
+
+        ###__PLACIDO__###
+        comm("Processando PLACIDO...")
+        self.PLACIDO(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_plac)
+        comm("PLACIDO processado.")
+
+        ###__SFRESGATE__###
+        comm("Processando SFRESGATE...")
+        self.SFRESGATE(sid, recurso=401756219, template=59, flag=16777218, Objeto=frt_sfre)
+        comm("SFRESGATE processado.")
+
+        ###__PETITTO__###
+        comm("Processando PETITTO...")
+        self.PETITTO(sid, recurso=401756219, template=59, flag=16777218, Objeto=401904974)
+        comm("PETITTO processado.")
+
+        ###__checkpoints e infrações__###
+        self.CH_INFRA(sid)
+
 
 
     def CLTDR_TESTE_01(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
@@ -400,10 +485,12 @@ class Command(BaseCommand):
         Wialon.wialon_logout(sid)
 
     def ATUALIZADOR_01(self, sid):
-        self.atualizador(sid, id_criador=401756218)
-        self.atualizador(sid, id_criador=401768998)
-        self.atualizador(sid, id_criador=401872802)
-        self.atualizador(sid, id_criador=401824174)
+        self.atualizador_04(sid, id_criador=401756218)
+        self.atualizador_04(sid, id_criador=401768998)
+        self.atualizador_04(sid, id_criador=401872802)
+        self.atualizador_04(sid, id_criador=401824174)
+
+
 
     def CH_INFRA(self, sid):
         processamento_df = pd.DataFrame()
@@ -453,7 +540,7 @@ class Command(BaseCommand):
         # pega dos ultimos 30 dias usando um loop for
         #dias = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
         # dias de testes
-        dias = range(1,10)
+        dias = range(1,15)
         for dia in dias:
             self.CLTDR_MOT_01_teste(sid, processamento_df, Objeto=401756219, flag=16777216, dias=dia, periodo=str(dia))
 
@@ -857,7 +944,7 @@ class Command(BaseCommand):
                             'timestamp_inicial': timestamp_inicial,
                             'timestamp_final': timestamp_final,
                             'veiculo': veiculo,
-                            'período': periodo,
+                            #'período': periodo,
 
                         }
                     )
@@ -1393,7 +1480,7 @@ class Command(BaseCommand):
             
             # Converte RPM e velocidade CAN para valores mais legíveis
             if 'can_rpm' in df.columns:
-                df['can_rpm_readable'] = df['can_rpm'] * 0.25  # Ajuste conforme necessário
+                df['can_rpm_readable'] = df['can_rpm'] / 8  # Ajuste conforme necessário
         
             if 'can_speed' in df.columns:
                 df['can_speed_kmh'] = df['can_speed'] / 256  # Ajuste conforme necessário
@@ -1404,375 +1491,92 @@ class Command(BaseCommand):
     
         return df
 
-    def TESTE_MENSAGENS(self, tempo):
-        counter = 0
-        # procura apenas unidade com nome que inclua "PRO"
-        #lista_unidades = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        lista_unidades = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)[:2]  # IDs das unidades a serem processadas
 
-        n_unidades = len(lista_unidades)
-        print(f"lista_unidades: {n_unidades} unidades.")
-        print(lista_unidades)
-
-
-        current_time = int(time.time())
-        timeFrom = current_time - (tempo * 24 * 3600)  
-        timeTo = current_time  # Agora
-        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
-        if not sid:
-            self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-            return
+    def MENSAGENS(self, tempo, empresa):
         
-        #################################################
-        for unidade_id in lista_unidades:
-            unidade_nome = Veiculo.objects.filter(id_wialon=unidade_id).first().nm
-            print(f"\nProcessando unidade ID: {colored(unidade_id, 'cyan')} - Nome: {colored(unidade_nome, 'yellow')}")
-
-            payload = {
-                "svc": "render/remove_layer",
-                "params": json.dumps({
-                    "layerName":"messages"
-                }),
-                "sid": sid
-            }
+        def avl_to_driver_code(avl_driver: int) -> int:
+            """Converte código AVL para código do motorista"""
             try:
-                response = requests.post(Wialon.API_URL, data=payload)
-                response.raise_for_status()
-                result = response.json()
-                print("Response 01:", result)
-            except requests.RequestException as e:
-                print("Error:", e)
-                return
-
-                ##################################################
-            
-            payload = {
-                "svc": "item/update_custom_property",
-                "params": json.dumps({
-                    #"itemId":unidade_id,"name":"lastmsgl","value":"{\"u\":401970473,\"t\":\"data\",\"s\":0}" 
-                    "itemId": unidade_id, "name": "lastmsgl", "value": f'{{"u":{unidade_id},"t":"data","s":0}}'
-
-                }),
-                "sid": sid
-            }
-            try:
-                response = requests.post(Wialon.API_URL, data=payload)
-                response.raise_for_status()
-                result = response.json()
-                print("Response 02:", result)
-            except requests.RequestException as e:
-                print("Error:", e)
-                return
-
-            ##################################################
-
-            payload = {
-                "svc": "render/create_messages_layer",
-                "params": json.dumps({
-                    "layerName":"messages","itemId":unidade_id,"timeFrom":timeFrom,"timeTo":timeTo,"tripDetector":0,"flags":0,"trackWidth":4,"trackColor":"speed","annotations":0,"points":1,"pointColor":"cc0000ff","arrows":1
-                }),
-                "sid": sid
-            }
-            try:
-                response = requests.post(Wialon.API_URL, data=payload)
-                response.raise_for_status()
-                result = response.json()
-                print("Response 03:", result)
-                #exemplo de resultado:
-                #{'name': 'messages', 'bounds': [-24.1431566, -49.45541, -23.84126, -49.31901], 'units': [{'id': 401970473, 'msgs': {'count': 14499, 'first': {'time': 1757034264, 'lat': -24.1347770691, 'lon': -49.4387168884}, 'last': {'time': 1757819133, 'lat': -23.8940887451, 'lon': -49.3677978516}}, 'mileage': 3467888.96775, 'max_speed': 81}]}}
-                #recuperar a contagem de mensagens
-                contagem_mensagens = result.get('units', [])[0].get('msgs', {}).get('count', 0) if result.get('units') else 0
-                print(f"Contagem de mensagens para a unidade {unidade_id}:", colored(contagem_mensagens, 'green'))
-            except requests.RequestException as e:
-                print("Error:", e)
-                return
-
-            ###################################################
-            # Sua última requisição que retorna as mensagens
-            payload = {
-                "svc": "render/get_messages",
-                "params": json.dumps({
-                    "indexFrom":0,"indexTo":contagem_mensagens,"layerName":"messages","unitId":unidade_id
-                }),
-                "sid": sid
-            }
-            try:
-                response = requests.post(Wialon.API_URL, data=payload)
-                response.raise_for_status()
-                result = response.json()
-                #print("Response 04:", result)
+                if not avl_driver or avl_driver == 0:
+                    return 0
                 
-                # Processa as mensagens e cria o DataFrame
-                if result and isinstance(result, list):
-                    df_messages = self.processar_mensagens_wialon(result)
-
-                    #atualiza o model Viagem_eco de acordo com a unidade_id = unidade_id_wialon
-                    unidade_obj = Veiculo.objects.get(id_wialon=unidade_id)
-                    if unidade_obj:
-                        for index, row in df_messages.iterrows():
-                            unidade_obj = Veiculo.objects.get(id_wialon=unidade_id)
-                            timestamp = str(row['timestamp'])
-                            can_rpm_readable = float(row['can_rpm_readable']) if 'can_rpm_readable' in row and pd.notna(row['can_rpm_readable']) else 0.0
-                            speed = float(row['speed']) if 'speed' in row and pd.notna(row['speed']) else 0.0
-                            altitude = float(row['altitude']) if 'altitude' in row and pd.notna(row['altitude']) else 0.0
-                            
-                            # Atualiza ou cria a viagem correspondente
-                            Viagem_eco.objects.update_or_create(
-                                unidade_id=unidade_obj.id,
-                                defaults={
-                                    'timestamp': timestamp,
-                                    'rpm': can_rpm_readable,
-                                    'speed': speed,
-                                    'altitude': altitude,
-                                }
-                            )
-                    
-
-
-
-                    print(f"\nDataFrame criado com {len(df_messages)} mensagens:")
-                    print(df_messages.head())
-                    
-                    # Salva em Excel para análise
-                    df_messages.to_excel(f'{deposito}/{unidade_nome}_{unidade_id}.xlsx', index=False)
-                    print(f"DataFrame salvo em {deposito}/{unidade_nome}_{unidade_id}.xlsx")
-
-                    # Mostra algumas estatísticas
-                    print(f"\nEstatísticas das mensagens:")
-                    print(f"Período: {df_messages['datetime'].min()} até {df_messages['datetime'].max()}")
-                    print(f"Velocidade média: {df_messages['speed'].mean():.2f} km/h")
-                    print(f"RPM médio: {df_messages['can_rpm'].mean():.0f}" if 'can_rpm' in df_messages.columns else "RPM não disponível")
-                    # 
-                    print(f"Consumo médio de combustível: {df_messages['can_fuel_rate'].mean():.2f} l/h" if 'can_fuel_rate' in df_messages.columns else "Consumo não disponível")
-                    print(f"Temperatura média do motor: {df_messages['can_coolant_temp'].mean():.2f} °C" if 'can_coolant_temp' in df_messages.columns else "Temperatura não disponível")
-                    print(f"Distância percorrida (odômetro): {df_messages['odometer_km'].iloc[-1] - df_messages['odometer_km'].iloc[0]:.2f} km" if 'odometer_km' in df_messages.columns else "Odômetro não disponível")
-                    #tempo médio entre mensagens
-                    print(f"Tempo médio entre mensagens: {((df_messages['timestamp'].iloc[-1] - df_messages['timestamp'].iloc[0]) / len(df_messages)):.2f} segundos")
-                    #print(f"Distância CAN: {df_messages['can_distance'].iloc[-1] - df_messages['can_distance'].iloc[0]} metros" if 'can_distance' in df_messages.columns else "Distância não disponível")
-                    
-                    counter += 1
-                    print("Unidades processadas com sucesso até agora:", colored(counter, 'yellow'), "/", colored(n_unidades, 'green'))
+                hex_str = hex(avl_driver)[2:]
+                if len(hex_str) % 2 != 0:
+                    hex_str = '0' + hex_str
+                reversed_bytes = ''.join([hex_str[i:i+2] for i in range(0, len(hex_str), 2)][::-1])
+                if len(reversed_bytes) >= 14:
+                    substr = reversed_bytes[6:14]
+                    return int(substr, 16)
                 else:
-                    print("Nenhuma mensagem para processar")
+                    return 0
+            except (ValueError, TypeError, IndexError):
+                return 0
 
-
-            except requests.RequestException as e:
-                print("Error:", e)
-                return df_messages
-        print("Total de unidades processadas com sucesso:", colored(counter, 'blue'), "/", colored(n_unidades, 'green'))
-        
-        #média entre mensagens
-        print(f"Tempo médio entre mensagens: {((df_messages['timestamp'].iloc[-1] - df_messages['timestamp'].iloc[0]) / len(df_messages)):.2f} segundos")
-
-
-
-
-        Wialon.wialon_logout(sid)
-
-
-
-    def TESTE_MENSAGENS_02(self, tempo):
-        counter = 0
-        # procura apenas unidade com nome que inclua "PRO"
-        #lista_unidades = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        lista_unidades = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        #lista todos os veículos
-        #lista_unidades = Veiculo.objects.all().values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-
-        n_unidades = len(lista_unidades)
-        print(f"lista_unidades: {n_unidades} unidades.")
-        print(lista_unidades)
-
-        current_time = int(time.time())
-        timeFrom = current_time - (tempo * 24 * 3600)  
-        timeTo = current_time  # Agora
-        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
-        if not sid:
-            self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
-            return
-        
-        #################################################
-        for unidade_id in lista_unidades:
-
-
-            unidade_nome = Veiculo.objects.filter(id_wialon=unidade_id).first().nm
-            print(f"\nProcessando unidade ID: {colored(unidade_id, 'cyan')} - Nome: {colored(unidade_nome, 'yellow')}")
-
-            payload = {
-                "svc": "render/remove_layer",
-                "params": json.dumps({
-                    "layerName":"messages"
-                }),
-                "sid": sid
+        def classificar_viagem(rpm: float, velocidade: float) -> dict:
+            """
+            Classifica a viagem baseada em RPM e velocidade
+            Retorna um dicionário com as classificações booleanas
+            """
+            classificacao = {
+                'ocioso': False,
+                'faixa_azul': False,
+                'faixa_verde': False,
+                'faixa_amarela': False,
+                'faixa_vermelha': False
             }
-            try:
-                response = requests.post(Wialon.API_URL, data=payload)
-                response.raise_for_status()
-                result = response.json()
-                print("Response 01:", result)
-            except requests.RequestException as e:
-                print("Error:", e)
-                continue
-
-            ##################################################
             
-            payload = {
-                "svc": "item/update_custom_property",
-                "params": json.dumps({
-                    "itemId": unidade_id, "name": "lastmsgl", "value": f'{{"u":{unidade_id},"t":"data","s":0}}'
-                }),
-                "sid": sid
-            }
-            try:
-                response = requests.post(Wialon.API_URL, data=payload)
-                response.raise_for_status()
-                result = response.json()
-                print("Response 02:", result)
-            except requests.RequestException as e:
-                print("Error:", e)
-                continue
-
-            ##################################################
-
-            payload = {
-                "svc": "render/create_messages_layer",
-                "params": json.dumps({
-                    "layerName":"messages","itemId":unidade_id,"timeFrom":timeFrom,"timeTo":timeTo,"tripDetector":0,"flags":0,"trackWidth":4,"trackColor":"speed","annotations":0,"points":1,"pointColor":"cc0000ff","arrows":1
-                }),
-                "sid": sid
-            }
-            try:
-                response = requests.post(Wialon.API_URL, data=payload)
-                response.raise_for_status()
-                result = response.json()
-                print("Response 03:", result)
-                contagem_mensagens = result.get('units', [])[0].get('msgs', {}).get('count', 0) if result.get('units') else 0
-                print(f"Contagem de mensagens para a unidade {unidade_id}:", colored(contagem_mensagens, 'green'))
-            except requests.RequestException as e:
-                print("Error:", e)
-                continue
-
-            ###################################################
-            # Requisição que retorna as mensagens
-            payload = {
-                "svc": "render/get_messages",
-                "params": json.dumps({
-                    "indexFrom":0,"indexTo":contagem_mensagens,"layerName":"messages","unitId":unidade_id
-                }),
-                "sid": sid
-            }
-            try:
-                response = requests.post(Wialon.API_URL, data=payload)
-                response.raise_for_status()
-                result = response.json()
-
-
-                
-                # Processa as mensagens e cria o DataFrame
-                if result and isinstance(result, list):
-                    df_messages = self.processar_mensagens_wialon(result)
-
-                    # CORREÇÃO: Atualiza o model Viagem_eco com TODOS os registros
-                    unidade_obj = Veiculo.objects.get(id_wialon=unidade_id)
-                    if unidade_obj and not df_messages.empty:
-                        registros_criados = 0
-                        registros_atualizados = 0
-                        
-                        for index, row in df_messages.iterrows():
-                            timestamp = str(row['timestamp'])
-                            can_rpm_readable = float(row['can_rpm_readable']) if 'can_rpm_readable' in row and pd.notna(row['can_rpm_readable']) else 0.0
-                            
-
-                            # Atualiza ou cria usando timestamp como chave única também
-                            viagem_eco, created = Viagem_eco.objects.update_or_create(
-                                unidade_id=unidade_obj.id,
-                                timestamp=timestamp,  # IMPORTANTE: Incluir timestamp na busca
-                                defaults={
-                                    'rpm': can_rpm_readable,
-                                    'velocidade': float(row['speed']) if 'speed' in row and pd.notna(row['speed']) else 0.0,
-                                    'altitude': float(row['altitude']) if 'altitude' in row and pd.notna(row['altitude']) else 0.0,
-                                }
-                            )
-                            
-                            if created:
-                                registros_criados += 1
-                            else:
-                                registros_atualizados += 1
-                        
-                        print(f"✅ Unidade {unidade_nome}: {colored(registros_criados, 'green')} novos registros, {colored(registros_atualizados, 'yellow')} atualizados")
-
-                    print(f"\nDataFrame criado com {len(df_messages)} mensagens:")
-                    print(df_messages.head())
-                    
-
-                    # Mostra algumas estatísticas
-                    print(f"\nEstatísticas das mensagens:")
-                    print(f"Período: {df_messages['datetime'].min()} até {df_messages['datetime'].max()}")
-                    print(f"Velocidade média: {df_messages['speed'].mean():.2f} km/h")
-                    print(f"RPM médio: {df_messages['can_rpm'].mean():.0f}" if 'can_rpm' in df_messages.columns else "RPM não disponível")
-                    print(f"Consumo médio de combustível: {df_messages['can_fuel_rate'].mean():.2f} l/h" if 'can_fuel_rate' in df_messages.columns else "Consumo não disponível")
-                    print(f"Temperatura média do motor: {df_messages['can_coolant_temp'].mean():.2f} °C" if 'can_coolant_temp' in df_messages.columns else "Temperatura não disponível")
-                    print(f"Distância percorrida (odômetro): {df_messages['odometer_km'].iloc[-1] - df_messages['odometer_km'].iloc[0]:.2f} km" if 'odometer_km' in df_messages.columns else "Odômetro não disponível")
-                    print(f"Tempo médio entre mensagens: {((df_messages['timestamp'].iloc[-1] - df_messages['timestamp'].iloc[0]) / len(df_messages)):.2f} segundos")
-                    
-                    counter += 1
-                    print("Unidades processadas com sucesso até agora:", colored(counter, 'yellow'), "/", colored(n_unidades, 'green'))
-                else:
-                    print("Nenhuma mensagem para processar")
-
-            except requests.RequestException as e:
-                print("Error:", e)
-                continue
-            except Exception as e:
-                print(f"Erro ao processar unidade {unidade_id}: {e}")
-                continue
-
-        print("Total de unidades processadas com sucesso:", colored(counter, 'blue'), "/", colored(n_unidades, 'green'))
-
-        Wialon.wialon_logout(sid)
-
-
-    def MENSAGENS_03(self, tempo):
-        import threading
-        import time
+            # Verifica se está ocioso (parado com motor ligado)
+            if velocidade == 0 and rpm > 0:
+                classificacao['ocioso'] = True
+                return classificacao
+            
+            # Classifica por faixa de RPM (apenas se estiver em movimento)
+            if velocidade > 0:
+                if 350 <= rpm <= 799:
+                    classificacao['faixa_azul'] = True
+                elif 800 <= rpm <= 1300:
+                    classificacao['faixa_verde'] = True
+                elif 1301 <= rpm <= 2300:
+                    classificacao['faixa_amarela'] = True
+                elif rpm > 2301:
+                    classificacao['faixa_vermelha'] = True
+            
+            return classificacao
         
         counter = 0
 
-        lista_cpbracell = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        lista_petitto = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        lista_sfresgate = Veiculo.objects.filter(empresa__nome="São Francisco Resgate").values_list('id_wialon', flat=True)
+        #lista_cpbracell = Veiculo.objects.filter(empresa__nome="CPBRACELL").values_list('id_wialon', flat=True)
+        #lista_petitto = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)
+        #lista_sfresgate = Veiculo.objects.filter(empresa__nome="São Francisco Resgate").values_list('id_wialon', flat=True)
+        #lista_unidades = list(lista_sfresgate) + list(lista_petitto) + list(lista_cpbracell)
+        #lista_unidades = list(lista_petitto) + list(lista_cpbracell)
 
-        #lista_unidades = Veiculo.objects.filter(nm__icontains="1023").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        #lista todos os veículos
-        #lista_unidades = Veiculo.objects.all().values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        lista_unidades = list(lista_sfresgate) + list(lista_petitto) + list(lista_cpbracell)
+        lista_unidades = Veiculo.objects.filter(empresa__nome=empresa).values_list('id_wialon',flat=True)
 
         n_unidades = len(lista_unidades)
         print(f"lista_unidades: {n_unidades} unidades.")
         print(lista_unidades)
 
+
         current_time = int(time.time())
-        timeFrom = current_time - (tempo * 24 * 3600)  
-        timeTo = current_time  # Agora
+        timeFrom = current_time - (tempo * 24 * 3600)
+        timeTo = current_time
         sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
         if not sid:
             self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
             return
         
-        # Variável de controle para parar o keep-alive
         keep_alive_active = True
         
         def keep_session_alive():
             """Thread function para manter a sessão ativa"""
             while keep_alive_active:
                 try:
-                    # Aguarda 3 minutos (180 segundos)
                     time.sleep(180)
                     
                     if not keep_alive_active:
                         break
                     
-                    # Faz requisição para manter a sessão
                     payload = {
                         "svc": "avl_evts",
                         "sid": sid
@@ -1788,22 +1592,18 @@ class Command(BaseCommand):
                 except Exception as e:
                     print(f"⚠️ Erro inesperado no keep-alive: {e}")
         
-        # Inicia thread do keep-alive
         keep_alive_thread = threading.Thread(target=keep_session_alive, daemon=True)
         keep_alive_thread.start()
         
         try:
-            #################################################
             for unidade_id in lista_unidades:
-
                 unidade_nome = Veiculo.objects.filter(id_wialon=unidade_id).first().nm
                 print(f"\nProcessando unidade ID: {colored(unidade_id, 'cyan')} - Nome: {colored(unidade_nome, 'yellow')}")
 
+                # Remover layer anterior
                 payload = {
                     "svc": "render/remove_layer",
-                    "params": json.dumps({
-                        "layerName":"messages"
-                    }),
+                    "params": json.dumps({"layerName": "messages"}),
                     "sid": sid
                 }
                 try:
@@ -1815,12 +1615,13 @@ class Command(BaseCommand):
                     print("Error:", e)
                     continue
 
-                ##################################################
-                
+                # Update custom property
                 payload = {
                     "svc": "item/update_custom_property",
                     "params": json.dumps({
-                        "itemId": unidade_id, "name": "lastmsgl", "value": f'{{"u":{unidade_id},"t":"data","s":0}}'
+                        "itemId": unidade_id,
+                        "name": "lastmsgl",
+                        "value": f'{{"u":{unidade_id},"t":"data","s":0}}'
                     }),
                     "sid": sid
                 }
@@ -1833,12 +1634,22 @@ class Command(BaseCommand):
                     print("Error:", e)
                     continue
 
-                ##################################################
-
+                # Create messages layer
                 payload = {
                     "svc": "render/create_messages_layer",
                     "params": json.dumps({
-                        "layerName":"messages","itemId":unidade_id,"timeFrom":timeFrom,"timeTo":timeTo,"tripDetector":0,"flags":0,"trackWidth":4,"trackColor":"speed","annotations":0,"points":1,"pointColor":"cc0000ff","arrows":1
+                        "layerName": "messages",
+                        "itemId": unidade_id,
+                        "timeFrom": timeFrom,
+                        "timeTo": timeTo,
+                        "tripDetector": 0,
+                        "flags": 0,
+                        "trackWidth": 4,
+                        "trackColor": "speed",
+                        "annotations": 0,
+                        "points": 1,
+                        "pointColor": "cc0000ff",
+                        "arrows": 1
                     }),
                     "sid": sid
                 }
@@ -1853,12 +1664,14 @@ class Command(BaseCommand):
                     print("Error:", e)
                     continue
 
-                ###################################################
-                # Requisição que retorna as mensagens
+                # Get messages
                 payload = {
                     "svc": "render/get_messages",
                     "params": json.dumps({
-                        "indexFrom":0,"indexTo":contagem_mensagens,"layerName":"messages","unitId":unidade_id
+                        "indexFrom": 0,
+                        "indexTo": contagem_mensagens,
+                        "layerName": "messages",
+                        "unitId": unidade_id
                     }),
                     "sid": sid
                 }
@@ -1868,49 +1681,90 @@ class Command(BaseCommand):
                     result = response.json()
 
 
-                    # Processa as mensagens e cria o DataFrame
                     if result and isinstance(result, list):
                         df_messages = self.processar_mensagens_wialon(result)
 
-                        # CORREÇÃO: Atualiza o model Viagem_eco com TODOS os registros
                         unidade_obj = Veiculo.objects.get(id_wialon=unidade_id)
                         if unidade_obj and not df_messages.empty:
-                            registros_criados = 0
-                            registros_atualizados = 0
+                            viagens_criar = []
                             
-                            for index, row in df_messages.iterrows():
-                                timestamp = str(row['timestamp'])
-                                #can_rpm_readable = float(row['can_rpm_readable']) if 'can_rpm_readable' in row and pd.notna(row['can_rpm_readable']) else 0.0
-                                
-
-                                # Atualiza ou cria usando timestamp como chave única também
-                                viagem_eco, created = Viagem_eco.objects.update_or_create(
-                                    unidade_id=unidade_obj.id,
-                                    timestamp=timestamp,  # IMPORTANTE: Incluir timestamp na busca
-                                    defaults={
-                                        'rpm': float(row['can_rpm']) if 'can_rpm' in row and pd.notna(row['can_rpm']) else 0.0,
-                                        'velocidade': float(row['speed']) if 'speed' in row and pd.notna(row['speed']) else 0.0,
-                                        'altitude': float(row['altitude']) if 'altitude' in row and pd.notna(row['altitude']) else 0.0,
-                                        'energia': float(row['power']) if 'power' in row and pd.notna(row['power']) else 0.0,
-                                    }
-                                )
-                                
-                                if created:
-                                    registros_criados += 1
-                                else:
-                                    registros_atualizados += 1
+                            for _, row in df_messages.iterrows():
+                                try:
+                                    rpm_valor = float(row.get('can_rpm', 0)) if pd.notna(row.get('can_rpm')) else 0
+                                    velocidade_valor = float(row.get('speed', 0)) if pd.notna(row.get('speed')) else 0
+                                    altitude_valor = float(row.get('altitude', 0)) if pd.notna(row.get('altitude')) else 0
+                                    energia_valor = int(row.get('power', 0)) if pd.notna(row.get('power')) else 0
+                                    timestamp_valor = int(row.get('timestamp', 0)) if pd.notna(row.get('timestamp')) else 0
+                                    avl_driver_valor = int(row.get('avl_driver', 0)) if pd.notna(row.get('avl_driver')) else 0
+                                    rpm_tratado = float(row.get('can_rpm_readable', 0)) if pd.notna(row.get('can_rpm_readable')) else 0
+                                    # Classificar a viagem
+                                    classificacao = classificar_viagem(rpm_tratado, velocidade_valor)
+                                    
+                                    # Converter avl_driver para driver_code
+                                    driver_code_valor = avl_to_driver_code(avl_driver_valor)
+                                    
+                                    # Buscar motorista pelo driver_code
+                                    nome_motorista_obj = None
+                                    if driver_code_valor and driver_code_valor != 0:
+                                        try:
+                                            nome_motorista_obj = Driver.objects.filter(
+                                                codigo=driver_code_valor,
+                                                empresa=unidade_obj.empresa
+                                            ).first()
+                                        except Driver.DoesNotExist:
+                                            pass
+                                    
+                                    viagem = Viagem_eco(
+                                        unidade=unidade_obj,
+                                        timestamp=timestamp_valor,
+                                        rpm=rpm_valor,
+                                        velocidade=velocidade_valor,
+                                        altitude=altitude_valor,
+                                        energia=energia_valor,
+                                        avl_driver=avl_driver_valor,
+                                        driver_code=driver_code_valor,
+                                        nome_motorista=nome_motorista_obj,
+                                        # Aplicar classificações
+                                        ocioso=classificacao['ocioso'],
+                                        faixa_azul=classificacao['faixa_azul'],
+                                        faixa_verde=classificacao['faixa_verde'],
+                                        faixa_amarela=classificacao['faixa_amarela'],
+                                        faixa_vermelha=classificacao['faixa_vermelha']
+                                    )
+                                    viagens_criar.append(viagem)
+                                    
+                                except Exception as e:
+                                    print(f"Erro ao processar mensagem: {e}")
+                                    continue
                             
-                            print(f"✅ Unidade {unidade_nome}: {colored(registros_criados, 'green')} novos registros, {colored(registros_atualizados, 'yellow')} atualizados")
+                            # Criar todas as viagens de uma vez
+                            if viagens_criar:
+                                Viagem_eco.objects.bulk_create(viagens_criar, ignore_conflicts=True)
+                                print(f"✅ {colored(f'{len(viagens_criar)} viagens ecológicas criadas para {unidade_nome}', 'green')}")
+                                
+                                # Estatísticas de classificação
+                                total_viagens = len(viagens_criar)
+                                ocioso_count = sum(1 for v in viagens_criar if v.ocioso)
+                                azul_count = sum(1 for v in viagens_criar if v.faixa_azul)
+                                verde_count = sum(1 for v in viagens_criar if v.faixa_verde)
+                                amarela_count = sum(1 for v in viagens_criar if v.faixa_amarela)
+                                vermelha_count = sum(1 for v in viagens_criar if v.faixa_vermelha)
+                                
+                                print(f"\n📊 Estatísticas de classificação:")
+                                print(f"   🔵 Ocioso: {colored(ocioso_count, 'cyan')} ({colored(f'{ocioso_count/total_viagens*100:.1f}%', 'cyan')})")
+                                print(f"   🔵 Faixa Azul: {colored(azul_count, 'blue')} ({colored(f'{azul_count/total_viagens*100:.1f}%', 'blue')})")
+                                print(f"   🟢 Faixa Verde: {colored(verde_count, 'green')} ({colored(f'{verde_count/total_viagens*100:.1f}%', 'green')})")
+                                print(f"   🟡 Faixa Amarela: {colored(amarela_count, 'yellow')} ({colored(f'{amarela_count/total_viagens*100:.1f}%', 'yellow')})")
+                                print(f"   🔴 Faixa Vermelha: {colored(vermelha_count, 'red')} ({colored(f'{vermelha_count/total_viagens*100:.1f}%', 'red')})")
 
                         print(f"\nDataFrame criado com {len(df_messages)} mensagens:")
                         print(df_messages.head())
                         
 
-                        # Mostra algumas estatísticas
                         print(f"\nEstatísticas das mensagens:")
                         print(f"Período: {df_messages['datetime'].min()} até {df_messages['datetime'].max()}")
                         print(f"Velocidade média: {df_messages['speed'].mean():.2f} km/h")
-                        print(f"RPM médio: {df_messages['can_rpm'].mean():.0f}" if 'can_rpm' in df_messages.columns else "RPM não disponível")
+                        print(f"RPM médio: {df_messages['can_rpm_readable'].mean():.0f}" if 'can_rpm_readable' in df_messages.columns else "RPM não disponível")
                         print(f"Consumo médio de combustível: {df_messages['can_fuel_rate'].mean():.2f} l/h" if 'can_fuel_rate' in df_messages.columns else "Consumo não disponível")
                         print(f"Temperatura média do motor: {df_messages['can_coolant_temp'].mean():.2f} °C" if 'can_coolant_temp' in df_messages.columns else "Temperatura não disponível")
                         print(f"Distância percorrida (odômetro): {df_messages['odometer_km'].iloc[-1] - df_messages['odometer_km'].iloc[0]:.2f} km" if 'odometer_km' in df_messages.columns else "Odômetro não disponível")
@@ -1931,7 +1785,6 @@ class Command(BaseCommand):
             print("Total de unidades processadas com sucesso:", colored(counter, 'blue'), "/", colored(n_unidades, 'green'))
 
         finally:
-            # Para o keep-alive e aguarda a thread finalizar
             keep_alive_active = False
             if keep_alive_thread.is_alive():
                 keep_alive_thread.join(timeout=5)
@@ -1942,13 +1795,16 @@ class Command(BaseCommand):
 
 
 
+###-----------------------------------------------------------------------------------------------------------------#####
+# INVESTIGAÇÃO #
+        #######################################################################################
+
     ############################################################################################
     ###+---------------------------------------------------------------------------------------------+
     # DEMOLIÇÃO #
-    
 
 
-    
+
     # DEMOLIÇÃO #
     ###+---------------------------------------------------------------------------------------------+
     ############################################################################################

@@ -62,6 +62,11 @@
                   <strong>Cor:</strong> {{ unidade.cor }}
                 </p>
               {% endif %}
+              {% if unidade.modelo %}
+                <p style="margin: 0.25rem 0 0 0; color: #495057;">
+                  <strong>Modelo:</strong> {{ unidade.modelo }}
+                </p>
+              {% endif %}
             </div>
             <div style="text-align: center;">
               {% if stats_gerais.total_viagens > 0 %}
