@@ -53,16 +53,6 @@
         
         {% if request.session.empresa_nome %}
         <div class="feature-card">
-          <h3>Ranking</h3>
-          <a href="{% url 'ranking_empresa' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Rankings</a>
-        </div>
-
-        <div class="feature-card">
-          <h3>Relatórios</h3>
-          <a href="{% url 'report_empresa' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Relatórios</a>
-        </div>
-        
-        <div class="feature-card">
           <h3>Viagem Diária</h3>
           <a href="{% url 'viagem_diaria' %}" class="btn btn-primary" style="margin-top: 1rem;">Ver Planilha</a>
         </div>
@@ -73,9 +63,15 @@
         </div>
 
         <div class="feature-card" >
-          <h3>Performance</h3>
+          <h3>Performance Frota</h3>
           <a href="{% url 'performance_frota' %}" class="btn btn-primary" style="margin-top: 1rem;">Checar Performance</a>
         </div>
+
+        <div class="feature-card" >
+          <h3>Performance Motoristas</h3>
+          <a href="{% url 'performance_motoristas' %}" class="btn btn-primary" style="margin-top: 1rem;">Checar Performance</a>
+        </div>
+
 
         {% else %}
 

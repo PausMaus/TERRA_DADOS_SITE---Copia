@@ -1,0 +1,603 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jornada de Trabalho - Motoristas - Umbrella360</title>
+    <link rel="stylesheet" href="{% static 'umbrella360/style.css' %}">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .menu-buttons {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .btn {
+        display: inline-block;
+        padding: 10px 20px;
+        margin: 0 5px;
+        background: #667eea;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: background 0.3s;
+      }
+      .btn:hover {
+        background: #5568d3;
+      }
+      .filters {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        text-align: center;
+      }
+      .filters select {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+        margin: 0 10px;
+      }
+      .filters button {
+        padding: 10px 30px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+      .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+      }
+      .stat-card h3 {
+        margin: 0;
+        font-size: 14px;
+        opacity: 0.9;
+      }
+      .stat-card .value {
+        font-size: 32px;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+      .stat-card.green {
+        background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%);
+      }
+      .stat-card.yellow {
+        background: linear-gradient(135deg, #FFC107 0%, #FFD54F 100%);
+      }
+      .stat-card.red {
+        background: linear-gradient(135deg, #f44336 0%, #e57373 100%);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th {
+        background: #667eea;
+        color: white;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+      }
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+      }
+      tr:hover {
+        background: #f8f9fa;
+      }
+      .badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .badge-green { background: #4CAF50; }
+      .badge-yellow { background: #FFC107; color: #333; }
+      .badge-red { background: #f44336; }
+      .no-data {
+        text-align: center;
+        padding: 60px;
+        color: #999;
+        font-size: 18px;
+      }
+      .details-btn {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .details-btn:hover {
+        background: #5568d3;
+      }
+      .details-table {
+        display: none;
+        margin-top: 15px;
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+      }
+      .details-table table {
+        margin: 0;
+        font-size: 13px;
+      }
+      .details-table th {
+        background: #5568d3;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Botão de alternância de tema -->
+    <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
+      <span class="theme-icon">◐</span> Noite de Verão
+    </button>
+    
+    <div class="header">
+      <div class="menu-buttons">
+            <a href="{% url 'index' %}" class="btn btn-primary">Início</a>
+            <a href="{% url 'report_empresa' %}" class="btn btn-secondary">Painel</a>
+            <a href="{% url 'performance_motoristas' %}" class="btn btn-secondary">Performance</a>
+      </div>
+    </div>
+
+    <main style="max-width: 1600px; margin: 0 auto; padding: 2rem;">
+
+      <!-- Título Principal -->
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5rem; margin-bottom: 0.5rem;">
+          ⏱️ Análise de Jornada de Trabalho
+        </h1>
+        <p style="color: #666; font-size: 1.1rem;">Tempo ao volante por motorista - Controle de horas trabalhadas</p>
+        {% if empresa_logada %}
+        <p style="color: #764ba2; font-weight: 600; margin-top: 0.5rem;">🏢 {{ empresa_logada.nome }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Mensagem de Erro (se houver) -->
+      {% if erro_mensagem %}
+      <div style="background: #fff3cd; border-left: 5px solid #ffc107; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+        <h3 style="color: #856404; margin: 0 0 0.5rem 0;">⚠️ Atenção</h3>
+        <p style="color: #856404; margin: 0;">{{ erro_mensagem }}</p>
+        <p style="color: #856404; margin: 0.5rem 0 0 0; font-size: 0.9rem;">Por favor, tente selecionar um período menor ou entre em contato com o suporte.</p>
+      </div>
+      {% endif %}
+
+      <!-- Filtros de Data -->
+      <div style="background: white; padding: 1.5rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+        <form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; justify-content: center;">
+          
+          <!-- Período Rápido -->
+          <div style="flex: 1; min-width: 200px;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">📅 Período Rápido:</label>
+            <select name="periodo_dias" id="periodoDias" style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;">
+              <option value="7" {% if periodo_dias == '7' %}selected{% endif %}>Últimos 7 dias</option>
+              <option value="15" {% if periodo_dias == '15' %}selected{% endif %}>Últimos 15 dias</option>
+              <option value="30" {% if periodo_dias == '30' %}selected{% endif %}>Últimos 30 dias</option>
+              <option value="60" {% if periodo_dias == '60' %}selected{% endif %}>Últimos 60 dias</option>
+              <option value="90" {% if periodo_dias == '90' %}selected{% endif %}>Últimos 90 dias</option>
+              <option value="custom" {% if data_inicio and data_fim %}selected{% endif %}>Personalizado</option>
+            </select>
+          </div>
+
+          <!-- Data Início (oculto por padrão) -->
+          <div id="dataInicioDiv" style="flex: 1; min-width: 200px; {% if not data_inicio %}display: none;{% endif %}">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">Data Início:</label>
+            <input type="date" name="data_inicio" value="{{ data_inicio }}" style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;">
+          </div>
+
+          <!-- Data Fim (oculto por padrão) -->
+          <div id="dataFimDiv" style="flex: 1; min-width: 200px; {% if not data_fim %}display: none;{% endif %}">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">Data Fim:</label>
+            <input type="date" name="data_fim" value="{{ data_fim }}" style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;">
+          </div>
+
+          <!-- Botão Filtrar -->
+          <div>
+            <button type="submit" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 2rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s;">
+              🔍 Filtrar
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <script>
+        // Mostrar/ocultar campos de data personalizada
+        document.getElementById('periodoDias').addEventListener('change', function() {
+          const dataInicioDiv = document.getElementById('dataInicioDiv');
+          const dataFimDiv = document.getElementById('dataFimDiv');
+          
+          if (this.value === 'custom') {
+            dataInicioDiv.style.display = 'block';
+            dataFimDiv.style.display = 'block';
+          } else {
+            dataInicioDiv.style.display = 'none';
+            dataFimDiv.style.display = 'none';
+          }
+        });
+      </script>
+
+      <!-- Info sobre limitações (se houver muitos dados) -->
+      {% if stats_gerais.total_motoristas > 0 %}
+      <div style="background: #e3f2fd; border-left: 5px solid #2196F3; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+        <p style="color: #1976D2; margin: 0; font-size: 0.95rem;">
+          ℹ️ <strong>Info:</strong> Processando dados de <strong>{{ stats_gerais.total_motoristas }}</strong> motorista{% if stats_gerais.total_motoristas > 1 %}s{% endif %}. 
+          Para melhor performance, o sistema limita a análise a <strong>100 motoristas</strong> e <strong>50.000 registros</strong> por vez.
+        </p>
+      </div>
+      {% endif %}
+
+      <!-- Cards de Estatísticas Gerais -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 15px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">👥</div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">Total de Motoristas</div>
+          <div style="font-size: 2rem; font-weight: 700; margin-top: 0.5rem;">{{ stats_gerais.total_motoristas }}</div>
+        </div>
+
+        <div style="background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%); padding: 1.5rem; border-radius: 15px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⏱️</div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">Total de Horas Trabalhadas</div>
+          <div style="font-size: 2rem; font-weight: 700; margin-top: 0.5rem;">{{ stats_gerais.total_horas_todas_jornadas|floatformat:1 }}h</div>
+        </div>
+
+        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 1.5rem; border-radius: 15px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📊</div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">Média de Horas/Motorista</div>
+          <div style="font-size: 2rem; font-weight: 700; margin-top: 0.5rem;">{{ stats_gerais.media_horas_por_motorista|floatformat:1 }}h</div>
+        </div>
+
+        <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 1.5rem; border-radius: 15px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📅</div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">Média de Dias Trabalhados</div>
+          <div style="font-size: 2rem; font-weight: 700; margin-top: 0.5rem;">{{ stats_gerais.media_dias_trabalhados|floatformat:1 }}</div>
+        </div>
+
+      </div>
+
+      <!-- Cards de Classificação -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        
+        <div style="background: white; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #4CAF50; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="font-size: 1.8rem; margin-bottom: 0.3rem;">✅</div>
+          <div style="font-size: 0.85rem; color: #666;">Jornada Completa (≥8h/dia)</div>
+          <div style="font-size: 1.8rem; font-weight: 700; color: #4CAF50; margin-top: 0.5rem;">{{ stats_gerais.motoristas_jornada_completa }}</div>
+        </div>
+
+        <div style="background: white; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #FFC107; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="font-size: 1.8rem; margin-bottom: 0.3rem;">⚠️</div>
+          <div style="font-size: 0.85rem; color: #666;">Jornada Parcial (6-8h/dia)</div>
+          <div style="font-size: 1.8rem; font-weight: 700; color: #FFC107; margin-top: 0.5rem;">{{ stats_gerais.motoristas_jornada_parcial }}</div>
+        </div>
+
+        <div style="background: white; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #f44336; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="font-size: 1.8rem; margin-bottom: 0.3rem;">❌</div>
+          <div style="font-size: 0.85rem; color: #666;">Jornada Reduzida (<6h/dia)</div>
+          <div style="font-size: 1.8rem; font-weight: 700; color: #f44336; margin-top: 0.5rem;">{{ stats_gerais.motoristas_jornada_reduzida }}</div>
+        </div>
+
+      </div>
+
+      <!-- Gráfico de Evolução Temporal -->
+      {% if evolucao_temporal %}
+      <div style="background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+        <h2 style="text-align: center; margin-bottom: 1.5rem; color: #764ba2;">
+          📈 Evolução Diária - Horas Trabalhadas
+        </h2>
+        <canvas id="chartEvolucao" style="max-height: 400px;"></canvas>
+      </div>
+
+      <script>
+      const evolucaoData = [
+        {% for dia in evolucao_temporal %}
+        {
+          data: '{{ dia.data }}',
+          total_horas: {{ dia.total_horas }},
+          motoristas_ativos: {{ dia.motoristas_ativos }},
+          media_horas: {{ dia.media_horas }}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+      ];
+
+      const ctxEvolucao = document.getElementById('chartEvolucao').getContext('2d');
+      new Chart(ctxEvolucao, {
+        type: 'line',
+        data: {
+          labels: evolucaoData.map(d => d.data),
+          datasets: [
+            {
+              label: 'Total de Horas',
+              data: evolucaoData.map(d => d.total_horas),
+              borderColor: '#667eea',
+              backgroundColor: 'rgba(102, 126, 234, 0.1)',
+              borderWidth: 3,
+              tension: 0.4,
+              fill: true,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Motoristas Ativos',
+              data: evolucaoData.map(d => d.motoristas_ativos),
+              borderColor: '#4CAF50',
+              backgroundColor: 'rgba(76, 175, 80, 0.1)',
+              borderWidth: 2,
+              tension: 0.4,
+              fill: false,
+              yAxisID: 'y1'
+            },
+            {
+              label: 'Média Horas/Motorista',
+              data: evolucaoData.map(d => d.media_horas),
+              borderColor: '#f5576c',
+              backgroundColor: 'rgba(245, 87, 108, 0.1)',
+              borderWidth: 2,
+              tension: 0.4,
+              fill: false,
+              yAxisID: 'y'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom'
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              padding: 12,
+              callbacks: {
+                title: function(context) {
+                  return '📅 ' + context[0].label;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Data',
+                font: { size: 14, weight: 'bold' }
+              },
+              ticks: {
+                maxRotation: 45,
+                minRotation: 45
+              }
+            },
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: {
+                display: true,
+                text: 'Horas',
+                color: '#667eea',
+                font: { size: 14, weight: 'bold' }
+              }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Motoristas',
+                color: '#4CAF50',
+                font: { size: 14, weight: 'bold' }
+              },
+              grid: {
+                drawOnChartArea: false
+              }
+            }
+          }
+        }
+      });
+      </script>
+      {% endif %}
+
+      <!-- Tabela de Jornadas por Motorista -->
+      {% if jornadas_motoristas %}
+      <div style="background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+        <h2 style="text-align: center; margin-bottom: 1.5rem; color: #764ba2;">
+          📋 Jornadas por Motorista
+        </h2>
+
+        {% for motorista_jornada in jornadas_motoristas %}
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border-left: 5px solid {{ motorista_jornada.cor_classificacao }};">
+          
+          <!-- Cabeçalho do Motorista -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h3 style="margin: 0; color: #333; font-size: 1.3rem;">
+                👤 {{ motorista_jornada.motorista.nm|default:motorista_jornada.motorista.id }}
+              </h3>
+              <span style="display: inline-block; padding: 0.3rem 0.8rem; background: {{ motorista_jornada.cor_classificacao }}; color: white; border-radius: 20px; font-size: 0.85rem; margin-top: 0.5rem;">
+                {{ motorista_jornada.classificacao }}
+              </span>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.9rem; color: #666;">Total de Horas:</div>
+              <div style="font-size: 1.8rem; font-weight: 700; color: {{ motorista_jornada.cor_classificacao }};">
+                {{ motorista_jornada.total_horas_trabalhadas }}h
+              </div>
+            </div>
+          </div>
+
+          <!-- Estatísticas Resumidas -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div style="background: white; padding: 1rem; border-radius: 8px;">
+              <div style="font-size: 0.85rem; color: #666;">Dias Trabalhados</div>
+              <div style="font-size: 1.5rem; font-weight: 600; color: #667eea;">{{ motorista_jornada.total_dias_trabalhados }}</div>
+            </div>
+            <div style="background: white; padding: 1rem; border-radius: 8px;">
+              <div style="font-size: 0.85rem; color: #666;">Média Horas/Dia</div>
+              <div style="font-size: 1.5rem; font-weight: 600; color: #667eea;">{{ motorista_jornada.media_horas_dia }}h</div>
+            </div>
+            <div style="background: white; padding: 1rem; border-radius: 8px;">
+              <div style="font-size: 0.85rem; color: #666;">Veículos Utilizados</div>
+              <div style="font-size: 1.5rem; font-weight: 600; color: #667eea;">{{ motorista_jornada.total_veiculos }}</div>
+            </div>
+          </div>
+
+          <!-- Botão para expandir detalhes -->
+          <button onclick="toggleDetalhes('motorista-{{ forloop.counter }}')" style="background: #667eea; color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+            📊 Ver Detalhes por Dia
+          </button>
+
+          <!-- Detalhes por Dia (oculto por padrão) -->
+          <div id="motorista-{{ forloop.counter }}" style="display: none; margin-top: 1rem; overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+              <thead style="background: #667eea; color: white;">
+                <tr>
+                  <th style="padding: 0.75rem; text-align: left;">Data</th>
+                  <th style="padding: 0.75rem; text-align: center;">Turno</th>
+                  <th style="padding: 0.75rem; text-align: center;">Início</th>
+                  <th style="padding: 0.75rem; text-align: center;">Fim</th>
+                  <th style="padding: 0.75rem; text-align: center;">Horas</th>
+                  <th style="padding: 0.75rem; text-align: center;">Veículos</th>
+                  <th style="padding: 0.75rem; text-align: center;">Vel. Média</th>
+                  <th style="padding: 0.75rem; text-align: center;">Registros</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for jornada_dia in motorista_jornada.jornadas_detalhadas %}
+                <tr style="border-bottom: 1px solid #eee;">
+                  <td style="padding: 0.75rem;">{{ jornada_dia.data|date:"d/m/Y" }}</td>
+                  <td style="padding: 0.75rem; text-align: center;">
+                    {% if jornada_dia.turno == "Manhã" %}🌅
+                    {% elif jornada_dia.turno == "Tarde" %}☀️
+                    {% elif jornada_dia.turno == "Noite" %}🌙
+                    {% endif %}
+                    {{ jornada_dia.turno }}
+                  </td>
+                  <td style="padding: 0.75rem; text-align: center;">
+                    {% if jornada_dia.jornada_inicio %}
+                    {{ jornada_dia.jornada_inicio|date:"H:i" }}
+                    {% else %}-{% endif %}
+                  </td>
+                  <td style="padding: 0.75rem; text-align: center;">
+                    {% if jornada_dia.jornada_fim %}
+                    {{ jornada_dia.jornada_fim|date:"H:i" }}
+                    {% else %}-{% endif %}
+                  </td>
+                  <td style="padding: 0.75rem; text-align: center; font-weight: 600;">
+                    {{ jornada_dia.tempo_formatado }}
+                  </td>
+                  <td style="padding: 0.75rem; text-align: center;">{{ jornada_dia.veiculos_count }}</td>
+                  <td style="padding: 0.75rem; text-align: center;">{{ jornada_dia.velocidade_media }} km/h</td>
+                  <td style="padding: 0.75rem; text-align: center;">{{ jornada_dia.registros_count }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+        {% endfor %}
+
+      </div>
+
+      <script>
+      function toggleDetalhes(id) {
+        const element = document.getElementById(id);
+        if (element.style.display === 'none') {
+          element.style.display = 'block';
+        } else {
+          element.style.display = 'none';
+        }
+      }
+      </script>
+
+      {% else %}
+      <div style="background: white; padding: 3rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">📭</div>
+        <h3 style="color: #666; margin-bottom: 1rem;">Nenhuma jornada encontrada</h3>
+        <p style="color: #999;">Não há dados de jornada para o período selecionado.</p>
+      </div>
+      {% endif %}
+
+    </main>
+    
+    <footer class="footer">
+      <p>&copy; 2025 Umbrella360. Transformando o Brasil através da logística inteligente.</p>
+      <p><em>"Nós enxergamos um mundo mais justo, mais humano e mais sustentável."</em></p>
+    </footer>
+
+    <style>
+    /* Animações de hover para cards */
+    div[style*="background: linear-gradient"]:hover {
+      transform: translateY(-5px);
+      transition: transform 0.3s ease;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      main {
+        padding: 1rem !important;
+      }
+      
+      h1 {
+        font-size: 1.8rem !important;
+      }
+    }
+
+    /* Hover em botões */
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    /* Animações suaves */
+    * {
+      transition: all 0.3s ease;
+    }
+    </style>
+
+  </body>
+</html>

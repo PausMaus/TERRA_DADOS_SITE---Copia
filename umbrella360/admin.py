@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Motorista,  ConfiguracaoSistema, Empresa, Unidade, Viagem_Base, CheckPoint, Infrações, Viagem_eco, Viagem_Detalhada 
+from .models import Motorista,  ConfiguracaoSistema, Empresa, Unidade, Viagem_Base, CheckPoint, Infrações, Viagem_eco, Viagem_Detalhada, Driver
 from .models import Veiculo
 # Register your models here.
 
@@ -111,9 +111,15 @@ class VeiculoAdmin(admin.ModelAdmin):
     search_fields = ('placa', 'marca', 'modelo')
     ordering = ('placa',)
 
+@admin.register(Driver)
+class DriverAdmin(admin.ModelAdmin):
+    list_display = ('nm', 'empresa')
+    search_fields = ('codigo','nm')
+
 @admin.register(Viagem_eco)
 class ViagemEcoAdmin(admin.ModelAdmin):
     list_display = ('unidade', 'timestamp', 'rpm')
+    list_filter = ( 'unidade', 'nome_motorista')
 
 
 @admin.register(Viagem_Detalhada)
