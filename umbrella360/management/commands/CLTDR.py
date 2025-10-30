@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from umbrella360.FERRAMENTAS.umbrellab import Wialon
 from umbrella360.FERRAMENTAS.umbrellab.Wialon import *
-from umbrella360.models import Empresa, Unidade, Viagem_Base, CheckPoint, Infrações, Veiculo, ConfiguracaoSistema, Viagem_eco, Viagem_Detalhada, Driver
+from umbrella360.models import Empresa, Unidade, Viagem_Base, CheckPoint, Infrações, Veiculo, ConfiguracaoSistema, Viagem_eco, Viagem_Detalhada, Driver, Estatistica_Diaria_Motorista
 import json
 import pandas as pd
 import time
@@ -18,6 +18,9 @@ import sqlite3
 import numbers
 import threading
 import time
+from collections import defaultdict
+from datetime import date
+
 
 
 
@@ -49,15 +52,16 @@ class Command(BaseCommand):
         # PRINCIPAL #
         #self.Limpeza() 
 
-        #self.CLTDR_TESTE_01(cor1="blue", cor2="green")
-        #self.CLTDR_TESTE_02(cor1="blue", cor2="green")
+        #self.UMBRELLA(cor1="blue", cor2="green")
         ##################################################
         # MENSAGENS #
 
         #Viagem_eco.objects.all().delete()
         self.MENSAGENS(20,"Petitto")
-        self.MENSAGENS(1,"CPBRACELL")
+        self.MENSAGENS(10,"CPBRACELL")
         
+
+        self.gerar_estatisticas_de_viagens_eco(dias=30)
 
         ##################################################
         # ESTUDO #
@@ -229,7 +233,7 @@ class Command(BaseCommand):
 
 
 
-    def CLTDR_TESTE_02(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
+    def UMBRELLA(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
         def comm(msg):
             print(colored("="*30, cor1))
             print(colored(tool, cor2))
@@ -1791,6 +1795,637 @@ class Command(BaseCommand):
             Wialon.wialon_logout(sid)
 
 
+
+
+
+
+    def MENSAGENS_02(self, tempo, empresa):
+        
+        def avl_to_driver_code(avl_driver: int) -> int:
+            """Converte código AVL para código do motorista"""
+            try:
+                if not avl_driver or avl_driver == 0:
+                    return 0
+                
+                hex_str = hex(avl_driver)[2:]
+                if len(hex_str) % 2 != 0:
+                    hex_str = '0' + hex_str
+                reversed_bytes = ''.join([hex_str[i:i+2] for i in range(0, len(hex_str), 2)][::-1])
+                if len(reversed_bytes) >= 14:
+                    substr = reversed_bytes[6:14]
+                    return int(substr, 16)
+                else:
+                    return 0
+            except (ValueError, TypeError, IndexError):
+                return 0
+
+        def classificar_viagem(rpm: float, velocidade: float) -> dict:
+            """
+            Classifica a viagem baseada em RPM e velocidade
+            Retorna um dicionário com as classificações booleanas
+            """
+            classificacao = {
+                'ocioso': False,
+                'faixa_azul': False,
+                'faixa_verde': False,
+                'faixa_amarela': False,
+                'faixa_vermelha': False
+            }
+            
+            # Verifica se está ocioso (parado com motor ligado)
+            if velocidade == 0 and rpm > 0:
+                classificacao['ocioso'] = True
+                return classificacao
+            
+            # Classifica por faixa de RPM (apenas se estiver em movimento)
+            if velocidade > 0:
+                if 350 <= rpm <= 799:
+                    classificacao['faixa_azul'] = True
+                elif 800 <= rpm <= 1300:
+                    classificacao['faixa_verde'] = True
+                elif 1301 <= rpm <= 2300:
+                    classificacao['faixa_amarela'] = True
+                elif rpm > 2301:
+                    classificacao['faixa_vermelha'] = True
+            
+            return classificacao
+        
+        counter = 0
+
+        #lista_cpbracell = Veiculo.objects.filter(empresa__nome="CPBRACELL").values_list('id_wialon', flat=True)
+        #lista_petitto = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)
+        #lista_sfresgate = Veiculo.objects.filter(empresa__nome="São Francisco Resgate").values_list('id_wialon', flat=True)
+        #lista_unidades = list(lista_sfresgate) + list(lista_petitto) + list(lista_cpbracell)
+        #lista_unidades = list(lista_petitto) + list(lista_cpbracell)
+
+        
+        #lista_unidades = Veiculo.objects.filter(nm__icontains="1037").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+        lista_unidades = Veiculo.objects.filter(empresa__nome=empresa).values_list('id_wialon',flat=True)[:10]
+
+        n_unidades = len(lista_unidades)
+        print(f"lista_unidades: {n_unidades} unidades.")
+        print(lista_unidades)
+
+
+        current_time = int(time.time())
+        timeFrom = current_time - (tempo * 24 * 3600)
+        timeTo = current_time
+        sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
+        if not sid:
+            self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
+            return
+        
+        keep_alive_active = True
+        
+        def keep_session_alive():
+            """Thread function para manter a sessão ativa"""
+            while keep_alive_active:
+                try:
+                    time.sleep(180)
+                    
+                    if not keep_alive_active:
+                        break
+                    
+                    payload = {
+                        "svc": "avl_evts",
+                        "sid": sid
+                    }
+                    
+                    response = requests.post(Wialon.API_URL, data=payload, timeout=30)
+                    response.raise_for_status()
+                    
+                    print(f"🔄 {colored('Keep-alive enviado', 'blue')} - {colored(datetime.now().strftime('%H:%M:%S'), 'cyan')}")
+                    
+                except requests.RequestException as e:
+                    print(f"⚠️ Erro no keep-alive: {e}")
+                except Exception as e:
+                    print(f"⚠️ Erro inesperado no keep-alive: {e}")
+        
+        keep_alive_thread = threading.Thread(target=keep_session_alive, daemon=True)
+        keep_alive_thread.start()
+        
+        try:
+            for unidade_id in lista_unidades:
+                unidade_nome = Veiculo.objects.filter(id_wialon=unidade_id).first().nm
+                print(f"\nProcessando unidade ID: {colored(unidade_id, 'cyan')} - Nome: {colored(unidade_nome, 'yellow')}")
+
+                # Remover layer anterior
+                payload = {
+                    "svc": "render/remove_layer",
+                    "params": json.dumps({"layerName": "messages"}),
+                    "sid": sid
+                }
+                try:
+                    response = requests.post(Wialon.API_URL, data=payload)
+                    response.raise_for_status()
+                    result = response.json()
+                    print("Response 01:", result)
+                except requests.RequestException as e:
+                    print("Error:", e)
+                    continue
+
+                # Update custom property
+                payload = {
+                    "svc": "item/update_custom_property",
+                    "params": json.dumps({
+                        "itemId": unidade_id,
+                        "name": "lastmsgl",
+                        "value": f'{{"u":{unidade_id},"t":"data","s":0}}'
+                    }),
+                    "sid": sid
+                }
+                try:
+                    response = requests.post(Wialon.API_URL, data=payload)
+                    response.raise_for_status()
+                    result = response.json()
+                    print("Response 02:", result)
+                except requests.RequestException as e:
+                    print("Error:", e)
+                    continue
+
+                # Create messages layer
+                payload = {
+                    "svc": "render/create_messages_layer",
+                    "params": json.dumps({
+                        "layerName": "messages",
+                        "itemId": unidade_id,
+                        "timeFrom": timeFrom,
+                        "timeTo": timeTo,
+                        "tripDetector": 0,
+                        "flags": 0,
+                        "trackWidth": 4,
+                        "trackColor": "speed",
+                        "annotations": 0,
+                        "points": 1,
+                        "pointColor": "cc0000ff",
+                        "arrows": 1
+                    }),
+                    "sid": sid
+                }
+                try:
+                    response = requests.post(Wialon.API_URL, data=payload)
+                    response.raise_for_status()
+                    result = response.json()
+                    print("Response 03:", result)
+                    contagem_mensagens = result.get('units', [])[0].get('msgs', {}).get('count', 0) if result.get('units') else 0
+                    print(f"Contagem de mensagens para a unidade {unidade_id}:", colored(contagem_mensagens, 'green'))
+                except requests.RequestException as e:
+                    print("Error:", e)
+                    continue
+
+                # Get messages
+                payload = {
+                    "svc": "render/get_messages",
+                    "params": json.dumps({
+                        "indexFrom": 0,
+                        "indexTo": contagem_mensagens,
+                        "layerName": "messages",
+                        "unitId": unidade_id
+                    }),
+                    "sid": sid
+                }
+                try:
+                    response = requests.post(Wialon.API_URL, data=payload)
+                    response.raise_for_status()
+                    result = response.json()
+
+                    #with open(f'{deposito}/messages_{unidade_nome}_{unidade_id}.json', 'w') as f:
+                    #    json.dump(result, f, indent=4)
+
+                    if result and isinstance(result, list):
+                        df_messages = self.processar_mensagens_wialon(result)
+
+                        unidade_obj = Veiculo.objects.get(id_wialon=unidade_id)
+                        if unidade_obj and not df_messages.empty:
+                            motoristas_por_dia = defaultdict(lambda: {
+                                'pontos': [],
+                                'veiculos': set(),
+                                'timestamps': []
+                            })
+                            viagens_criar = []
+                            
+                            for _, row in df_messages.iterrows():
+                                try:
+                                    rpm_valor = float(row.get('can_rpm', 0)) if pd.notna(row.get('can_rpm')) else 0
+                                    velocidade_valor = float(row.get('speed', 0)) if pd.notna(row.get('speed')) else 0
+                                    altitude_valor = float(row.get('altitude', 0)) if pd.notna(row.get('altitude')) else 0
+                                    energia_valor = int(row.get('power', 0)) if pd.notna(row.get('power')) else 0
+                                    timestamp_valor = int(row.get('timestamp', 0)) if pd.notna(row.get('timestamp')) else 0
+                                    avl_driver_valor = int(row.get('avl_driver', 0)) if pd.notna(row.get('avl_driver')) else 0
+                                    rpm_tratado = float(row.get('can_rpm_readable', 0)) if pd.notna(row.get('can_rpm_readable')) else 0
+                                    
+                                    # Converter timestamp para data
+                                    data_viagem = date.fromtimestamp(timestamp_valor)
+                                    
+                                    # Classificar a viagem
+                                    classificacao = classificar_viagem(rpm_tratado, velocidade_valor)
+                                    
+                                    # Converter avl_driver para driver_code
+                                    driver_code_valor = avl_to_driver_code(avl_driver_valor)
+                                    nome_motorista_obj = None
+                                    # Buscar motorista pelo driver_code
+                                    nome_motorista_obj = None
+
+                                    if driver_code_valor and driver_code_valor != 0:
+                                        nome_motorista_obj = Driver.objects.filter(
+                                            codigo=driver_code_valor,
+                                            empresa=unidade_obj.empresa
+                                        ).first()
+                                        
+                                    
+                                    if nome_motorista_obj:
+                                        key = (nome_motorista_obj.id, data_viagem)
+                                        
+                                        motoristas_por_dia[key]['pontos'].append({
+                                            'rpm': rpm_tratado,
+                                            'velocidade': velocidade_valor,
+                                            'classificacao': classificacao
+                                        })
+                                        motoristas_por_dia[key]['veiculos'].add(unidade_obj.id)
+                                        motoristas_por_dia[key]['timestamps'].append(timestamp_valor)
+
+                                    viagem = Viagem_eco(
+                                        unidade=unidade_obj,
+                                        timestamp=timestamp_valor,
+                                        rpm=rpm_valor,
+                                        velocidade=velocidade_valor,
+                                        altitude=altitude_valor,
+                                        energia=energia_valor,
+                                        avl_driver=avl_driver_valor,
+                                        driver_code=driver_code_valor,
+                                        nome_motorista=nome_motorista_obj,
+                                        # Aplicar classificações
+                                        ocioso=classificacao['ocioso'],
+                                        faixa_azul=classificacao['faixa_azul'],
+                                        faixa_verde=classificacao['faixa_verde'],
+                                        faixa_amarela=classificacao['faixa_amarela'],
+                                        faixa_vermelha=classificacao['faixa_vermelha']
+                                    )
+                                    viagens_criar.append(viagem)
+                                    
+                                except Exception as e:
+                                    print(f"Erro ao processar mensagem: {e}")
+                                    continue
+                            
+                            # Criar todas as viagens de uma vez
+                            if viagens_criar:
+                                Viagem_eco.objects.bulk_create(viagens_criar, ignore_conflicts=True)
+                                print(f"✅ {colored(f'{len(viagens_criar)} viagens ecológicas criadas para {unidade_nome}', 'green')}")
+                                
+                                # Estatísticas de classificação
+                                total_viagens = len(viagens_criar)
+                                ocioso_count = sum(1 for v in viagens_criar if v.ocioso)
+                                azul_count = sum(1 for v in viagens_criar if v.faixa_azul)
+                                verde_count = sum(1 for v in viagens_criar if v.faixa_verde)
+                                amarela_count = sum(1 for v in viagens_criar if v.faixa_amarela)
+                                vermelha_count = sum(1 for v in viagens_criar if v.faixa_vermelha)
+                                
+                                print(f"\n📊 Estatísticas de classificação:")
+                                print(f"   🔵 Ocioso: {colored(ocioso_count, 'cyan')} ({colored(f'{ocioso_count/total_viagens*100:.1f}%', 'cyan')})")
+                                print(f"   🔵 Faixa Azul: {colored(azul_count, 'blue')} ({colored(f'{azul_count/total_viagens*100:.1f}%', 'blue')})")
+                                print(f"   🟢 Faixa Verde: {colored(verde_count, 'green')} ({colored(f'{verde_count/total_viagens*100:.1f}%', 'green')})")
+                                print(f"   🟡 Faixa Amarela: {colored(amarela_count, 'yellow')} ({colored(f'{amarela_count/total_viagens*100:.1f}%', 'yellow')})")
+                                print(f"   🔴 Faixa Vermelha: {colored(vermelha_count, 'red')} ({colored(f'{vermelha_count/total_viagens*100:.1f}%', 'red')})")
+                            
+                            # 🔥 DEBUG: Verificar dados coletados antes de processar
+                            print(f"\n🔍 DEBUG - Dados coletados para estatísticas:")
+                            print(f"   Total de chaves (motorista, data): {colored(len(motoristas_por_dia), 'cyan')}")
+                            if motoristas_por_dia:
+                                print(f"   Exemplo de chave: {list(motoristas_por_dia.keys())[0]}")
+                                exemplo_dados = list(motoristas_por_dia.values())[0]
+                                print(f"   Exemplo de dados: {len(exemplo_dados['pontos'])} pontos, {len(exemplo_dados['veiculos'])} veículos")
+                            else:
+                                print(f"   ⚠️ {colored('NENHUM DADO COLETADO!', 'yellow')}")
+                            
+                            # 🔥 NOVO: Criar/atualizar estatísticas diárias
+                            self.processar_estatisticas_diarias(motoristas_por_dia)
+                        
+                        print(f"\nDataFrame criado com {len(df_messages)} mensagens:")
+                        print(df_messages.head())
+                        
+                        #df_messages.to_excel(f'{deposito}/{unidade_nome}_{unidade_id}.xlsx', index=False)
+                        #print(f"DataFrame salvo em {deposito}/{unidade_nome}_{unidade_id}.xlsx")
+
+                        print(f"\nEstatísticas das mensagens:")
+                        print(f"Período: {df_messages['datetime'].min()} até {df_messages['datetime'].max()}")
+                        print(f"Velocidade média: {df_messages['speed'].mean():.2f} km/h")
+                        print(f"RPM médio: {df_messages['can_rpm_readable'].mean():.0f}" if 'can_rpm_readable' in df_messages.columns else "RPM não disponível")
+                        print(f"Consumo médio de combustível: {df_messages['can_fuel_rate'].mean():.2f} l/h" if 'can_fuel_rate' in df_messages.columns else "Consumo não disponível")
+                        print(f"Temperatura média do motor: {df_messages['can_coolant_temp'].mean():.2f} °C" if 'can_coolant_temp' in df_messages.columns else "Temperatura não disponível")
+                        print(f"Distância percorrida (odômetro): {df_messages['odometer_km'].iloc[-1] - df_messages['odometer_km'].iloc[0]:.2f} km" if 'odometer_km' in df_messages.columns else "Odômetro não disponível")
+                        print(f"Tempo médio entre mensagens: {((df_messages['timestamp'].iloc[-1] - df_messages['timestamp'].iloc[0]) / len(df_messages)):.2f} segundos")
+                        
+                        counter += 1
+                        print("Unidades processadas com sucesso até agora:", colored(counter, 'yellow'), "/", colored(n_unidades, 'green'))
+                    else:
+                        print("Nenhuma mensagem para processar")
+
+                except requests.RequestException as e:
+                    print("Error:", e)
+                    continue
+                except Exception as e:
+                    print(f"Erro ao processar unidade {unidade_id}: {e}")
+                    continue
+
+            print("Total de unidades processadas com sucesso:", colored(counter, 'blue'), "/", colored(n_unidades, 'green'))
+
+        finally:
+            keep_alive_active = False
+            if keep_alive_thread.is_alive():
+                keep_alive_thread.join(timeout=5)
+            
+            print(f"🔄 {colored('Keep-alive finalizado', 'blue')}")
+            
+            Wialon.wialon_logout(sid)
+
+
+    def processar_estatisticas_diarias(self, motoristas_por_dia):
+        """
+        Processa e salva estatísticas diárias pré-calculadas
+        """
+        import json
+        
+        print(f"\n{'='*60}")
+        print(f"🔥 PROCESSANDO ESTATÍSTICAS DIÁRIAS")
+        print(f"{'='*60}")
+        print(f"Total de motoristas/dias para processar: {colored(len(motoristas_por_dia), 'cyan')}")
+        
+        if not motoristas_por_dia:
+            print(f"⚠️ {colored('NENHUM DADO PARA PROCESSAR!', 'yellow')}")
+            return
+        
+        estatisticas_criadas = 0
+        estatisticas_atualizadas = 0
+        erros = 0
+        
+        for (motorista_id, data), dados in motoristas_por_dia.items():
+            try:
+                motorista = Driver.objects.get(id=motorista_id)
+                
+                # Contar pontos por classificação
+                total_pontos = len(dados['pontos'])
+                pontos_ocioso = sum(1 for p in dados['pontos'] if p['classificacao']['ocioso'])
+                pontos_azul = sum(1 for p in dados['pontos'] if p['classificacao']['faixa_azul'])
+                pontos_verde = sum(1 for p in dados['pontos'] if p['classificacao']['faixa_verde'])
+                pontos_amarela = sum(1 for p in dados['pontos'] if p['classificacao']['faixa_amarela'])
+                pontos_vermelha = sum(1 for p in dados['pontos'] if p['classificacao']['faixa_vermelha'])
+                
+                # Calcular médias
+                rpm_medio = sum(p['rpm'] for p in dados['pontos']) / total_pontos if total_pontos > 0 else 0
+                velocidade_media = sum(p['velocidade'] for p in dados['pontos']) / total_pontos if total_pontos > 0 else 0
+                
+                # Timestamps
+                timestamps = sorted(dados['timestamps'])
+                timestamp_inicio = timestamps[0] if timestamps else None
+                timestamp_fim = timestamps[-1] if timestamps else None
+                
+                # Veículos
+                total_veiculos = len(dados['veiculos'])
+                veiculos_ids_json = json.dumps(list(dados['veiculos']))
+                
+                # Debug detalhado
+                print(f"\n  📊 Processando: {colored(motorista.nm, 'yellow')} - {colored(data, 'cyan')}")
+                print(f"     Total pontos: {total_pontos}")
+                print(f"     Ocioso: {pontos_ocioso} | Azul: {pontos_azul} | Verde: {pontos_verde} | Amarela: {pontos_amarela} | Vermelha: {pontos_vermelha}")
+                print(f"     RPM médio: {rpm_medio:.2f} | Velocidade média: {velocidade_media:.2f}")
+                print(f"     Veículos: {total_veiculos}")
+                
+                # Criar ou atualizar estatística
+                estatistica, created = Estatistica_Diaria_Motorista.objects.update_or_create(
+                    motorista=motorista,
+                    data=data,
+                    defaults={
+                        'total_pontos': total_pontos,
+                        'pontos_ocioso': pontos_ocioso,
+                        'pontos_faixa_azul': pontos_azul,
+                        'pontos_faixa_verde': pontos_verde,
+                        'pontos_faixa_amarela': pontos_amarela,
+                        'pontos_faixa_vermelha': pontos_vermelha,
+                        'rpm_medio': rpm_medio,
+                        'velocidade_media': velocidade_media,
+                        'timestamp_inicio': timestamp_inicio,
+                        'timestamp_fim': timestamp_fim,
+                        'total_veiculos': total_veiculos,
+                        'veiculos_ids': veiculos_ids_json,
+                    }
+                )
+                
+                if created:
+                    estatisticas_criadas += 1
+                    print(f"     ✅ {colored('CRIADA', 'green')}")
+                else:
+                    estatisticas_atualizadas += 1
+                    print(f"     🔄 {colored('ATUALIZADA', 'blue')}")
+                    
+            except Driver.DoesNotExist:
+                erros += 1
+                print(f"     ❌ {colored(f'Motorista ID {motorista_id} não encontrado', 'red')}")
+                continue
+            except Exception as e:
+                erros += 1
+                print(f"     ❌ {colored(f'Erro: {str(e)}', 'red')}")
+                import traceback
+                traceback.print_exc()
+                continue
+        
+        # Resumo final
+        print(f"\n{'='*60}")
+        print(f"📈 RESUMO DO PROCESSAMENTO")
+        print(f"{'='*60}")
+        print(f"✅ Estatísticas criadas: {colored(estatisticas_criadas, 'green')}")
+        print(f"🔄 Estatísticas atualizadas: {colored(estatisticas_atualizadas, 'blue')}")
+        print(f"❌ Erros: {colored(erros, 'red')}")
+        print(f"{'='*60}\n")
+
+    def gerar_estatisticas_de_viagens_eco(self, empresa=None, dias=None):
+        """
+        🔥 FUNÇÃO STANDALONE: Processa dados de Viagem_eco e cria Estatistica_Diaria_Motorista
+        Pode ser executada a qualquer momento para gerar/atualizar estatísticas
+        
+        Args:
+            empresa: Nome da empresa (opcional, None = todas)
+            dias: Número de dias para processar (opcional, None = todos os dados)
+        """
+        from datetime import date, timedelta
+        from collections import defaultdict
+        import json
+        
+        print(f"\n{'='*70}")
+        print(f"🔥 GERANDO ESTATÍSTICAS DIÁRIAS A PARTIR DE VIAGEM_ECO")
+        print(f"{'='*70}")
+        
+        # Construir query base
+        viagens_query = Viagem_eco.objects.select_related('nome_motorista', 'unidade__empresa')
+        viagens_query = viagens_query.filter(nome_motorista__isnull=False)
+        
+        # Filtrar por empresa se especificado
+        if empresa:
+            viagens_query = viagens_query.filter(unidade__empresa__nome=empresa)
+            print(f"📊 Empresa filtrada: {colored(empresa, 'cyan')}")
+        else:
+            print(f"📊 Processando: {colored('TODAS as empresas', 'cyan')}")
+        
+        # Filtrar por período se especificado
+        if dias:
+            from datetime import datetime
+            data_limite = datetime.now() - timedelta(days=dias)
+            timestamp_limite = int(data_limite.timestamp())
+            viagens_query = viagens_query.filter(timestamp__gte=timestamp_limite)
+            print(f"📅 Período: {colored(f'Últimos {dias} dias', 'cyan')}")
+        else:
+            print(f"📅 Período: {colored('TODOS os dados históricos', 'yellow')}")
+        
+        # Contar total de viagens
+        total_viagens = viagens_query.count()
+        print(f"🚛 Total de viagens a processar: {colored(f'{total_viagens:,}', 'green')}")
+        
+        if total_viagens == 0:
+            print(f"⚠️ {colored('Nenhuma viagem encontrada!', 'yellow')}")
+            return
+        
+        print(f"\n{'─'*70}")
+        print(f"🔄 Agrupando dados por motorista e data...")
+        print(f"{'─'*70}\n")
+        
+        # Dicionário para agrupar dados: {(motorista_id, data): dados}
+        motoristas_por_dia = defaultdict(lambda: {
+            'pontos': [],
+            'veiculos': set(),
+            'timestamps': []
+        })
+        
+        # Processar viagens em lotes para economizar memória
+        batch_size = 10000
+        total_processadas = 0
+        
+        # Usar iterator() para processar em batches
+        viagens_iterator = viagens_query.iterator(chunk_size=batch_size)
+        
+        print(f"⏳ Processando em lotes de {batch_size:,} viagens...")
+        
+        for viagem in viagens_iterator:
+            try:
+                # Converter timestamp para data
+                data_viagem = date.fromtimestamp(viagem.timestamp)
+                motorista_id = viagem.nome_motorista.id
+                
+                # Determinar classificação
+                classificacao = {
+                    'ocioso': viagem.ocioso,
+                    'faixa_azul': viagem.faixa_azul,
+                    'faixa_verde': viagem.faixa_verde,
+                    'faixa_amarela': viagem.faixa_amarela,
+                    'faixa_vermelha': viagem.faixa_vermelha
+                }
+                
+                # Calcular RPM tratado (dividir por 8 conforme sua lógica)
+                rpm_tratado = (viagem.rpm / 8) if viagem.rpm else 0
+                
+                # Agrupar por motorista e data
+                key = (motorista_id, data_viagem)
+                motoristas_por_dia[key]['pontos'].append({
+                    'rpm': rpm_tratado,
+                    'velocidade': viagem.velocidade or 0,
+                    'classificacao': classificacao
+                })
+                motoristas_por_dia[key]['veiculos'].add(viagem.unidade.id)
+                motoristas_por_dia[key]['timestamps'].append(viagem.timestamp)
+                
+                total_processadas += 1
+                
+                # Mostrar progresso a cada 10k viagens
+                if total_processadas % 10000 == 0:
+                    print(f"   ⚙️ Processadas: {colored(f'{total_processadas:,}', 'cyan')} / {colored(f'{total_viagens:,}', 'green')} viagens ({total_processadas/total_viagens*100:.1f}%)")
+                
+            except Exception as e:
+                print(f"   ⚠️ Erro ao processar viagem ID {viagem.id}: {e}")
+                continue
+        
+        print(f"\n✅ Total de viagens processadas: {colored(f'{total_processadas:,}', 'green')}")
+        print(f"📊 Total de combinações (motorista, data): {colored(len(motoristas_por_dia), 'cyan')}")
+        
+        # Agora criar as estatísticas
+        print(f"\n{'─'*70}")
+        print(f"💾 Salvando estatísticas no banco de dados...")
+        print(f"{'─'*70}\n")
+        
+        estatisticas_criadas = 0
+        estatisticas_atualizadas = 0
+        erros = 0
+        
+        for (motorista_id, data), dados in motoristas_por_dia.items():
+            try:
+                motorista = Driver.objects.get(id=motorista_id)
+                
+                # Contar pontos por classificação
+                total_pontos = len(dados['pontos'])
+                pontos_ocioso = sum(1 for p in dados['pontos'] if p['classificacao']['ocioso'])
+                pontos_azul = sum(1 for p in dados['pontos'] if p['classificacao']['faixa_azul'])
+                pontos_verde = sum(1 for p in dados['pontos'] if p['classificacao']['faixa_verde'])
+                pontos_amarela = sum(1 for p in dados['pontos'] if p['classificacao']['faixa_amarela'])
+                pontos_vermelha = sum(1 for p in dados['pontos'] if p['classificacao']['faixa_vermelha'])
+                
+                # Calcular médias
+                rpm_medio = sum(p['rpm'] for p in dados['pontos']) / total_pontos if total_pontos > 0 else 0
+                velocidade_media = sum(p['velocidade'] for p in dados['pontos']) / total_pontos if total_pontos > 0 else 0
+                
+                # Timestamps
+                timestamps = sorted(dados['timestamps'])
+                timestamp_inicio = timestamps[0] if timestamps else None
+                timestamp_fim = timestamps[-1] if timestamps else None
+                
+                # Veículos
+                total_veiculos = len(dados['veiculos'])
+                veiculos_ids_json = json.dumps(list(dados['veiculos']))
+                
+                # Criar ou atualizar estatística
+                estatistica, created = Estatistica_Diaria_Motorista.objects.update_or_create(
+                    motorista=motorista,
+                    data=data,
+                    defaults={
+                        'total_pontos': total_pontos,
+                        'pontos_ocioso': pontos_ocioso,
+                        'pontos_faixa_azul': pontos_azul,
+                        'pontos_faixa_verde': pontos_verde,
+                        'pontos_faixa_amarela': pontos_amarela,
+                        'pontos_faixa_vermelha': pontos_vermelha,
+                        'rpm_medio': rpm_medio,
+                        'velocidade_media': velocidade_media,
+                        'timestamp_inicio': timestamp_inicio,
+                        'timestamp_fim': timestamp_fim,
+                        'total_veiculos': total_veiculos,
+                        'veiculos_ids': veiculos_ids_json,
+                    }
+                )
+                
+                if created:
+                    estatisticas_criadas += 1
+                else:
+                    estatisticas_atualizadas += 1
+                
+                # Mostrar progresso
+                total_stats = estatisticas_criadas + estatisticas_atualizadas
+                if total_stats % 50 == 0:
+                    print(f"   💾 Salvas: {colored(total_stats, 'cyan')} estatísticas...")
+                    
+            except Driver.DoesNotExist:
+                erros += 1
+                print(f"   ❌ Motorista ID {motorista_id} não encontrado")
+                continue
+            except Exception as e:
+                erros += 1
+                print(f"   ❌ Erro ao salvar estatística para motorista {motorista_id} - {data}: {e}")
+                continue
+        
+        # Resumo final
+        print(f"\n{'='*70}")
+        print(f"📊 RESUMO FINAL")
+        print(f"{'='*70}")
+        print(f"✅ Estatísticas CRIADAS: {colored(estatisticas_criadas, 'green')}")
+        print(f"🔄 Estatísticas ATUALIZADAS: {colored(estatisticas_atualizadas, 'blue')}")
+        print(f"❌ Erros: {colored(erros, 'red')}")
+        print(f"📈 Taxa de sucesso: {colored(f'{((estatisticas_criadas + estatisticas_atualizadas) / len(motoristas_por_dia) * 100):.1f}%', 'green')}")
+        print(f"{'='*70}\n")
 
 ###-----------------------------------------------------------------------------------------------------------------#####
 # INVESTIGAÇÃO #

@@ -20,8 +20,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from .models import (
     Motorista, Caminhao, Viagem_MOT, Viagem_CAM,
-    Empresa, Unidade, Viagem_Base, CheckPoint, Veiculo, Viagem_Detalhada,
-    Driver
+    Empresa, Unidade, Viagem_Base, CheckPoint, Veiculo, Viagem_Detalhada
 )
 from .config import Config, ConfiguracaoManager
 import pandas as pd
@@ -1103,7 +1102,7 @@ def ranking_empresa(request):
         return HttpResponseRedirect(reverse('login'))
     
     # Obter filtros opcionais
-    periodo_selecionado = request.GET.get('periodo', 'Últimos 30 dias')  #  Padrão: últimos 30 dias
+    periodo_selecionado = request.GET.get('periodo', 'todos')
     
     # Buscar viagens apenas da empresa logada
     viagens_base = Viagem_Base.objects.select_related('unidade', 'unidade__empresa').filter(
@@ -2456,11 +2455,13 @@ def performance_frota(request):
     }
     
     return render(request, 'umbrella360/performance.html', context)
+
 def performance_motoristas(request):
-    """View OTIMIZADA usando estatísticas pré-processadas"""
-    from datetime import datetime, timedelta, date
-    from django.core.paginator import Paginator
+    """View para análise de performance de RPM dos motoristas - USANDO CAMPOS BOOLEANOS DO MODEL"""
+    from datetime import datetime, timedelta
+    from django.db.models import Count, Avg, Q
     
+    # Verificar se há empresa logada
     empresa_logada_id = request.session.get('empresa_logada')
     empresa_logada = None
     
@@ -2470,117 +2471,258 @@ def performance_motoristas(request):
         except Empresa.DoesNotExist:
             return HttpResponseRedirect(reverse('login_view'))
     
-    # Filtros de data
+    # 🔥 Obter filtros de data
     data_inicio = request.GET.get('data_inicio', '')
     data_fim = request.GET.get('data_fim', '')
-    periodo_dias = request.GET.get('periodo_dias', '30')
+    periodo_dias = request.GET.get('periodo_dias', '30')  # Padrão: últimos 30 dias
     
-    # 🔥 USAR MODELO PRÉ-PROCESSADO
-    from .models import Estatistica_Diaria_Motorista
+    # Buscar viagens eco relacionadas a motoristas
+    from .models import Viagem_eco, Driver
     
-    stats_query = Estatistica_Diaria_Motorista.objects.select_related('motorista', 'motorista__empresa')
+    viagens_eco_query = Viagem_eco.objects.select_related('nome_motorista', 'unidade', 'unidade__empresa')
     
-    # Aplicar filtro de empresa
+    # Filtrar apenas viagens que têm motorista associado
+    viagens_eco_query = viagens_eco_query.filter(nome_motorista__isnull=False)
+    
     if empresa_logada_id:
-        stats_query = stats_query.filter(motorista__empresa_id=empresa_logada_id)
+        viagens_eco_query = viagens_eco_query.filter(unidade__empresa_id=empresa_logada_id)
     
     # Aplicar filtros de data
     if data_inicio and data_fim:
         try:
-            dt_inicio = datetime.strptime(data_inicio, '%Y-%m-%d').date()
-            dt_fim = datetime.strptime(data_fim, '%Y-%m-%d').date()
-            stats_query = stats_query.filter(data__gte=dt_inicio, data__lte=dt_fim)
+            dt_inicio = datetime.strptime(data_inicio, '%Y-%m-%d')
+            dt_fim = datetime.strptime(data_fim, '%Y-%m-%d')
+            timestamp_inicio = int(dt_inicio.timestamp())
+            timestamp_fim = int(dt_fim.replace(hour=23, minute=59, second=59).timestamp())
+            viagens_eco_query = viagens_eco_query.filter(
+                timestamp__gte=timestamp_inicio,
+                timestamp__lte=timestamp_fim
+            )
         except ValueError:
             pass
     elif periodo_dias and periodo_dias != 'todos':
         try:
             dias = int(periodo_dias)
-            data_limite = date.today() - timedelta(days=dias)
-            stats_query = stats_query.filter(data__gte=data_limite)
+            data_limite = datetime.now() - timedelta(days=dias)
+            timestamp_limite = int(data_limite.timestamp())
+            viagens_eco_query = viagens_eco_query.filter(timestamp__gte=timestamp_limite)
         except ValueError:
             pass
-    
-    # 🔥 AGREGAR POR MOTORISTA (super rápido pois dados já estão pré-processados)
-    motoristas_stats = stats_query.values('motorista_id').annotate(
-        total_pontos=Sum('total_pontos'),
-        total_ocioso=Sum('pontos_ocioso'),
-        total_azul=Sum('pontos_faixa_azul'),
-        total_verde=Sum('pontos_faixa_verde'),
-        total_amarela=Sum('pontos_faixa_amarela'),
-        total_vermelha=Sum('pontos_faixa_vermelha'),
-        rpm_medio=Avg('rpm_medio'),
-        velocidade_media=Avg('velocidade_media'),
-        score_medio=Avg('score_performance'),
-        dias_trabalhados=Count('data'),
-        total_horas=Sum('horas_trabalhadas'),
-    ).order_by('-score_medio')[:200]  # Top 200 motoristas
-    
-    # Buscar motoristas em lote
-    motoristas_ids = [s['motorista_id'] for s in motoristas_stats]
-    motoristas_dict = {
-        m.id: m 
-        for m in Driver.objects.filter(id__in=motoristas_ids).select_related('empresa')
-    }
-    
-    # Montar lista de performance
+
+    # 🔥 NOVO: Processar dados por motorista usando campos booleanos
     motoristas_performance = []
-    for stats in motoristas_stats:
-        motorista = motoristas_dict.get(stats['motorista_id'])
-        if not motorista:
-            continue
+    
+    if viagens_eco_query.exists():
+        # Agrupar por motorista e contar classificações usando os campos booleanos
+        motoristas_stats = viagens_eco_query.values('nome_motorista_id').annotate(
+            total_pontos=Count('id'),
+            
+            # Contar cada faixa usando os campos booleanos
+            faixa_azul_count=Count('id', filter=Q(faixa_azul=True)),
+            faixa_verde_count=Count('id', filter=Q(faixa_verde=True)),
+            faixa_amarela_count=Count('id', filter=Q(faixa_amarela=True)),
+            faixa_vermelha_count=Count('id', filter=Q(faixa_vermelha=True)),
+            motor_ocioso_count=Count('id', filter=Q(ocioso=True)),
+            
+            # Médias de RPM e velocidade
+            rpm_medio=Avg('rpm', filter=Q(rpm__gt=0)),
+            rpm_maximo=Max('rpm', filter=Q(rpm__gt=0)),
+            rpm_minimo=Min('rpm', filter=Q(rpm__gt=0)),
+            velocidade_media=Avg('velocidade', filter=Q(velocidade__gt=0)),
+            
+            # Contar veículos únicos
+            total_veiculos=Count('unidade_id', distinct=True)
+        )
         
-        total = stats['total_pontos']
-        if total > 0:
-            perc_ocioso = (stats['total_ocioso'] / total) * 100
-            perc_azul = (stats['total_azul'] / total) * 100
-            perc_verde = (stats['total_verde'] / total) * 100
-            perc_amarela = (stats['total_amarela'] / total) * 100
-            perc_vermelha = (stats['total_vermelha'] / total) * 100
-        else:
-            perc_ocioso = perc_azul = perc_verde = perc_amarela = perc_vermelha = 0
+        # Processar cada motorista
+        for stats in motoristas_stats:
+            try:
+                motorista = Driver.objects.select_related('empresa').get(id=stats['nome_motorista_id'])
+                
+                total_pontos = stats['total_pontos']
+                
+                # 🔥 CORREÇÃO: Calcular soma das classificações válidas (que somam 100%)
+                total_classificados = (
+                    stats['faixa_azul_count'] + 
+                    stats['faixa_verde_count'] + 
+                    stats['faixa_amarela_count'] + 
+                    stats['faixa_vermelha_count'] + 
+                    stats['motor_ocioso_count']
+                )
+                
+                # Usar total_classificados como base para percentuais (DEVE SOMAR 100%)
+                base_percentual = total_classificados if total_classificados > 0 else 1
+                
+                perc_azul = (stats['faixa_azul_count'] / base_percentual * 100)
+                perc_verde = (stats['faixa_verde_count'] / base_percentual * 100)
+                perc_amarela = (stats['faixa_amarela_count'] / base_percentual * 100)
+                perc_vermelha = (stats['faixa_vermelha_count'] / base_percentual * 100)
+                perc_ocioso = (stats['motor_ocioso_count'] / base_percentual * 100)
+                
+                # 🔥 VALIDAÇÃO: Garantir que soma seja ~100%
+                soma_percentuais = perc_azul + perc_verde + perc_amarela + perc_vermelha + perc_ocioso
+                if abs(soma_percentuais - 100.0) > 0.1:
+                    print(f"⚠️ AVISO: Soma dos percentuais para {motorista.nm} = {soma_percentuais:.2f}% (esperado: 100%)")
+                
+                # Score de performance (mais verde e azul = melhor, motor ocioso penaliza)
+                score = (perc_verde * 1.0) + (perc_azul * 0.8) - (perc_amarela * 0.5) - (perc_vermelha * 1.0) - (perc_ocioso * 0.3)
+                
+                # Ajustar RPM (dividir por 8 conforme sua lógica)
+                rpm_medio = (stats['rpm_medio'] / 8) if stats['rpm_medio'] else 0
+                rpm_maximo = (stats['rpm_maximo'] / 8) if stats['rpm_maximo'] else 0
+                rpm_minimo = (stats['rpm_minimo'] / 8) if stats['rpm_minimo'] else 0
+                
+                motoristas_performance.append({
+                    'motorista': motorista,
+                    'total_pontos': total_pontos,
+                    'total_classificados': total_classificados,
+                    'total_veiculos': stats['total_veiculos'],
+                    'total_pontos_rpm': total_pontos - stats['motor_ocioso_count'],
+                    'rpm_medio': rpm_medio,
+                    'rpm_maximo': rpm_maximo,
+                    'rpm_minimo': rpm_minimo,
+                    'velocidade_media': stats['velocidade_media'] or 0,
+                    'faixa_azul': stats['faixa_azul_count'],
+                    'faixa_verde': stats['faixa_verde_count'],
+                    'faixa_amarela': stats['faixa_amarela_count'],
+                    'faixa_vermelha': stats['faixa_vermelha_count'],
+                    'motor_ocioso': stats['motor_ocioso_count'],
+                    'perc_azul': perc_azul,
+                    'perc_verde': perc_verde,
+                    'perc_amarela': perc_amarela,
+                    'perc_vermelha': perc_vermelha,
+                    'perc_ocioso': perc_ocioso,
+                    'soma_percentuais': soma_percentuais,
+                    'score': score,
+                })
+            except Driver.DoesNotExist:
+                continue
+    
+    # Ordenar por score (melhor performance primeiro)
+    motoristas_performance = sorted(motoristas_performance, key=lambda x: x['score'], reverse=True)
+    
+    # Calcular estatísticas gerais
+    if motoristas_performance:
+        # 🔥 CORREÇÃO: Usar total_classificados para médias ponderadas corretas
+        total_classificados_geral = sum(m['total_classificados'] for m in motoristas_performance)
+        total_pontos_geral = sum(m['total_pontos'] for m in motoristas_performance)
         
-        motoristas_performance.append({
-            'motorista': motorista,
-            'total_pontos': total,
-            'total_classificados': total,
-            'rpm_medio': stats['rpm_medio'] or 0,
-            'velocidade_media': stats['velocidade_media'] or 0,
-            'faixa_azul': stats['total_azul'],
-            'faixa_verde': stats['total_verde'],
-            'faixa_amarela': stats['total_amarela'],
-            'faixa_vermelha': stats['total_vermelha'],
-            'motor_ocioso': stats['total_ocioso'],
-            'perc_azul': perc_azul,
-            'perc_verde': perc_verde,
-            'perc_amarela': perc_amarela,
-            'perc_vermelha': perc_vermelha,
-            'perc_ocioso': perc_ocioso,
-            'score': stats['score_medio'] or 0,
-            'dias_trabalhados': stats['dias_trabalhados'],
-            'total_horas': stats['total_horas'] or 0,
+        stats_gerais = {
+            'total_motoristas': len(motoristas_performance),
+            'total_pontos': total_pontos_geral,
+            'total_classificados': total_classificados_geral,
+            'rpm_medio_geral': sum(m['rpm_medio'] * m['total_pontos'] for m in motoristas_performance) / total_pontos_geral if total_pontos_geral > 0 else 0,
+            'velocidade_media_geral': sum(m['velocidade_media'] * m['total_pontos'] for m in motoristas_performance) / total_pontos_geral if total_pontos_geral > 0 else 0,
+            
+            # 🔥 CORREÇÃO: Percentuais gerais somam 100%
+            'perc_verde_geral': (sum(m['faixa_verde'] for m in motoristas_performance) / total_classificados_geral * 100) if total_classificados_geral > 0 else 0,
+            'perc_vermelha_geral': (sum(m['faixa_vermelha'] for m in motoristas_performance) / total_classificados_geral * 100) if total_classificados_geral > 0 else 0,
+            'perc_azul_geral': (sum(m['faixa_azul'] for m in motoristas_performance) / total_classificados_geral * 100) if total_classificados_geral > 0 else 0,
+            'perc_amarela_geral': (sum(m['faixa_amarela'] for m in motoristas_performance) / total_classificados_geral * 100) if total_classificados_geral > 0 else 0,
+            'perc_ocioso_geral': (sum(m['motor_ocioso'] for m in motoristas_performance) / total_classificados_geral * 100) if total_classificados_geral > 0 else 0,
+        }
+        
+        # 🔥 VALIDAÇÃO: Verificar se soma é ~100%
+        soma_geral = (
+            stats_gerais['perc_verde_geral'] + 
+            stats_gerais['perc_vermelha_geral'] + 
+            stats_gerais['perc_azul_geral'] + 
+            stats_gerais['perc_amarela_geral'] + 
+            stats_gerais['perc_ocioso_geral']
+        )
+        if abs(soma_geral - 100.0) > 0.1:
+            print(f"⚠️ AVISO: Soma dos percentuais gerais = {soma_geral:.2f}% (esperado: 100%)")
+    else:
+        stats_gerais = {
+            'total_motoristas': 0,
+            'total_pontos': 0,
+            'total_classificados': 0,
+            'rpm_medio_geral': 0,
+            'velocidade_media_geral': 0,
+            'perc_verde_geral': 0,
+            'perc_vermelha_geral': 0,
+            'perc_azul_geral': 0,
+            'perc_amarela_geral': 0,
+            'perc_ocioso_geral': 0,
+        }
+    
+    # 🔥 NOVO: Preparar dados temporais usando campos booleanos
+    from collections import defaultdict
+    from datetime import date
+    
+    evolucao_temporal = []
+    
+    if viagens_eco_query.exists():
+        # Agrupar viagens por data
+        dados_por_data = defaultdict(lambda: {
+            'total_registros': 0,
+            'faixa_azul': 0,
+            'faixa_verde': 0,
+            'faixa_amarela': 0,
+            'faixa_vermelha': 0,
+            'motor_ocioso': 0,
+            'rpms': [],
+            'velocidades': []
         })
-    
-    # Paginação
-    paginator = Paginator(motoristas_performance, 10)
-    page_number = request.GET.get('page', 1)
-    try:
-        motoristas_paginados = paginator.page(page_number)
-    except:
-        motoristas_paginados = paginator.page(1)
-    
-    # Estatísticas gerais
-    stats_gerais = {
-        'total_motoristas': len(motoristas_performance),
-        'total_pontos': sum(m['total_pontos'] for m in motoristas_performance),
-        'rpm_medio_geral': sum(m['rpm_medio'] * m['total_pontos'] for m in motoristas_performance) / sum(m['total_pontos'] for m in motoristas_performance) if motoristas_performance else 0,
-    }
+        
+        for v in viagens_eco_query:
+            try:
+                data_viagem = date.fromtimestamp(v.timestamp)
+                
+                dados_por_data[data_viagem]['total_registros'] += 1
+                
+                # Contar classificações usando os campos booleanos
+                if v.faixa_azul:
+                    dados_por_data[data_viagem]['faixa_azul'] += 1
+                if v.faixa_verde:
+                    dados_por_data[data_viagem]['faixa_verde'] += 1
+                if v.faixa_amarela:
+                    dados_por_data[data_viagem]['faixa_amarela'] += 1
+                if v.faixa_vermelha:
+                    dados_por_data[data_viagem]['faixa_vermelha'] += 1
+                if v.ocioso:
+                    dados_por_data[data_viagem]['motor_ocioso'] += 1
+                
+                # Coletar RPM e velocidade para médias
+                if v.rpm and v.rpm > 0:
+                    dados_por_data[data_viagem]['rpms'].append(v.rpm / 8)
+                if v.velocidade and v.velocidade > 0:
+                    dados_por_data[data_viagem]['velocidades'].append(v.velocidade)
+                    
+            except (ValueError, OSError):
+                continue
+        
+        # Calcular métricas por data
+        for data, dados in sorted(dados_por_data.items()):
+            total = dados['total_registros']
+            if total > 0:
+                # 🔥 Usar total como base (soma = 100%)
+                perc_azul = (dados['faixa_azul'] / total * 100)
+                perc_verde = (dados['faixa_verde'] / total * 100)
+                perc_amarela = (dados['faixa_amarela'] / total * 100)
+                perc_vermelha = (dados['faixa_vermelha'] / total * 100)
+                perc_ocioso = (dados['motor_ocioso'] / total * 100)
+                
+                score = (perc_verde * 1.0) + (perc_azul * 0.8) - (perc_amarela * 0.5) - (perc_vermelha * 1.0) - (perc_ocioso * 0.3)
+                
+                evolucao_temporal.append({
+                    'data': data.strftime('%Y-%m-%d'),
+                    'score': round(score, 2),
+                    'rpm_medio': round(sum(dados['rpms']) / len(dados['rpms']), 1) if dados['rpms'] else 0,
+                    'velocidade_media': round(sum(dados['velocidades']) / len(dados['velocidades']), 1) if dados['velocidades'] else 0,
+                    'perc_verde': round(perc_verde, 1),
+                    'perc_vermelha': round(perc_vermelha, 1),
+                    'perc_azul': round(perc_azul, 1),
+                    'perc_amarela': round(perc_amarela, 1),
+                    'perc_ocioso': round(perc_ocioso, 1),
+                    'total_pontos': total
+                })
     
     context = {
         'empresa_logada': empresa_logada,
-        'motoristas_performance': motoristas_paginados,
-        'paginator': paginator,
-        'page_obj': motoristas_paginados,
+        'motoristas_performance': motoristas_performance,
         'stats_gerais': stats_gerais,
+        'evolucao_temporal': evolucao_temporal,
         'data_inicio': data_inicio,
         'data_fim': data_fim,
         'periodo_dias': periodo_dias,
