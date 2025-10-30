@@ -18,9 +18,7 @@ import sqlite3
 import numbers
 import threading
 import time
-conn = sqlite3.connect('db.sqlite3')
-conn.execute('PRAGMA journal_mode=WAL;')
-conn.close()
+
 
 
 
@@ -52,14 +50,13 @@ class Command(BaseCommand):
         # PRINCIPAL #
         #self.Limpeza() 
 
-        #self.CLTDR_TESTE_01(cor1="blue", cor2="green")
-        #   self.CLTDR_TESTE_02(cor1="blue", cor2="green")
+        #self.UMBRELLA(cor1="blue", cor2="green")
         ##################################################
         # MENSAGENS #
 
         #Viagem_eco.objects.all().delete()
-        self.MENSAGENS(1,"Petitto")
-        self.MENSAGENS(1,"CPBRACELL")
+        #self.MENSAGENS(30,"Petitto")
+        self.MENSAGENS(15,"CPBRACELL")
         
 
         ##################################################
@@ -232,7 +229,7 @@ class Command(BaseCommand):
 
 
 
-    def CLTDR_TESTE_02(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
+    def UMBRELLA(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
         def comm(msg):
             print(colored("="*30, cor1))
             print(colored(tool, cor2))
@@ -253,7 +250,7 @@ class Command(BaseCommand):
         self.ATUALIZADOR_01(sid)
 
         ###__CLTDR_empresas__###
-        self.CLTDR_empresas(sid, cor1="blue" , cor2="white", tool= "CLTDR_empresas")
+        #self.CLTDR_empresas(sid, cor1="blue" , cor2="white", tool= "CLTDR_empresas")
 
         Wialon.wialon_logout(sid)
 
@@ -1884,7 +1881,9 @@ class Command(BaseCommand):
         #lista_unidades = list(lista_sfresgate) + list(lista_petitto) + list(lista_cpbracell)
         #lista_unidades = list(lista_petitto) + list(lista_cpbracell)
 
-        lista_unidades = Veiculo.objects.filter(empresa__nome=empresa).values_list('id_wialon',flat=True)[:3]
+        lista_unidades = Veiculo.objects.filter(empresa__nome=empresa).values_list('id_wialon',flat=True)
+        #lista_unidades = Veiculo.objects.filter(nm__icontains="1037").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+
 
         n_unidades = len(lista_unidades)
         print(f"lista_unidades: {n_unidades} unidades.")

@@ -36,3 +36,14 @@ class Usuario(models.Model):
         """Define a senha do usuário (hash)"""
         from django.contrib.auth.hashers import make_password
         self.senha = make_password(senha_texto)
+
+
+class YouTubeData(models.Model):
+    termo = models.CharField(max_length=200, blank=False, null=False)
+    data_inicial = models.DateField(blank=False, null=False)
+    data_final = models.DateField(blank=False, null=False)
+    total_videos = models.IntegerField(default=0)
+    data_consulta = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['termo', 'data_inicial', 'data_final']

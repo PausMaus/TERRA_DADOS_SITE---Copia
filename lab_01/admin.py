@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Regiao, GoogleTrendsData, Usuario
+from .models import Regiao, GoogleTrendsData, Usuario, YouTubeData
 
 @admin.register(Regiao)
 class RegiaoAdmin(admin.ModelAdmin):
@@ -22,3 +22,8 @@ class UsuarioAdmin(admin.ModelAdmin):
         if 'senha' in form.changed_data:
             obj.set_senha(form.cleaned_data['senha'])
         super().save_model(request, obj, form, change)
+
+
+@admin.register(YouTubeData)
+class YoutubeDataAdmin(admin.ModelAdmin):
+    list_display = ['termo','data_inicial']

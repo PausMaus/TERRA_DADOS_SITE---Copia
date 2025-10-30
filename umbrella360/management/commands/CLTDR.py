@@ -18,9 +18,6 @@ import sqlite3
 import numbers
 import threading
 import time
-conn = sqlite3.connect('db.sqlite3')
-conn.execute('PRAGMA journal_mode=WAL;')
-conn.close()
 
 
 
@@ -53,12 +50,12 @@ class Command(BaseCommand):
         #self.Limpeza() 
 
         #self.CLTDR_TESTE_01(cor1="blue", cor2="green")
-        #   self.CLTDR_TESTE_02(cor1="blue", cor2="green")
+        #self.CLTDR_TESTE_02(cor1="blue", cor2="green")
         ##################################################
         # MENSAGENS #
 
         #Viagem_eco.objects.all().delete()
-        self.MENSAGENS(1,"Petitto")
+        self.MENSAGENS(20,"Petitto")
         self.MENSAGENS(1,"CPBRACELL")
         
 

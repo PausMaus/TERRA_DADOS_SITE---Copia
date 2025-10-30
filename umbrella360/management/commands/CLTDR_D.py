@@ -540,7 +540,7 @@ class Command(BaseCommand):
         # pega dos ultimos 30 dias usando um loop for
         #dias = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
         # dias de testes
-        dias = range(1,15)
+        dias = range(1,3)
         for dia in dias:
             self.CLTDR_MOT_01_teste(sid, processamento_df, Objeto=401756219, flag=16777216, dias=dia, periodo=str(dia))
 
