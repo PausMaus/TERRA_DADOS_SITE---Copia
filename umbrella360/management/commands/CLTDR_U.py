@@ -50,7 +50,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Iniciando comando às {start_time.strftime("%H:%M:%S")}'))
         ###############################################
         # PRINCIPAL #
-        self.Limpeza() 
+        #self.Limpeza() 
 
         #self.CLTDR_TESTE_01(cor1="blue", cor2="green")
         self.CLTDR_TESTE_02(cor1="blue", cor2="green")

@@ -16,6 +16,8 @@ from datetime import timedelta
 import pytz
 import sqlite3
 import numbers
+import threading
+import time
 conn = sqlite3.connect('db.sqlite3')
 conn.execute('PRAGMA journal_mode=WAL;')
 conn.close()
@@ -55,7 +57,7 @@ class Command(BaseCommand):
         ##################################################
         # MENSAGENS #
         
-        self.MENSAGENS_03(1)
+        self.MENSAGENS_04(1)
 
         ##################################################
         # ESTUDO #
@@ -1499,7 +1501,7 @@ class Command(BaseCommand):
             
             # Converte RPM e velocidade CAN para valores mais legíveis
             if 'can_rpm' in df.columns:
-                df['can_rpm_readable'] = df['can_rpm'] * 0.25  # Ajuste conforme necessário
+                df['can_rpm_readable'] = df['can_rpm'] / 8  # Ajuste conforme necessário
         
             if 'can_speed' in df.columns:
                 df['can_speed_kmh'] = df['can_speed'] / 256  # Ajuste conforme necessário
@@ -1844,10 +1846,7 @@ class Command(BaseCommand):
 
         Wialon.wialon_logout(sid)
 
-
-    def MENSAGENS_03(self, tempo):
-        import threading
-        import time
+    def MENSAGENS_04(self, tempo):
         
         def avl_to_driver_code(avl_driver: int) -> int:
             """Converte código AVL para código do motorista"""
@@ -1855,49 +1854,74 @@ class Command(BaseCommand):
                 if not avl_driver or avl_driver == 0:
                     return 0
                 
-                hex_str = hex(avl_driver)[2:]  # remove '0x'
+                hex_str = hex(avl_driver)[2:] # remove '0x'
                 # garante que tenha número par de caracteres
                 if len(hex_str) % 2 != 0:
                     hex_str = '0' + hex_str
-                # inverte os bytes
+                    # inverte os bytes
                 reversed_bytes = ''.join([hex_str[i:i+2] for i in range(0, len(hex_str), 2)][::-1])
                 # extrai da posição 6 os próximos 8 caracteres
                 if len(reversed_bytes) >= 14:
                     substr = reversed_bytes[6:14]
-                    # converte para decimal
+                     # converte para decimal
                     return int(substr, 16)
                 else:
                     return 0
             except (ValueError, TypeError, IndexError):
                 return 0
 
-
+        def classificar_viagem(rpm: float, velocidade: float) -> dict:
+            """
+            Classifica a viagem baseada em RPM e velocidade
+            Retorna um dicionário com as classificações booleanas
+            """
+            classificacao = {
+                'ocioso': False,
+                'faixa_azul': False,
+                'faixa_verde': False,
+                'faixa_amarela': False,
+                'faixa_vermelha': False
+            }
+            
+            # Verifica se está ocioso (parado com motor ligado)
+            if velocidade == 0 and rpm > 0:
+                classificacao['ocioso'] = True
+                return classificacao
+            
+            # Classifica por faixa de RPM (apenas se estiver em movimento)
+            if velocidade > 0:
+                if 350 <= rpm <= 799:
+                    classificacao['faixa_azul'] = True
+                elif 800 <= rpm <= 1300:
+                    classificacao['faixa_verde'] = True
+                elif 1301 <= rpm <= 2300:
+                    classificacao['faixa_amarela'] = True
+                elif rpm > 2301:
+                    classificacao['faixa_vermelha'] = True
+            
+            return classificacao
         
         counter = 0
 
-        lista_cpbracell = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        lista_petitto = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+        lista_cpbracell = Veiculo.objects.filter(empresa__nome="CPBRACELL").values_list('id_wialon', flat=True)
+        lista_petitto = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)
         lista_sfresgate = Veiculo.objects.filter(empresa__nome="São Francisco Resgate").values_list('id_wialon', flat=True)
 
-        #lista_unidades = Veiculo.objects.filter(nm__icontains="1025").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
-        #lista todos os veículos
-        #lista_unidades = Veiculo.objects.all().values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
         lista_unidades = list(lista_sfresgate) + list(lista_petitto) + list(lista_cpbracell)
-        lista_unidades = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)[:10]
+        #lista_unidades = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)[:10]
 
         n_unidades = len(lista_unidades)
         print(f"lista_unidades: {n_unidades} unidades.")
         print(lista_unidades)
 
         current_time = int(time.time())
-        timeFrom = current_time - (tempo * 24 * 3600)  
-        timeTo = current_time  # Agora
+        timeFrom = current_time - (tempo * 24 * 3600)
+        timeTo = current_time
         sid = Wialon.authenticate_with_wialon(WIALON_TOKEN_UMBR)
         if not sid:
             self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
             return
-        
-        # Variável de controle para parar o keep-alive
+        # Variável de controle para parar o keep-alive        
         keep_alive_active = True
         
         def keep_session_alive():
@@ -1933,15 +1957,12 @@ class Command(BaseCommand):
         try:
             #################################################
             for unidade_id in lista_unidades:
-
                 unidade_nome = Veiculo.objects.filter(id_wialon=unidade_id).first().nm
                 print(f"\nProcessando unidade ID: {colored(unidade_id, 'cyan')} - Nome: {colored(unidade_nome, 'yellow')}")
 
                 payload = {
                     "svc": "render/remove_layer",
-                    "params": json.dumps({
-                        "layerName":"messages"
-                    }),
+                    "params": json.dumps({"layerName": "messages"}),
                     "sid": sid
                 }
                 try:
@@ -1958,7 +1979,9 @@ class Command(BaseCommand):
                 payload = {
                     "svc": "item/update_custom_property",
                     "params": json.dumps({
-                        "itemId": unidade_id, "name": "lastmsgl", "value": f'{{"u":{unidade_id},"t":"data","s":0}}'
+                        "itemId": unidade_id,
+                        "name": "lastmsgl",
+                        "value": f'{{"u":{unidade_id},"t":"data","s":0}}'
                     }),
                     "sid": sid
                 }
@@ -1976,7 +1999,18 @@ class Command(BaseCommand):
                 payload = {
                     "svc": "render/create_messages_layer",
                     "params": json.dumps({
-                        "layerName":"messages","itemId":unidade_id,"timeFrom":timeFrom,"timeTo":timeTo,"tripDetector":0,"flags":0,"trackWidth":4,"trackColor":"speed","annotations":0,"points":1,"pointColor":"cc0000ff","arrows":1
+                        "layerName": "messages",
+                        "itemId": unidade_id,
+                        "timeFrom": timeFrom,
+                        "timeTo": timeTo,
+                        "tripDetector": 0,
+                        "flags": 0,
+                        "trackWidth": 4,
+                        "trackColor": "speed",
+                        "annotations": 0,
+                        "points": 1,
+                        "pointColor": "cc0000ff",
+                        "arrows": 1
                     }),
                     "sid": sid
                 }
@@ -1991,12 +2025,14 @@ class Command(BaseCommand):
                     print("Error:", e)
                     continue
 
-                ###################################################
-                # Requisição que retorna as mensagens
+                # Get messages
                 payload = {
                     "svc": "render/get_messages",
                     "params": json.dumps({
-                        "indexFrom":0,"indexTo":contagem_mensagens,"layerName":"messages","unitId":unidade_id
+                        "indexFrom": 0,
+                        "indexTo": contagem_mensagens,
+                        "layerName": "messages",
+                        "unitId": unidade_id
                     }),
                     "sid": sid
                 }

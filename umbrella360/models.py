@@ -309,3 +309,5 @@ class Infrações(models.Model):
         ordering = ['-data']
 
 
+
+

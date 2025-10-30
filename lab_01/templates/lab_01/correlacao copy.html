@@ -52,9 +52,6 @@
         <!-- Estatísticas -->
         <section class="status-section">
             <h2>Estatísticas</h2>
-            <p style="text-align: center; color: #6c757d; margin-bottom: 1.5rem;">
-                Período: <strong>{{ stats.data_inicial|date:"d/m/Y" }}</strong> a <strong>{{ stats.data_final|date:"d/m/Y" }}</strong>
-            </p>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value">{{ stats.correlacao }}</div>
@@ -71,14 +68,6 @@
                 <div class="stat-card">
                     <div class="stat-value">{{ stats.media_termo2 }}</div>
                     <div class="stat-label">Média {{ termo2 }}</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f);">
-                    <div class="stat-value" style="color: white;">{{ stats.youtube_termo1 }}</div>
-                    <div class="stat-label" style="color: white;">📹 YouTube - {{ termo1 }}</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f);">
-                    <div class="stat-value" style="color: white;">{{ stats.youtube_termo2 }}</div>
-                    <div class="stat-label" style="color: white;">📹 YouTube - {{ termo2 }}</div>
                 </div>
             </div>
         </section>

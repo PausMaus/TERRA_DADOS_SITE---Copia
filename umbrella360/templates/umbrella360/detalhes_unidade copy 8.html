@@ -62,6 +62,11 @@
                   <strong>Cor:</strong> {{ unidade.cor }}
                 </p>
               {% endif %}
+              {% if unidade.modelo %}
+                <p style="margin: 0.25rem 0 0 0; color: #495057;">
+                  <strong>Modelo:</strong> {{ unidade.modelo }}
+                </p>
+              {% endif %}
             </div>
             <div style="text-align: center;">
               {% if stats_gerais.total_viagens > 0 %}
@@ -918,6 +923,68 @@
                             pointRadius: 0,
                             pointHoverRadius: 6,
                             hidden: false
+                        },
+                        // 🔥 NOVA LINHA: RPM = 500 (Linha de referência)
+                        {
+                            label: 'RPM 500 (Referência)',
+                            data: Array(labels.length).fill(500), // Cria array com valor 500 para todos os pontos
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5], // Linha tracejada
+                            fill: false,
+                            tension: 0,
+                            yAxisID: 'y',
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            hidden: false,
+                            order: 0 // Garante que a linha apareça atrás dos outros dados
+                        },
+                        // 🔥 NOVA LINHA: RPM = 500 (Linha de referência)
+                        {
+                            //label: 'RPM 800 (Referência)',
+                            data: Array(labels.length).fill(800), // Cria array com valor 500 para todos os pontos
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5], // Linha tracejada
+                            fill: false,
+                            tension: 0,
+                            yAxisID: 'y',
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            hidden: false,
+                            order: 0 // Garante que a linha apareça atrás dos outros dados
+                        },
+                        {
+                            //label: 'RPM 1300 (Referência)',
+                            data: Array(labels.length).fill(1300), // Cria array com valor 500 para todos os pontos
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5], // Linha tracejada
+                            fill: false,
+                            tension: 0,
+                            yAxisID: 'y',
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            hidden: false,
+                            order: 0 // Garante que a linha apareça atrás dos outros dados
+                        },
+                        {
+                            //label: 'RPM 2300 (Referência)',
+                            data: Array(labels.length).fill(2300), // Cria array com valor 500 para todos os pontos
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5], // Linha tracejada
+                            fill: false,
+                            tension: 0,
+                            yAxisID: 'y',
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            hidden: false,
+                            order: 0 // Garante que a linha apareça atrás dos outros dados
                         }
                     ]
                 },
@@ -1162,6 +1229,9 @@
             document.getElementById('toggle-rpm').addEventListener('change', function() {
                 const meta = rpmChart.getDatasetMeta(0);
                 meta.hidden = !this.checked;
+                // 🔥 NOVO: Também controlar a linha de referência junto com RPM
+                const refMeta = rpmChart.getDatasetMeta(3);
+                refMeta.hidden = !this.checked;
                 updateAxisVisibility();
             });
             

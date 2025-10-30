@@ -3,11 +3,10 @@ from django.contrib import messages
 from django.db.models import Avg, Count
 from django.urls import reverse
 from functools import wraps
-from .models import Regiao, GoogleTrendsData, YouTubeData
+from .models import Regiao, GoogleTrendsData
 import csv
 import re
 import json
-import requests
 from datetime import datetime
 from collections import defaultdict
 
@@ -87,9 +86,6 @@ def importar_csv(request):
         data_inicial = datetime.strptime(match.group(2), '%d/%m/%Y').date()
         data_final = datetime.strptime(match.group(3), '%d/%m/%Y').date()
         
-        # Buscar dados do YouTube
-        youtube_count = buscar_youtube_videos(termo, data_inicial, data_final)
-        
         # Processar dados
         contador = 0
         for row in reader:
@@ -111,46 +107,9 @@ def importar_csv(request):
                 contador += 1
         
         messages.success(request, f'{contador} registros importados com sucesso!')
-        if youtube_count is not None:
-            messages.success(request, f'YouTube: {youtube_count} vídeos encontrados para "{termo}"')
         return redirect('lab_01:index')
     
     return render(request, 'lab_01/importar.html')
-
-
-def buscar_youtube_videos(termo, data_inicial, data_final):
-    """Busca número de vídeos no YouTube para o termo e período"""
-    API_KEY = 'AIzaSyDmuJl4bHPFVy-XWVoIV7aA4_jCZKUHmkY'
-    url = 'https://www.googleapis.com/youtube/v3/search'
-    
-    params = {
-        'part': 'snippet',
-        'q': termo,
-        'type': 'video',
-        'publishedAfter': f'{data_inicial}T00:00:00Z',
-        'publishedBefore': f'{data_final}T23:59:59Z',
-        'maxResults': 0,
-        'key': API_KEY
-    }
-    
-    try:
-        response = requests.get(url, params=params, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            total = data.get('pageInfo', {}).get('totalResults', 0)
-            
-            # Salvar no banco
-            YouTubeData.objects.update_or_create(
-                termo=termo,
-                data_inicial=data_inicial,
-                data_final=data_final,
-                defaults={'total_videos': total}
-            )
-            return total
-    except Exception as e:
-        print(f'Erro ao buscar YouTube: {e}')
-    
-    return None
 
 def correlacao(request):
     """Análise de correlação entre termos e regiões"""
@@ -213,20 +172,13 @@ def correlacao(request):
         else:
             correlacao_pearson = 0
         
-        # Buscar dados do YouTube
-        yt1 = YouTubeData.objects.filter(termo=termo1).first()
-        yt2 = YouTubeData.objects.filter(termo=termo2).first()
-        
         # Estatísticas
         stats = {
             'correlacao': round(correlacao_pearson, 4),
             'regioes_analisadas': len(regioes_comuns),
             'media_termo1': round(sum(x_values) / len(x_values), 2) if x_values else 0,
             'media_termo2': round(sum(y_values) / len(y_values), 2) if y_values else 0,
-            'data_inicial': dados1.first().data_inicial if dados1.exists() else None,
-            'data_final': dados1.first().data_final if dados1.exists() else None,
-            'youtube_termo1': yt1.total_videos if yt1 else 0,
-            'youtube_termo2': yt2.total_videos if yt2 else 0,
+            'data_inicial': 
         }
         
         context.update({
