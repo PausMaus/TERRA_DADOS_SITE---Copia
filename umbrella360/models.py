@@ -309,5 +309,100 @@ class Infrações(models.Model):
         ordering = ['-data']
 
 
-
+class Estatistica_Diaria_Motorista(models.Model):
+    """
+    Modelo para armazenar estatísticas diárias pré-processadas dos motoristas.
+    Calculado durante a coleta de dados das mensagens (MENSAGENS command).
+    """
+    # Chaves
+    motorista = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='estatisticas_diarias')
+    data = models.DateField(verbose_name="Data", db_index=True)
+    
+    # Estatísticas de RPM (baseadas nas faixas)
+    total_pontos = models.IntegerField(default=0, verbose_name="Total de Pontos")
+    pontos_ocioso = models.IntegerField(default=0, verbose_name="Pontos em Ocioso")
+    pontos_faixa_azul = models.IntegerField(default=0, verbose_name="Pontos Faixa Azul")
+    pontos_faixa_verde = models.IntegerField(default=0, verbose_name="Pontos Faixa Verde")
+    pontos_faixa_amarela = models.IntegerField(default=0, verbose_name="Pontos Faixa Amarela")
+    pontos_faixa_vermelha = models.IntegerField(default=0, verbose_name="Pontos Faixa Vermelha")
+    
+    # Percentuais (calculados)
+    perc_ocioso = models.FloatField(default=0.0, verbose_name="% Ocioso")
+    perc_faixa_azul = models.FloatField(default=0.0, verbose_name="% Faixa Azul")
+    perc_faixa_verde = models.FloatField(default=0.0, verbose_name="% Faixa Verde")
+    perc_faixa_amarela = models.FloatField(default=0.0, verbose_name="% Faixa Amarela")
+    perc_faixa_vermelha = models.FloatField(default=0.0, verbose_name="% Faixa Vermelha")
+    
+    # Score de performance
+    score_performance = models.FloatField(default=0.0, verbose_name="Score de Performance")
+    
+    # Médias de sensores
+    rpm_medio = models.FloatField(default=0.0, verbose_name="RPM Médio")
+    velocidade_media = models.FloatField(default=0.0, verbose_name="Velocidade Média")
+    
+    # Jornada de trabalho
+    timestamp_inicio = models.IntegerField(verbose_name="Timestamp Início do Dia", blank=True, null=True)
+    timestamp_fim = models.IntegerField(verbose_name="Timestamp Fim do Dia", blank=True, null=True)
+    horas_trabalhadas = models.FloatField(default=0.0, verbose_name="Horas Trabalhadas")
+    
+    # Veículos utilizados
+    total_veiculos = models.IntegerField(default=0, verbose_name="Total de Veículos Diferentes")
+    veiculos_ids = models.TextField(blank=True, null=True, verbose_name="IDs dos Veículos (JSON)")
+    
+    # Metadados
+    data_processamento = models.DateTimeField(auto_now=True, verbose_name="Data de Processamento")
+    
+    class Meta:
+        verbose_name = "Estatística Diária do Motorista"
+        verbose_name_plural = "Estatísticas Diárias dos Motoristas"
+        ordering = ['-data', 'motorista']
+        unique_together = ['motorista', 'data']  # Um registro por motorista por dia
+        indexes = [
+            models.Index(fields=['motorista', 'data']),
+            models.Index(fields=['data']),
+            models.Index(fields=['score_performance']),
+        ]
+    
+    def __str__(self):
+        return f"{self.motorista.nm} - {self.data.strftime('%d/%m/%Y')} - Score: {self.score_performance:.2f}"
+    
+    def calcular_percentuais(self):
+        """Calcula os percentuais baseados nos pontos"""
+        if self.total_pontos > 0:
+            self.perc_ocioso = (self.pontos_ocioso / self.total_pontos) * 100
+            self.perc_faixa_azul = (self.pontos_faixa_azul / self.total_pontos) * 100
+            self.perc_faixa_verde = (self.pontos_faixa_verde / self.total_pontos) * 100
+            self.perc_faixa_amarela = (self.pontos_faixa_amarela / self.total_pontos) * 100
+            self.perc_faixa_vermelha = (self.pontos_faixa_vermelha / self.total_pontos) * 100
+        else:
+            self.perc_ocioso = 0.0
+            self.perc_faixa_azul = 0.0
+            self.perc_faixa_verde = 0.0
+            self.perc_faixa_amarela = 0.0
+            self.perc_faixa_vermelha = 0.0
+    
+    def calcular_score(self):
+        """Calcula o score de performance"""
+        self.score_performance = (
+            (self.perc_faixa_verde * 1.0) + 
+            (self.perc_faixa_azul * 0.8) - 
+            (self.perc_faixa_amarela * 0.5) - 
+            (self.perc_faixa_vermelha * 1.0) - 
+            (self.perc_ocioso * 0.3)
+        )
+    
+    def calcular_horas_trabalhadas(self):
+        """Calcula horas trabalhadas baseado nos timestamps"""
+        if self.timestamp_inicio and self.timestamp_fim:
+            diferenca_segundos = self.timestamp_fim - self.timestamp_inicio
+            self.horas_trabalhadas = diferenca_segundos / 3600
+        else:
+            self.horas_trabalhadas = 0.0
+    
+    def save(self, *args, **kwargs):
+        """Override save para calcular métricas automaticamente"""
+        self.calcular_percentuais()
+        self.calcular_score()
+        self.calcular_horas_trabalhadas()
+        super().save(*args, **kwargs)
 

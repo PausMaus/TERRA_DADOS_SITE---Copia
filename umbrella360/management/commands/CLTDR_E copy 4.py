@@ -18,9 +18,7 @@ import sqlite3
 import numbers
 import threading
 import time
-conn = sqlite3.connect('db.sqlite3')
-conn.execute('PRAGMA journal_mode=WAL;')
-conn.close()
+
 
 
 
@@ -52,24 +50,21 @@ class Command(BaseCommand):
         # PRINCIPAL #
         #self.Limpeza() 
 
-        #self.CLTDR_TESTE_01(cor1="blue", cor2="green")
-        #self.CLTDR_TESTE_02(cor1="blue", cor2="green")
+        #self.UMBRELLA(cor1="blue", cor2="green")
         ##################################################
         # MENSAGENS #
+
+        #Viagem_eco.objects.all().delete()
+        #self.MENSAGENS(30,"Petitto")
+        self.MENSAGENS(15,"CPBRACELL")
         
-        self.MENSAGENS_04(1)
 
         ##################################################
         # ESTUDO #
 
-
-
-        #self.ESTUDO_01()
-        #self.ESTUDO_02()
-        #self.ESTUDO_03()
         ##################################################
         # CHECAGEM #
-        #self.Checagem_01()
+        self.Checagem_01()
         ##################################################
         # End timing and display results
         end_time = datetime.now()
@@ -83,25 +78,6 @@ class Command(BaseCommand):
     #######################################################################################
     
 ################################################################################################
-
-
-
-
-    def driver_code_to_avl(self, codigo_motorista: int) -> int:
-        # converte para hex e garante 8 caracteres
-        hex_code = f'{codigo_motorista:08x}'
-        # cria uma string de 16 bytes com o código no meio
-        # exemplo: prefixo + hex_code + sufixo
-        # aqui usamos um padrão que gera o mesmo resultado
-        reversed_bytes = '000000' + hex_code + '000000'
-        # inverte os bytes novamente
-        bytes_list = [reversed_bytes[i:i+2] for i in range(0, len(reversed_bytes), 2)]
-        original_hex = ''.join(bytes_list[::-1])
-        # converte para decimal
-        return int(original_hex, 16)
-
-
-
 
 
 
@@ -253,7 +229,7 @@ class Command(BaseCommand):
 
 
 
-    def CLTDR_TESTE_02(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
+    def UMBRELLA(self, cor1, cor2, tool="CLTDR_UMBRELLA"):
         def comm(msg):
             print(colored("="*30, cor1))
             print(colored(tool, cor2))
@@ -274,11 +250,11 @@ class Command(BaseCommand):
         self.ATUALIZADOR_01(sid)
 
         ###__CLTDR_empresas__###
-        #self.CLTDR_empresas(self, sid, "orange" , "white", tool= "CLTDR_empresas")
+        self.CLTDR_empresas(sid, cor1="blue" , cor2="white", tool= "CLTDR_empresas")
 
         Wialon.wialon_logout(sid)
 
-    def CLTDR_empresas(self, sid, cor1, cor2, tool="CLTDR_UMBRELLA"):
+    def CLTDR_empresas(self, sid, cor1, cor2, tool):
         def comm(msg):
             print(colored("="*30, cor1))
             print(colored(tool, cor2))
@@ -561,7 +537,7 @@ class Command(BaseCommand):
         # pega dos ultimos 30 dias usando um loop for
         #dias = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
         # dias de testes
-        dias = range(1,10)
+        dias = range(1,15)
         for dia in dias:
             self.CLTDR_MOT_01_teste(sid, processamento_df, Objeto=401756219, flag=16777216, dias=dia, periodo=str(dia))
 
@@ -965,7 +941,7 @@ class Command(BaseCommand):
                             'timestamp_inicial': timestamp_inicial,
                             'timestamp_final': timestamp_final,
                             'veiculo': veiculo,
-                            'período': periodo,
+                            #'período': periodo,
 
                         }
                     )
@@ -1846,7 +1822,7 @@ class Command(BaseCommand):
 
         Wialon.wialon_logout(sid)
 
-    def MENSAGENS_04(self, tempo):
+    def MENSAGENS(self, tempo, empresa):
         
         def avl_to_driver_code(avl_driver: int) -> int:
             """Converte código AVL para código do motorista"""
@@ -1903,16 +1879,20 @@ class Command(BaseCommand):
         
         counter = 0
 
-        lista_cpbracell = Veiculo.objects.filter(empresa__nome="CPBRACELL").values_list('id_wialon', flat=True)
-        lista_petitto = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)
-        lista_sfresgate = Veiculo.objects.filter(empresa__nome="São Francisco Resgate").values_list('id_wialon', flat=True)
+        #lista_cpbracell = Veiculo.objects.filter(empresa__nome="CPBRACELL").values_list('id_wialon', flat=True)
+        #lista_petitto = Veiculo.objects.filter(empresa__nome="Petitto").values_list('id_wialon', flat=True)
+        #lista_sfresgate = Veiculo.objects.filter(empresa__nome="São Francisco Resgate").values_list('id_wialon', flat=True)
+        #lista_unidades = list(lista_sfresgate) + list(lista_petitto) + list(lista_cpbracell)
+        #lista_unidades = list(lista_petitto) + list(lista_cpbracell)
 
-        lista_unidades = list(lista_sfresgate) + list(lista_petitto) + list(lista_cpbracell)
-        #lista_unidades = Veiculo.objects.filter(empresa__nome="CPBRACELL", nm__icontains="PRO").values_list('id_wialon', flat=True)[:10]
+        lista_unidades = Veiculo.objects.filter(empresa__nome=empresa).values_list('id_wialon',flat=True)
+        #lista_unidades = Veiculo.objects.filter(nm__icontains="1037").values_list('id_wialon', flat=True)  # IDs das unidades a serem processadas
+
 
         n_unidades = len(lista_unidades)
         print(f"lista_unidades: {n_unidades} unidades.")
         print(lista_unidades)
+
 
         current_time = int(time.time())
         timeFrom = current_time - (tempo * 24 * 3600)
@@ -1921,7 +1901,7 @@ class Command(BaseCommand):
         if not sid:
             self.stdout.write(self.style.ERROR('Falha ao iniciar sessão Wialon.'))
             return
-        # Variável de controle para parar o keep-alive        
+        
         keep_alive_active = True
         
         def keep_session_alive():

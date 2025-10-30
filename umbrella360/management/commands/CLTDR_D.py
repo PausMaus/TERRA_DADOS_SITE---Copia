@@ -18,9 +18,6 @@ import sqlite3
 import numbers
 import threading
 import time
-conn = sqlite3.connect('db.sqlite3')
-conn.execute('PRAGMA journal_mode=WAL;')
-conn.close()
 
 
 

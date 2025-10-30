@@ -259,6 +259,11 @@ class Viagem_eco(models.Model):
     avl_driver = models.IntegerField(verbose_name="Avl_Driver", blank=True, null=True )
     driver_code = models.IntegerField(verbose_name="Motorista", null=True, blank=True)
     nome_motorista = models.ForeignKey(Driver, on_delete=models.CASCADE, default=None, blank=True, null=True, related_name='viagens_motorista')
+    faixa_azul = models.BooleanField(verbose_name="Faixa Azul", blank=True, null=True)
+    faixa_verde = models.BooleanField(verbose_name="Faixa Verde", blank=True, null=True)
+    faixa_amarela = models.BooleanField(verbose_name="Faixa Amarela", blank=True, null=True)
+    faixa_vermelha = models.BooleanField(verbose_name="Faixa Vermelha", blank=True, null=True)
+    ocioso = models.BooleanField(verbose_name="Ocioso", blank=True, null=True)
     
     def __str__(self):
         return f"{self.unidade.nm} - {self.timestamp}"
@@ -302,5 +307,7 @@ class Infrações(models.Model):
         verbose_name = "Infração"
         verbose_name_plural = "Infrações"
         ordering = ['-data']
+
+
 
 
