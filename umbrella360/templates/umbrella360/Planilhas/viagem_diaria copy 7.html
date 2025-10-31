@@ -418,7 +418,7 @@
       <!-- Cabeçalho da Planilha -->
       <div class="planilha-header">
         <h1>📋 Viagem Diária - <span class="gradient-text">{{ data_selecionada|date:"d/m/Y" }}</span></h1>
-        <p>Relatório detalhado das viagens realizadas na data de {{ data_selecionada|date:"d/m/Y" }}</p>
+        <p>Relatório detalhado das viagens realizadas na data de {{ data_selecionada|date:"d/m/Y" }} (Somatório por Motorista)</p>
       </div>
 
       <!-- Navegação de Datas -->
@@ -465,7 +465,7 @@
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-value">{{ total_unidades }}</div>
-            <div class="stat-label">Unidades Ativas</div>
+            <div class="stat-label">Motoristas Ativos</div>
           </div>
           <div class="stat-card">
             <div class="stat-value">{{ total_km|floatformat:0 }} km</div>
@@ -505,37 +505,29 @@
             <thead>
               <tr>
                 <th>Motorista</th>
-                <th>KM Rodado</th>
-                <th>Consumo (L)</th>
-                <th>Média (km/L)</th>
-                <th>Eficiência</th>
+                <th>Veículo</th>
+                <th>KM Total</th>
+                <th>Consumo Total (L)</th>
+                <th>Eficiência (km/L)</th>
               </tr>
             </thead>
             <tbody>
               {% for viagem in viagens %}
               <tr>
                 <td>
-                  <span class="motorista-name">{{ viagem.unidade.nm|default:viagem.unidade.id}}</span>
-                </td>
-                <td class="km-value">
-                  {{ viagem.quilometragem|floatformat:2 }}
-                </td>
-                <td class="consumo-value">
-                  {{ viagem.Consumido|floatformat:1 }}
-                </td>
-                <td class="media-value">
-                  {{ viagem.Quilometragem_média|floatformat:2 }}
+                  <span class="motorista-name">{{ viagem.unidade__nm|default:viagem.unidade }}</span>
                 </td>
                 <td>
-                  {% if viagem.Quilometragem_média >= 2.0 %}
-                    <span class="eficiencia-badge eficiencia-excelente">Excelente</span>
-                  {% elif viagem.Quilometragem_média >= 1.78 %}
-                    <span class="eficiencia-badge eficiencia-boa">Boa</span>
-                  {% elif viagem.Quilometragem_média >= 1.5 %}
-                    <span class="eficiencia-badge eficiencia-regular">Regular</span>
-                  {% else %}
-                    <span class="eficiencia-badge eficiencia-ruim">Ruim</span>
-                  {% endif %}
+                  <span class="placa-badge">{{ viagem.veiculo|default:'N/A' }}</span>
+                </td>
+                <td class="km-value">
+                  {{ viagem.total_quilometragem|floatformat:2 }}
+                </td>
+                <td class="consumo-value">
+                  {{ viagem.total_consumido|floatformat:1 }}
+                </td>
+                <td class="media-value">
+                  {{ viagem.eficiencia_media|floatformat:2 }}
                 </td>
               </tr>
               {% endfor %}
@@ -568,11 +560,6 @@
             <div class="stat-value">{{ unidades_ineficientes }}</div>
             <div class="stat-label">Motoristas Ineficientes</div>
             <small style="color: #dc3545;">< 1.5 km/L</small>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">{{ economia_potencial|floatformat:0 }} L</div>
-            <div class="stat-label">Economia Potencial</div>
-            <small style="color: #17a2b8;">Se todos ≥ 2.0 km/L</small>
           </div>
         </div>
       </div>

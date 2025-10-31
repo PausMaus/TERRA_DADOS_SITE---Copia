@@ -37,7 +37,11 @@ def get_empresas_disponiveis():
 def get_marcas_por_empresa(empresa_id=None):
     """Retorna lista de marcas disponíveis para uma empresa específica"""
     if empresa_id and empresa_id != 'todas':
-        return Unidade.objects.filter(empresa_id=empresa_id).values_list('marca', flat=True).distinct().order_by('marca')
+        return Unidade.objects.filter(
+            empresa_id=empresa_id).values_list(
+            'marca', flat=True).distinct(
+            ).order_by(
+                'marca')
     return Unidade.objects.values_list('marca', flat=True).distinct().order_by('marca')
 
 def get_periodos_disponiveis():
@@ -689,7 +693,7 @@ def detalhes_unidade(request, unidade_id):
         limite_medio=Avg('limite'),
         limite_mais_infringido=Max('limite')
     )
-    
+
     # Limites mais infringidos por esta unidade
     limites_unidade = infracoes.values('limite').annotate(
         total_ocorrencias=Count('id')
@@ -2456,10 +2460,12 @@ def performance_frota(request):
     }
     
     return render(request, 'umbrella360/performance.html', context)
+
+
 def performance_motoristas(request):
-    """View OTIMIZADA usando estatísticas pré-processadas"""
+    """View OTIMIZADA usando estatísticas pré-processadas - SEM PAGINAÇÃO"""
     from datetime import datetime, timedelta, date
-    from django.core.paginator import Paginator
+    from django.db.models import Sum, Avg
     
     empresa_logada_id = request.session.get('empresa_logada')
     empresa_logada = None
@@ -2513,6 +2519,9 @@ def performance_motoristas(request):
         score_medio=Avg('score_performance'),
         dias_trabalhados=Count('data'),
         total_horas=Sum('horas_trabalhadas'),
+        # 🔥 NOVO: Agregar dados de combustível
+        quilometragem_total=Sum('quilometragem_total'),
+        consumo_total=Sum('consumo_total'),
     ).order_by('-score_medio')[:200]  # Top 200 motoristas
     
     # Buscar motoristas em lote
@@ -2539,6 +2548,11 @@ def performance_motoristas(request):
         else:
             perc_ocioso = perc_azul = perc_verde = perc_amarela = perc_vermelha = 0
         
+        # 🔥 Calcular dados de combustível
+        quilometragem_total = float(stats.get('quilometragem_total') or 0)
+        consumo_total = float(stats.get('consumo_total') or 0)
+        km_litro = quilometragem_total / consumo_total if consumo_total > 0 else 0
+        
         motoristas_performance.append({
             'motorista': motorista,
             'total_pontos': total,
@@ -2558,35 +2572,108 @@ def performance_motoristas(request):
             'score': stats['score_medio'] or 0,
             'dias_trabalhados': stats['dias_trabalhados'],
             'total_horas': stats['total_horas'] or 0,
+            # 🔥 NOVO: Dados de combustível
+            'quilometragem_total': quilometragem_total,
+            'consumo_total': consumo_total,
+            'km_litro': km_litro,
         })
     
-    # Paginação
-    paginator = Paginator(motoristas_performance, 10)
-    page_number = request.GET.get('page', 1)
-    try:
-        motoristas_paginados = paginator.page(page_number)
-    except:
-        motoristas_paginados = paginator.page(1)
-    
     # Estatísticas gerais
-    stats_gerais = {
-        'total_motoristas': len(motoristas_performance),
-        'total_pontos': sum(m['total_pontos'] for m in motoristas_performance),
-        'rpm_medio_geral': sum(m['rpm_medio'] * m['total_pontos'] for m in motoristas_performance) / sum(m['total_pontos'] for m in motoristas_performance) if motoristas_performance else 0,
-    }
+    if motoristas_performance:
+        total_classificados_geral = sum(m['total_classificados'] for m in motoristas_performance)
+        total_pontos_geral = sum(m['total_pontos'] for m in motoristas_performance)
+        
+        # 🔥 Calcular totais de combustível
+        quilometragem_total_geral = sum(m['quilometragem_total'] for m in motoristas_performance)
+        consumo_total_geral = sum(m['consumo_total'] for m in motoristas_performance)
+        km_litro_medio_geral = quilometragem_total_geral / consumo_total_geral if consumo_total_geral > 0 else 0
+        
+        stats_gerais = {
+            'total_motoristas': len(motoristas_performance),
+            'total_pontos': total_pontos_geral,
+            'rpm_medio_geral': sum(m['rpm_medio'] * m['total_pontos'] for m in motoristas_performance) / total_pontos_geral if total_pontos_geral > 0 else 0,
+            'velocidade_media_geral': sum(m['velocidade_media'] * m['total_pontos'] for m in motoristas_performance) / total_pontos_geral if total_pontos_geral > 0 else 0,
+            'perc_verde_geral': (sum(m['faixa_verde'] for m in motoristas_performance) / total_classificados_geral * 100) if total_classificados_geral > 0 else 0,
+            'perc_vermelha_geral': (sum(m['faixa_vermelha'] for m in motoristas_performance) / total_classificados_geral * 100) if total_classificados_geral > 0 else 0,
+            'perc_azul_geral': (sum(m['faixa_azul'] for m in motoristas_performance) / total_classificados_geral * 100) if total_classificados_geral > 0 else 0,
+            'perc_amarela_geral': (sum(m['faixa_amarela'] for m in motoristas_performance) / total_classificados_geral * 100) if total_classificados_geral > 0 else 0,
+            'perc_ocioso_geral': (sum(m['motor_ocioso'] for m in motoristas_performance) / total_classificados_geral * 100) if total_classificados_geral > 0 else 0,
+            # 🔥 NOVO: Estatísticas de combustível
+            'quilometragem_total_geral': quilometragem_total_geral,
+            'consumo_total_geral': consumo_total_geral,
+            'km_litro_medio_geral': km_litro_medio_geral,
+        }
+    else:
+        stats_gerais = {
+            'total_motoristas': 0,
+            'total_pontos': 0,
+            'rpm_medio_geral': 0,
+            'velocidade_media_geral': 0,
+            'perc_verde_geral': 0,
+            'perc_vermelha_geral': 0,
+            'perc_azul_geral': 0,
+            'perc_amarela_geral': 0,
+            'perc_ocioso_geral': 0,
+            # 🔥 NOVO: Combustível zerado
+            'quilometragem_total_geral': 0,
+            'consumo_total_geral': 0,
+            'km_litro_medio_geral': 0,
+        }
     
+    # 🔥 EVOLUÇÃO TEMPORAL - Usar estatísticas diárias agregadas
+    evolucao_temporal = []
+    
+    # Buscar estatísticas diárias com os mesmos filtros
+    stats_temporais = stats_query.values('data').annotate(
+        total_pontos_dia=Sum('total_pontos'),
+        total_ocioso_dia=Sum('pontos_ocioso'),
+        total_azul_dia=Sum('pontos_faixa_azul'),
+        total_verde_dia=Sum('pontos_faixa_verde'),
+        total_amarela_dia=Sum('pontos_faixa_amarela'),
+        total_vermelha_dia=Sum('pontos_faixa_vermelha'),
+        rpm_medio_dia=Avg('rpm_medio'),
+        velocidade_media_dia=Avg('velocidade_media'),
+    ).order_by('data')
+    
+    for stat in stats_temporais:
+        total_dia = stat['total_pontos_dia']
+        if total_dia > 0:
+            perc_azul = (stat['total_azul_dia'] / total_dia * 100)
+            perc_verde = (stat['total_verde_dia'] / total_dia * 100)
+            perc_amarela = (stat['total_amarela_dia'] / total_dia * 100)
+            perc_vermelha = (stat['total_vermelha_dia'] / total_dia * 100)
+            perc_ocioso = (stat['total_ocioso_dia'] / total_dia * 100)
+            
+            score = (perc_verde * 1.0) + (perc_azul * 0.8) - (perc_amarela * 0.5) - (perc_vermelha * 1.0) - (perc_ocioso * 0.3)
+            
+            evolucao_temporal.append({
+                'data': stat['data'].strftime('%Y-%m-%d'),
+                'score': round(score, 2),
+                'rpm_medio': round(stat['rpm_medio_dia'], 1) if stat['rpm_medio_dia'] else 0,
+                'velocidade_media': round(stat['velocidade_media_dia'], 1) if stat['velocidade_media_dia'] else 0,
+                'perc_verde': round(perc_verde, 1),
+                'perc_vermelha': round(perc_vermelha, 1),
+                'perc_azul': round(perc_azul, 1),
+                'perc_amarela': round(perc_amarela, 1),
+                'perc_ocioso': round(perc_ocioso, 1),
+                'total_pontos': total_dia
+            })
+    
+    # 🔥 SEM PAGINAÇÃO - todos os motoristas em uma página
     context = {
         'empresa_logada': empresa_logada,
-        'motoristas_performance': motoristas_paginados,
-        'paginator': paginator,
-        'page_obj': motoristas_paginados,
+        'motoristas_performance': motoristas_performance,  # Lista completa
         'stats_gerais': stats_gerais,
+        'evolucao_temporal': evolucao_temporal,
         'data_inicio': data_inicio,
         'data_fim': data_fim,
         'periodo_dias': periodo_dias,
     }
     
     return render(request, 'umbrella360/performance_motoristas.html', context)
+
+
+
 
 def jornada_motoristas(request):
     """View para análise de jornada de trabalho dos motoristas - tempo ao volante por dia"""

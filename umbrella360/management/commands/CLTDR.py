@@ -57,8 +57,8 @@ class Command(BaseCommand):
         # MENSAGENS #
 
         #Viagem_eco.objects.all().delete()
-        self.MENSAGENS(20,"Petitto")
-        self.MENSAGENS(10,"CPBRACELL")
+        self.MENSAGENS(1,"Petitto")
+        self.MENSAGENS(1,"CPBRACELL")
         
 
         self.gerar_estatisticas_de_viagens_eco(dias=30)

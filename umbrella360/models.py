@@ -344,6 +344,18 @@ class Estatistica_Diaria_Motorista(models.Model):
     timestamp_inicio = models.IntegerField(verbose_name="Timestamp Início do Dia", blank=True, null=True)
     timestamp_fim = models.IntegerField(verbose_name="Timestamp Fim do Dia", blank=True, null=True)
     horas_trabalhadas = models.FloatField(default=0.0, verbose_name="Horas Trabalhadas")
+
+    # 🔥 Combustível e Quilometragem (de Viagem_Detalhada)
+    quilometragem_total = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00, verbose_name="Quilometragem Total (km)", blank=True, null=True
+    )
+    consumo_total = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00, verbose_name="Consumo Total (litros)", blank=True, null=True
+    )
+    Quilometragem_média = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0.00, verbose_name="Média de Consumo (km/l)", blank=True, null=True
+    )
+    total_viagens_detalhadas = models.IntegerField(default=0, verbose_name="Total de Viagens Detalhadas")
     
     # Veículos utilizados
     total_veiculos = models.IntegerField(default=0, verbose_name="Total de Veículos Diferentes")
